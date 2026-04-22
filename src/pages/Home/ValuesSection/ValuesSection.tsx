@@ -1,7 +1,7 @@
 import React from 'react';
 import { Heart, Users, BookOpen, Shield, Lightbulb, Handshake } from 'lucide-react';
 
-const ValuesSection = () => {
+export function ValuesSection() {
   const values = [
     { icon: Heart, title: 'Respeto', description: 'Valoramos la dignidad de cada persona' },
     { icon: Users, title: 'Solidaridad', description: 'Trabajamos juntos por el bien común' },
@@ -39,4 +39,3 @@ const ValuesSection = () => {
   );
 };
 
-export default ValuesSection;

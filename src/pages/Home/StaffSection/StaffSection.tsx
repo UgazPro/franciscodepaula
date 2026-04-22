@@ -1,6 +1,6 @@
 import React from 'react';
 
-const StaffSection = () => {
+export function StaffSection() {
   const staff = [
     { name: 'Dra. María Elena Rodríguez', role: 'Directora General', image: 'https://randomuser.me/api/portraits/women/68.jpg' },
     { name: 'Prof. Luis Alberto Méndez', role: 'Coordinador Académico', image: 'https://randomuser.me/api/portraits/men/32.jpg' },
@@ -34,4 +34,3 @@ const StaffSection = () => {
   );
 };
 
-export default StaffSection;

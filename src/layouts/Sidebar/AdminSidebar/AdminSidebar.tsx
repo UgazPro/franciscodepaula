@@ -21,7 +21,7 @@ export default function AdminSidebar() {
           {/* Logo/Header */}
           <div className="flex items-center mb-8 rounded-lg group-hover:bg-blue-800/50 mt-3 transition-colors duration-300">
             <div className="h-10 w-10 flex items-center justify-center shrink-0">
-              <img src="logoF.png" alt="Logo" className="text-white rounded-full" />
+              <img src="logoF.png" alt="Logo" className="text-white" />
             </div>
             <div className="ml-3 overflow-hidden whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-2 group-hover:translate-x-0">
               <span className="text-sm font-bold">Francisco de Paula</span>

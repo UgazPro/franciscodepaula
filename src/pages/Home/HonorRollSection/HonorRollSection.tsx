@@ -1,7 +1,6 @@
-import React from 'react';
 import { Award, Star } from 'lucide-react';
 
-const HonorRollSection = () => {
+export function HonorRollSection() {
   const students = [
     { name: 'Sofía Valentina Rojas', grade: '5to Año', honor: 'Excelencia Académica' },
     { name: 'Mateo Alejandro Gil', grade: '4to Año', honor: 'Mejor Rendimiento' },
@@ -33,4 +32,3 @@ const HonorRollSection = () => {
   );
 };
 
-export default HonorRollSection;

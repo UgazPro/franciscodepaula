@@ -1,8 +1,9 @@
-import React from 'react';
 import { Activity, Mail, Phone, MapPin } from 'lucide-react';
 
-const Footer = () => {
+export function Footer() {
+
   return (
+
     <footer className="bg-blue-900 text-white pt-12 pb-6">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid md:grid-cols-4 gap-8 mb-8">
@@ -50,7 +51,8 @@ const Footer = () => {
         </div>
       </div>
     </footer>
+
   );
+
 };
 
-export default Footer;

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { 
-  Users, 
-  GraduationCap, 
-  DollarSign, 
-  Calendar, 
-  TrendingUp, 
+import {
+  Users,
+  GraduationCap,
+  DollarSign,
+  Calendar,
+  TrendingUp,
   AlertTriangle,
   UserCheck,
   BookOpen,
@@ -66,7 +66,7 @@ const AdminPanel = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header del Dashboard */}
-      <div className="bg-gradient-to-r from-blue-900 to-blue-800 text-white">
+      <div className="bg-linear-to-r from-blue-900 to-blue-800 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
@@ -88,33 +88,33 @@ const AdminPanel = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* Tarjetas de Estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <StatCard 
-            icon={Users} 
-            title="Total Estudiantes" 
+          <StatCard
+            icon={Users}
+            title="Total Estudiantes"
             value={stats.totalStudents}
             change="+8.2%"
             color="blue"
           />
-          <StatCard 
-            icon={GraduationCap} 
-            title="Profesores" 
+          <StatCard
+            icon={GraduationCap}
+            title="Profesores"
             value={stats.totalTeachers}
             change="+3"
             color="green"
           />
-          <StatCard 
-            icon={UserCheck} 
-            title="Personal Administrativo" 
+          <StatCard
+            icon={UserCheck}
+            title="Personal Administrativo"
             value={stats.totalStaff}
             change="+1"
             color="blue"
           />
-          <StatCard 
-            icon={DollarSign} 
-            title="Morosidad" 
+          <StatCard
+            icon={DollarSign}
+            title="Morosidad"
             value={`${Math.round((stats.overduePayments / stats.totalStudents) * 100)}%`}
             subtitle={`${stats.overduePayments} estudiantes`}
             color="red"
@@ -123,23 +123,23 @@ const AdminPanel = () => {
 
         {/* Segunda fila de estadísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <StatCard 
-            icon={Calendar} 
-            title="Asistencia Promedio" 
+          <StatCard
+            icon={Calendar}
+            title="Asistencia Promedio"
             value={`${stats.averageAttendance}%`}
             subtitle="Últimos 30 días"
             color="green"
           />
-          <StatCard 
-            icon={TrendingUp} 
-            title="Padres/Representantes" 
+          <StatCard
+            icon={TrendingUp}
+            title="Padres/Representantes"
             value={stats.activeParents}
             subtitle="Activos en sistema"
             color="blue"
           />
-          <StatCard 
-            icon={AlertTriangle} 
-            title="Incidencias Activas" 
+          <StatCard
+            icon={AlertTriangle}
+            title="Incidencias Activas"
             value="42"
             subtitle="-15% vs mes anterior"
             color="red"
@@ -148,7 +148,7 @@ const AdminPanel = () => {
 
         {/* Gráficos y Tablas principales */}
         <div className="grid lg:grid-cols-2 gap-8 mb-8">
-          
+
           {/* Promedios por año */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
@@ -171,8 +171,8 @@ const AdminPanel = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 bg-gray-200 rounded-full h-3 overflow-hidden">
-                        <div 
-                          className="bg-gradient-to-r from-blue-900 to-green-500 h-3 rounded-full transition-all duration-500"
+                        <div
+                          className="bg-linear-to-r from-blue-900 to-green-500 h-3 rounded-full transition-all duration-500"
                           style={{ width: `${grade.average}%` }}
                         ></div>
                       </div>
@@ -232,7 +232,7 @@ const AdminPanel = () => {
 
         {/* Tercera fila */}
         <div className="grid lg:grid-cols-3 gap-8 mb-8">
-          
+
           {/* Distribución de Personal */}
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
@@ -309,10 +309,9 @@ const AdminPanel = () => {
             <div className="divide-y divide-gray-100">
               {alerts.map((alert, idx) => (
                 <div key={idx} className="px-6 py-3 flex items-start gap-3">
-                  <div className={`mt-0.5 w-2 h-2 rounded-full ${
-                    alert.priority === 'high' ? 'bg-red-500' : 
-                    alert.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
-                  }`}></div>
+                  <div className={`mt-0.5 w-2 h-2 rounded-full ${alert.priority === 'high' ? 'bg-red-500' :
+                      alert.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
+                    }`}></div>
                   <p className="text-sm text-gray-700 flex-1">{alert.message}</p>
                 </div>
               ))}
@@ -327,25 +326,25 @@ const AdminPanel = () => {
 
         {/* Indicadores adicionales */}
         <div className="grid lg:grid-cols-4 gap-6">
-          <MetricCard 
+          <MetricCard
             title="Aprobación General"
             value="86.5%"
             change="+3.2%"
             color="green"
           />
-          <MetricCard 
+          <MetricCard
             title="Retención Estudiantil"
             value="96.8%"
             change="+1.5%"
             color="blue"
           />
-          <MetricCard 
+          <MetricCard
             title="Satisfacción Docente"
             value="4.2/5"
             change="+0.3"
             color="green"
           />
-          <MetricCard 
+          <MetricCard
             title="Participación en Actividades"
             value="78%"
             change="+12%"
@@ -359,8 +358,17 @@ const AdminPanel = () => {
 };
 
 // Componente para tarjetas de estadísticas principales
-const StatCard = ({ icon: Icon, title, value, subtitle, change, color }: any) => {
-  const colors = {
+type StatCardProps = {
+  icon: any;
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  change?: string;
+  color?: 'blue' | 'green' | 'red';
+};
+
+const StatCard = ({ icon: Icon, title, value, subtitle, change, color = 'blue' }: StatCardProps) => {
+  const colors: Record<'blue' | 'green' | 'red', string> = {
     blue: 'from-blue-900 to-blue-700',
     green: 'from-green-500 to-green-600',
     red: 'from-red-500 to-red-600'
@@ -374,7 +382,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle, change, color }: any) =>
           <p className="text-2xl font-bold text-gray-800">{value}</p>
           {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
         </div>
-        <div className={`bg-gradient-to-br ${colors[color] || colors.blue} p-3 rounded-lg`}>
+        <div className={`bg-linear-to-br ${colors[color] || colors.blue} p-3 rounded-lg`}>
           <Icon size={20} className="text-white" />
         </div>
       </div>

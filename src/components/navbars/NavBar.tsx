@@ -1,85 +1,90 @@
-import { useState } from 'react';
-import { Menu, X, LogIn } from 'lucide-react';
+import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
+import { Button } from "../ui/button";
 
 export default function NavBar() {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-  const navLinks = [
-    { name: 'Inicio', href: '#inicio' },
-    { name: 'Misión y Visión', href: '#mision-vision' },
-    { name: 'Valores', href: '#valores' },
-    { name: 'Personal', href: '#personal' },
-    { name: 'Calendario', href: '#calendario' },
-    { name: 'Cuadro de Honor', href: '#honor' },
-    { name: 'Actividades', href: '#actividades' },
+  useEffect(() => {
+    const handleWindowScroll = () => {
+      setOpen(false);
+    };
+
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    return () =>
+      window.removeEventListener("scroll", handleWindowScroll);
+  }, []);
+
+  const handleScroll = (id: string) => {
+    if(id === 'inicio') {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setOpen(false);
+      return; 
+    }
+    const section = document.getElementById(id);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+    setOpen(false);
+  };
+
+  const menuItems = [
+    { id: "inicio", label: "Inicio" },
+    { id: "mision-vision", label: "Misión y Visión" },
+    { id: "valores", label: "Valores" },
+    { id: "personal", label: "Personal" },
+    { id: "calendario", label: "Calendario" },
+    { id: "honor", label: "Cuadro de Honor" },
+    { id: "actividades", label: "Actividades" },
   ];
 
   return (
-    <nav className="bg-blue-900 shadow-lg sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          {/* Logo y título */}
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-xl">UEP</span>
+
+    <div className="relative w-full transition-all duration-300 py-2">
+
+      {/* ================= DESKTOP MENU ================= */}
+      <nav className="hidden md:flex justify-center items-center space-x-10">
+        {menuItems.map((item) => (
+          <button
+            key={item.id}
+            onClick={() => handleScroll(item.id)}
+            style={{ fontFamily: "Kavoon" }}
+            className="text-lg lg:text-xl cursor-pointer font-medium transition-colors hover:text-primary bg-transparent"
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
+
+      {/* ================= MOBILE MENU ================= */}
+      <nav className="flex flex-col items-center w-full md:hidden">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setOpen(!open)}
+          aria-label="Toggle menu"
+          className="transition-all duration-300 z-50"
+        >
+          <Menu className="text-black" />
+        </Button>
+
+        {open && (
+          <div className="absolute top-full left-0 right-0 bg-(--greenColor) shadow-lg z-40">
+            <div className="flex flex-col items-center space-y-4 py-4">
+              {menuItems.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleScroll(item.id)}
+                  style={{ fontFamily: "Kavoon" }}
+                  className="text-lg cursor-pointer font-medium transition-colors hover:text-primary bg-transparent p-2 w-full text-center"
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
-            <span className="text-white font-bold text-lg hidden sm:block">
-              Francisco de Paula Salazar Acosta
-            </span>
-          </div>
-
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex space-x-6">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-white hover:text-green-400 transition-colors duration-200 font-medium"
-              >
-                {link.name}
-              </a>
-            ))}
-          </div>
-
-          {/* Botón de inicio de sesión */}
-          <div className="hidden md:block">
-            <button className="flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all duration-200 font-semibold shadow-md">
-              <LogIn size={18} />
-              Iniciar Sesión
-            </button>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="text-white focus:outline-none"
-            >
-              {isOpen ? <X size={28} /> : <Menu size={28} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Navigation */}
-        {isOpen && (
-          <div className="md:hidden pb-4 space-y-2">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
-                className="block text-white hover:text-green-400 py-2 transition-colors"
-              >
-                {link.name}
-              </a>
-            ))}
-            <button className="w-full flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg transition-all font-semibold mt-3">
-              <LogIn size={18} />
-              Iniciar Sesión
-            </button>
           </div>
         )}
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
-};
+}

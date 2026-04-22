@@ -1,7 +1,6 @@
-import React from 'react';
 import { Calendar, Clock, MapPin } from 'lucide-react';
 
-const CalendarSection = () => {
+export function CalendarSection() {
   const events = [
     { date: '15 de Abril', event: 'Inicio de inscripciones 2026', type: 'Académico' },
     { date: '28 de Abril', event: 'Consejo de padres y representantes', type: 'Reunión' },
@@ -43,4 +42,3 @@ const CalendarSection = () => {
   );
 };
 
-export default CalendarSection;

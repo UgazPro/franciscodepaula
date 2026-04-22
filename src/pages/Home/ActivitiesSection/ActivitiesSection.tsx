@@ -1,7 +1,6 @@
-import React from 'react';
 import { Music, BookOpen, Paintbrush, Trophy, Users, Globe } from 'lucide-react';
 
-const ActivitiesSection = () => {
+export function ActivitiesSection() {
   const activities = [
     { icon: Music, title: 'Coral Infantil', description: 'Desarrollo musical y expresión artística' },
     { icon: Trophy, title: 'Deportes', description: 'Fútbol, baloncesto, voleibol y atletismo' },
@@ -41,4 +40,3 @@ const ActivitiesSection = () => {
   );
 };
 
-export default ActivitiesSection;

@@ -11,7 +11,6 @@ export default function AdminLayout() {
                 <AdminSidebar />
             </div>
 
-            {/* Contenido principal */}
             <div className="h-full w-full md:ml-16 flex flex-col">
                 {/* Header */}
                 <AdminHeader />
