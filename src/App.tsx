@@ -9,6 +9,7 @@ import AcademicMonitoring from './pages/Admin/AcademicMonitoring/AcademicMonitor
 import Teachers from './pages/Admin/Teachers/Teachers';
 import Administration from './pages/Admin/Administration/Administration';
 import AppLayout from './layouts/App/AppLayout';
+import ProtectedRoute from './ProtectedRoute';
 
 function App() {
 
@@ -25,7 +26,9 @@ function App() {
             <Route path="/login" element={<Login />} />
           </Route>
 
-          <Route element={<AdminLayout />}>
+          <Route element={
+            <ProtectedRoute><AdminLayout /></ProtectedRoute>
+          }>
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/estudiantes" element={<Students />} />
             <Route path="/admin/control-estudio" element={<AcademicMonitoring />} />

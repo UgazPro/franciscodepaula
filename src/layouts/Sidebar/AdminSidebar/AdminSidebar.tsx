@@ -2,13 +2,20 @@ import { useState } from "react";
 import { Link, useLocation } from "react-router";
 import { sidebarData } from "./AdminSidebar.data";
 import { LogOut, Menu, X } from "lucide-react";
+import { useAuthStore } from "@/stores/auth.store";
 
 export default function AdminSidebar() {
-  const [showSpinner, setShowSpinner] = useState(false);
+
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const location = useLocation();
+  const logout = useAuthStore((s) => s.logout);
+
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    logout();
+  };
 
   return (
     <>
@@ -67,7 +74,7 @@ export default function AdminSidebar() {
         <div className="w-full px-3 pb-6">
           <button
             className="flex items-center p-3 rounded-lg hover:bg-red-600/20 transition-all duration-300 group/item w-full border-t border-blue-700 pt-4"
-            onClick={() => console.log("Saliendo...")}
+            onClick={handleLogout}
             disabled={isLoggingOut}
           >
             <LogOut className="h-5 w-5 shrink-0 text-red-300" />
@@ -79,7 +86,7 @@ export default function AdminSidebar() {
       </div>
 
       {/* Mobile Sidebar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-900 to-blue-800 text-white shadow-lg">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-linear-to-r from-blue-900 to-blue-800 text-white shadow-lg">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
@@ -113,7 +120,8 @@ export default function AdminSidebar() {
               </Link>
             ))}
             <button
-              onClick={() => console.log("Saliendo...")}
+              onClick={handleLogout}
+              disabled={isLoggingOut}
               className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-600/20 w-full text-red-200 border-t border-blue-700 pt-4 mt-2"
             >
               <LogOut className="h-5 w-5" />

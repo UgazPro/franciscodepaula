@@ -1,15 +1,41 @@
+import { useLoginMutation } from "@/queries/useAuthMutations";
+import { zodResolver } from "@hookform/resolvers/zod";
+import type { AuthLoginData } from "@/services/auth/auth.interface";
+import { LoginSchema } from "@/services/auth/auth.schema";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
 import { Link } from "react-router";
+import ErrorMessage from "@/components/form/renderFormComponents/ErrorMessage";
 
 export default function Login() {
 
+    const [loginErrorMessage, setLoginErrorMessage] = useState("");
+
+    const loginMutation = useLoginMutation();
+
+    const { register, handleSubmit, formState: { errors } } = useForm<AuthLoginData>({
+        resolver: zodResolver(LoginSchema),
+    });
+
+    const onSubmit = async (data: AuthLoginData) => {
+        try {
+            console.log(data)
+            await loginMutation.mutateAsync(data);
+        } catch (error: any) {
+            setLoginErrorMessage(error.message || "Error al iniciar sesión");
+            setTimeout(() => setLoginErrorMessage(""), 2500);
+        }
+    };
+
     return (
+
         <div className="min-h-screen">
 
             <div className="h-2 bg-linear-to-r from-blue-900 via-green-500 to-blue-900"></div>
 
             <div className="bg-linear-to-br from-blue-900/95 to-blue-800/95 min-h-screen w-full flex items-center py-12">
                 <div className="flex flex-col justify-center w-full max-w-md mx-auto px-4 sm:px-6">
-                    <form>
+                    <form onSubmit={handleSubmit(onSubmit)}>
                         <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 space-y-6 border border-white/20">
 
                             <div className="flex justify-center mb-4">
@@ -31,10 +57,12 @@ export default function Login() {
                                     Correo Electrónico
                                 </label>
                                 <input
-                                    type="text"
+                                    type="email"
                                     className="w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
                                     placeholder="usuario@colegio.edu.ve"
+                                    {...register("email")}
                                 />
+                                {errors.email && <ErrorMessage>{errors.email.message}</ErrorMessage>}
                             </div>
 
                             <div className="space-y-2">
@@ -45,7 +73,9 @@ export default function Login() {
                                     type="password"
                                     className="w-full bg-white/10 border border-white/30 rounded-xl px-4 py-3 text-white placeholder-white/50 focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition-all"
                                     placeholder="••••••••"
+                                    {...register("password")}
                                 />
+                                {errors.password && <ErrorMessage>{errors.password.message}</ErrorMessage>}
                             </div>
 
                             <button
@@ -55,32 +85,12 @@ export default function Login() {
                                 Iniciar Sesión
                             </button>
 
-                            <div className="relative">
-                                <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-white/20"></div>
-                                </div>
-                                <div className="relative flex justify-center text-xs">
-                                    <span className="bg-transparent px-2 text-white/60">O continúa con</span>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-center">
-
-                            </div>
-
-                            <div className="flex flex-col sm:flex-row sm:justify-between items-center gap-4 pt-2">
+                            <div className="flex justify-center items-center gap-4 pt-2">
                                 <Link
                                     to="#"
                                     className="text-green-400 hover:text-green-300 text-sm transition-colors"
                                 >
                                     ¿Olvidaste tu contraseña?
-                                </Link>
-
-                                <Link
-                                    to="/registro"
-                                    className="text-white/80 hover:text-white text-sm transition-colors"
-                                >
-                                    ¿No tienes cuenta? <span className="text-green-400 font-medium">Regístrate</span>
                                 </Link>
                             </div>
                         </div>
