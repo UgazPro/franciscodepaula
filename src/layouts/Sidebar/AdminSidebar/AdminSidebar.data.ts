@@ -9,7 +9,8 @@ import {
   UserCircle,
   GraduationCap,
   School,
-  ClipboardList
+  ClipboardList,
+  IdCardLanyard
 } from "lucide-react";
 
 export interface SidebarContent {
