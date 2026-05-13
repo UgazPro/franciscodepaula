@@ -1,17 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import {
-    Bell,
-    Search,
-    User,
-    ChevronDown,
-    Moon,
-    Sun,
-    Settings,
-    LogOut,
-    HelpCircle,
-    Menu
-} from "lucide-react";
+import { Bell, Search, User, ChevronDown, Moon, Sun, Settings, LogOut, HelpCircle, Menu } from "lucide-react";
 
 export default function AdminHeader() {
     const [showNotifications, setShowNotifications] = useState(false);
@@ -75,18 +64,16 @@ export default function AdminHeader() {
     const unreadCount = notifications.filter(n => !n.read).length;
 
     return (
-        <header className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200">
+        <header className="sticky top-0 z-40 bg-white shadow-sm border-b border-gray-200 px-6">
             <div className="px-4 md:px-6 py-3">
                 <div className="flex items-center justify-between gap-4">
 
-                    {/* Left section - Título y búsqueda */}
                     <div className="flex items-center gap-4 flex-1">
-                        {/* Mobile menu button (opcional, si quieres sidebar móvil) */}
+
                         <button className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition">
                             <Menu size={20} className="text-gray-600" />
                         </button>
 
-                        {/* Título de página */}
                         <div className="hidden sm:block">
                             <h1 className="text-xl md:text-2xl font-bold text-blue-900">
                                 {getPageTitle()}
@@ -95,9 +82,9 @@ export default function AdminHeader() {
                                 {formatDate(currentTime)}
                             </p>
                         </div>
+
                     </div>
 
-                    {/* Center - Barra de búsqueda (solo desktop) */}
                     <div className="hidden md:flex items-center flex-1 max-w-md">
                         <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -109,12 +96,11 @@ export default function AdminHeader() {
                                 className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500 transition"
                             />
                         </div>
+
                     </div>
 
-                    {/* Right section - Acciones */}
                     <div className="flex items-center gap-2 md:gap-3">
 
-                        {/* Modo oscuro */}
                         <button
                             onClick={() => setIsDarkMode(!isDarkMode)}
                             className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-600"
@@ -122,7 +108,6 @@ export default function AdminHeader() {
                             {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
                         </button>
 
-                        {/* Notificaciones */}
                         <div className="relative">
                             <button
                                 onClick={() => setShowNotifications(!showNotifications)}
@@ -134,7 +119,6 @@ export default function AdminHeader() {
                                 )}
                             </button>
 
-                            {/* Dropdown notificaciones */}
                             {showNotifications && (
                                 <>
                                     <div
@@ -166,7 +150,6 @@ export default function AdminHeader() {
                             )}
                         </div>
 
-                        {/* Perfil de usuario */}
                         <div className="relative">
                             <button
                                 onClick={() => setShowUserMenu(!showUserMenu)}
@@ -186,7 +169,6 @@ export default function AdminHeader() {
                                 <ChevronDown size={16} className="hidden lg:block text-gray-400" />
                             </button>
 
-                            {/* Dropdown usuario */}
                             {showUserMenu && (
                                 <>
                                     <div
@@ -242,7 +224,6 @@ export default function AdminHeader() {
                     </div>
                 </div>
 
-                {/* Barra de búsqueda móvil */}
                 <div className="md:hidden mt-3">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />

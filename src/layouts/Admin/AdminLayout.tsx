@@ -12,8 +12,8 @@ export default function AdminLayout() {
             </div>
 
             <div className="h-full w-full md:pl-12">
-                    {/* Header */}
-                    <AdminHeader />
+                {/* Header */}
+                <AdminHeader />
 
                 {/* Main Content */}
                 <main className="flex-1 px-4 md:px-6 py-4 md:py-6 overflow-x-hidden">

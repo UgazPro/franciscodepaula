@@ -27,8 +27,8 @@ export const studentLeftFields: FormField[] = [
     label: "Género",
     type: "select",
     options: [
-      { label: "Masculino", value: "male" },
-      { label: "Femenino", value: "female" },
+      { label: "Masculino", value: "Masculino" },
+      { label: "Femenino", value: "Femenino" },
     ],
   },
 ];

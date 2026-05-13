@@ -3,7 +3,8 @@ import { useEffect } from "react";
 import { TableComponent } from "@/components/table/TableComponent";
 import type { IStudent } from "@/services/users/user.interface";
 import { useDeleteStudent } from "@/queries/useUserMutations";
-import { studentColumns } from "@/services/users/student.tables";
+import { studentActionColumns, studentColumns } from "@/services/users/student.tables";
+import { useLocation } from "react-router";
 
 interface StudentListViewProps {
     filteredStudents: IStudent[];
@@ -11,13 +12,15 @@ interface StudentListViewProps {
 
 export default function StudentListView({ filteredStudents }: StudentListViewProps) {
 
+    const location = useLocation();
+
     const { startEdit, selectedStudent } = useStudentsStore();
 
     const selectStudent = useStudentsStore((state) => state.selectStudent);
 
     const { mutateAsync: deleteStudent } = useDeleteStudent();
 
-    const columns = studentColumns({ startEdit, deleteStudent, });
+    const columns = location.pathname.includes("/control-estudio") ? studentActionColumns({ startEdit, deleteStudent, }) : studentColumns();
 
     useEffect(() => {
         console.log("Selected Student:", selectedStudent);

@@ -33,7 +33,7 @@ export default function StudentsForm() {
             lastNames: "",
             identificationNumber: "",
 
-            birthDate: new Date(), // importante para zod + react-hook-form
+            birthDate: new Date(),
 
             gender: "",
 
@@ -65,7 +65,7 @@ export default function StudentsForm() {
                 birthDate: new Date(selectedStudent.person.birthDate),
                 gender: selectedStudent.person.gender,
 
-                // Student selectedStudent
+                // Student
                 birthCountry: selectedStudent.birthCountry,
                 state: selectedStudent.state,
                 parish: selectedStudent.parish,
