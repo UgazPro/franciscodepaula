@@ -1,9 +1,9 @@
+import { useState } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import DialogComponent from "@/components/dialog/DialogComponent";
 import StudentForm from "./form/StudentForm";
 import StudentDetailView from "../Students/detail/StudentDetailView";
 import { useStudentsStore } from "@/stores/students.store";
-import StudentsGridView from "../Students/views/StudentsGridView";
 import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
@@ -13,7 +13,9 @@ export default function AcademicMonitoring() {
 
     const { data: students = [], isLoading } = useStudents();
 
-    const { viewMode, setViewMode, usingForm, openForm, screen, finishForm } = useStudentsStore();
+    const [ view, setView ] = useState<"students" | "details">("students");
+
+    const { usingForm, openForm, screen, finishForm } = useStudentsStore();
 
     return (
 
@@ -25,14 +27,15 @@ export default function AcademicMonitoring() {
 
                     <div className="space-y-6">
 
-                        {/* <TabsComponent 
+                        <TabsComponent 
                             tabs={[
-                                { label: "Vista de Tabla", value: "list" },
-                                { label: "Vista de Grid", value: "grid" },
+                                { label: "Estudiantes", value: "students" },
+                                { label: "Detalles", value: "details" }
                             ]}
-                            activeTab={viewMode}
-                            onChange={(value) => setViewMode(value)}
-                        /> */}
+                            activeTab={view}
+                            onChange={(value) => setView(value)}
+                            className="w-full max-w-md"
+                        />
 
                         {/* Header de la sección */}
                         <AcademicMonitoringHeader
@@ -49,7 +52,7 @@ export default function AcademicMonitoring() {
                         />
 
                         {/* Vista de Tabla */}
-                        {viewMode === "list" && (
+                        {view === "students" && (
                             <>
                                 <StudentListView filteredStudents={students} />
                                 {/* <PaginationComponent
@@ -62,12 +65,6 @@ export default function AcademicMonitoring() {
                             </>
                         )}
 
-                        {/* Vista de Grid */}
-                        {viewMode === "grid" && (
-                            <StudentsGridView
-                                paginatedEstudiantes={students}
-                            />
-                        )}
 
                     </div>
 
