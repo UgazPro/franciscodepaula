@@ -22,7 +22,7 @@ export default function AcademicMonitoringHeader({ viewMode, setViewMode, openCr
                 <SearchFilterComponent
                     searchTerm={searchTerm}
                     setSearchTerm={setSearchTerm}
-                    placeHolder="Buscar por nombre, apellido, cédula o email..."
+                    placeHolder="Buscar por nombre, apellido o cédula..."
                     width="w-92"
                 />
                 <button
