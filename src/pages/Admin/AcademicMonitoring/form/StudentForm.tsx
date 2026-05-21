@@ -47,7 +47,7 @@ export default function StudentsForm() {
 
             admissionDate: new Date(),
 
-            sectionId: undefined,
+            // sectionId: 0,
         }
     });
 
@@ -58,7 +58,7 @@ export default function StudentsForm() {
         if (mode === "edit" && selectedStudent) {
 
             form.reset({
-                profilePhoto: selectedStudent.person.profilePhoto,
+                profilePhoto: "",
                 firstNames: selectedStudent.person.firstNames,
                 lastNames: selectedStudent.person.lastNames,
                 identificationNumber: selectedStudent.person.identificationNumber,
@@ -73,7 +73,7 @@ export default function StudentsForm() {
                 address: selectedStudent.address,
                 status: true,
                 admissionDate: new Date(selectedStudent.admissionDate),
-                sectionId: undefined,
+                // sectionId: 0,
             });
 
             // setImagePreview(selectedStudent.profileImg || null);
@@ -109,7 +109,7 @@ export default function StudentsForm() {
         console.log(data);
 
         const payload = {
-            profilePhoto: data.profilePhoto,
+            profilePhoto: "",
             firstNames: data.firstNames,
             lastNames: data.lastNames,
             identificationNumber: data.identificationNumber,
@@ -124,19 +124,17 @@ export default function StudentsForm() {
             address: data.address,
             status: true,
             admissionDate: data.admissionDate,
-            sectionId: undefined,
+            // sectionId: 0,
         };
 
         if (mode === "create") {
             await createStudent({ data: payload });
         } else {
-            console.log(data);
             await updateStudent({
                 id: selectedStudent!.id,
                 data: payload,
             });
         }
-
 
         console.log(payload);
 
@@ -147,9 +145,12 @@ export default function StudentsForm() {
 
         <Form {...form}>
 
-            <form onSubmit={form.handleSubmit(sendForm)}>
+            <form
+                onSubmit={form.handleSubmit(sendForm)}
+                className="rounded-3xl bg-(--grayColor) border border-(--lightBlueColor)/30 p-4 shadow-lg"
+            >
 
-                <div className="grid grid-cols-3 gap-6 my-6">
+                <div className="grid lg:grid-cols-3 gap-3 my-3">
 
                     {/* Left */}
                     <div className="space-y-4">
@@ -183,16 +184,17 @@ export default function StudentsForm() {
 
                 </div>
 
-                <div className="flex justify-end space-x-4">
+                <div className="mt-5 pt-6 border-t border-(--lightBlueColor)/30 flex justify-end gap-4">
                     <Button
-                        type="button" variant="outline" className="cursor-pointer"
+                        type="button" variant="outline" 
+                        className="border-(--lightBlueColor) text-(--darkBlueColor) hover:bg-(--grayColor) cursor-pointer"
                         onClick={finishForm}
                     >
                         Cancelar
                     </Button>
                     <Button
                         type="submit"
-                        className="bg-red-700 hover:bg-red-800 cursor-pointer"
+                        className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer"
                     >
                         {mode === "create" ? "Guardar Estudiante" : "Actualizar Estudiante"}
                     </Button>

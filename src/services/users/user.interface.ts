@@ -9,7 +9,7 @@ export interface IStudent {
     parish:         string;
     previousSchool: string;
     address:        string;
-    status:         string;
+    status:         boolean;
     admissionDate:  Date;
     sectionId:      null;
     person:         Person;

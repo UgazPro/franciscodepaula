@@ -23,9 +23,10 @@ interface FormSelectFormProps {
     name: string;
     options: IOptions[];
     disabled?: boolean;
+    labelStyle?: string;
 }
 
-export function SelectComponentForm({ form, label, placeholder, name, options, disabled }: FormSelectFormProps) {
+export function SelectComponentForm({ form, label, placeholder, name, options, disabled, labelStyle }: FormSelectFormProps) {
 
     const isNumberSelect = typeof options?.[0]?.value === 'number';
 
@@ -35,7 +36,7 @@ export function SelectComponentForm({ form, label, placeholder, name, options, d
             name={name}
             render={({ field }) => (
                 <FormItem className="w-full">
-                    <FormLabel>{label}</FormLabel>
+                    <FormLabel className={labelStyle}>{label}</FormLabel>
 
                     <Select
                         key={String(field.value)}
