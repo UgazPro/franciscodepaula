@@ -8,10 +8,12 @@ import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
 import TabsComponent from "@/components/tabs/TabsComponent";
+import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 
 export default function AcademicMonitoring() {
 
     const { data: students = [], isLoading } = useStudents();
+    const filteredStudents = useFilteredStudents(students);
 
     const [ view, setView ] = useState<"students" | "details">("students");
 
@@ -54,7 +56,7 @@ export default function AcademicMonitoring() {
                         {/* Vista de Tabla */}
                         {view === "students" && (
                             <>
-                                <StudentListView filteredStudents={students} />
+                                <StudentListView filteredStudents={filteredStudents} />
                                 {/* <PaginationComponent
                                     currentPage={currentPage}
                                     totalPages={totalPages}
