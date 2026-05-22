@@ -7,7 +7,6 @@ import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
-import TabsComponent from "@/components/tabs/TabsComponent";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 
 export default function AcademicMonitoring() {
@@ -15,9 +14,9 @@ export default function AcademicMonitoring() {
     const { data: students = [], isLoading } = useStudents();
     const filteredStudents = useFilteredStudents(students);
 
-    const [ view, setView ] = useState<"students" | "details">("students");
+    const [ view, setView ] = useState("students");
 
-    const { usingForm, openForm, screen, finishForm } = useStudentsStore();
+    const { usingForm, openForm, screen, finishForm, mode } = useStudentsStore();
 
     return (
 
@@ -29,25 +28,17 @@ export default function AcademicMonitoring() {
 
                     <div className="space-y-6">
 
-                        <TabsComponent 
-                            tabs={[
-                                { label: "Estudiantes", value: "students" },
-                                { label: "Detalles", value: "details" }
-                            ]}
-                            activeTab={view}
-                            onChange={(value) => setView(value)}
-                            className="w-full max-w-md"
-                        />
-
                         {/* Header de la sección */}
                         <AcademicMonitoringHeader
                             openCreateStudent={openForm}
+                            view={view}
+                            setView={setView}
                         />
 
                         <DialogComponent
                             openDialog={usingForm}
                             onClose={finishForm}
-                            dialogTitle="Nuevo Estudiante"
+                            dialogTitle={mode === "create" ? "Agregar Estudiante" : "Editar Estudiante"}
                             children={<StudentForm />}
                             className="max-w-6xl"
                             dialogDescription="Complete los campos para agregar un nuevo estudiante a la institución"

@@ -14,54 +14,64 @@ interface TabsComponentProps<T extends string> {
   className?: string;
 }
 
-export default function TabsComponent<T extends string>({ tabs, activeTab, onChange, className = "", } : TabsComponentProps<T>) {
-    
+export default function TabsComponent<T extends string>({
+  tabs,
+  activeTab,
+  onChange,
+  className = "",
+}: TabsComponentProps<T>) {
+
   return (
+
     <div
       className={`
-        flex flex-wrap gap-2 p-2
-        bg-(--grayColor)
-        border border-(--lightBlueColor)/30
-        rounded-2xl shadow-sm
+        flex flex-wrap gap-1
         ${className}
       `}
     >
+
       {tabs.map((tab) => {
+
         const isActive = activeTab === tab.value;
 
         return (
+
           <Button
             key={tab.value}
             type="button"
             variant="ghost"
             onClick={() => onChange(tab.value)}
-            className={`
-              flex-1 min-w-35
-              rounded-xl
-              font-medium
-              transition-all duration-300
-              border
-              cursor-pointer
-              ${isActive ? `bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) text-white border-(--blueColor) shadow-md hover:from-(--darkBlueColor) hover:to-(--blueColor)` : `bg-white text-(--darkBlueColor) border-transparent hover:bg-(--lightBlueColor)/15 hover:text-(--blueColor) hover:border-(--lightBlueColor)/40`}
-            `}
+            className={`group rounded-none rounded-t-xl px-5 py-2 h-auto flex items-center gap-2 border-b-[3px] transition-all duration-300 cursor-pointer ${isActive ? ` bg-white text-(--darkBlueColor) border-(--greenColor) shadow-[0_-2px_12px_rgba(12,18,143,0.06)]` : ` bg-transparent text-(--lightBlueColor) border-transparent hover:bg-white hover:text-(--blueColor)`}`}
           >
+
             {tab.icon && (
               <span
                 className={`
-                  mr-2 flex items-center
-                  ${isActive ? "text-white" : "text-(--blueColor)"}
+                  transition-colors
+                  duration-300
+
+                  ${isActive
+                    ? "text-(--greenColor)"
+                    : "text-(--lightBlueColor) group-hover:text-(--blueColor)"
+                  }
                 `}
               >
                 {tab.icon}
               </span>
             )}
 
-            <span className="truncate">
+            <span className="font-medium">
               {tab.label}
             </span>
+
           </Button>
+
         );
+
       })}
+
     </div>
+
   );
+
 }

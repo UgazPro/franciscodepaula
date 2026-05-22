@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router";
 import { Bell, Search, User, ChevronDown, Moon, Sun, Settings, LogOut, HelpCircle, Menu } from "lucide-react";
+import { useUserData } from "@/helpers/token";
 
 export default function AdminHeader() {
     const [showNotifications, setShowNotifications] = useState(false);
@@ -11,10 +12,16 @@ export default function AdminHeader() {
 
     const location = useLocation();
 
+    const userDB = useUserData();
+
+    useEffect(() => {
+        console.log(userDB);
+    }, []);
+
     const user = {
-        name: "Ana Gómez",
-        email: "hola@hola.com",
-        role: "Directora",
+        name: userDB?.person.firstNames + " " + userDB?.person.lastNames || "Ana Gómez",
+        email: userDB?.email,
+        role: userDB?.role.role,
     };
 
     // Notificaciones de ejemplo
@@ -163,7 +170,7 @@ export default function AdminHeader() {
                                         {user?.name || 'Administrador'}
                                     </p>
                                     <p className="text-xs text-gray-500">
-                                        {user?.role || 'Director'}
+                                        {user.role}
                                     </p>
                                 </div>
                                 <ChevronDown size={16} className="hidden lg:block text-gray-400" />
