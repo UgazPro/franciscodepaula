@@ -8,13 +8,14 @@ import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
+import StudentsNoResults from "../Students/views/StudentNoResultsView";
 
 export default function AcademicMonitoring() {
 
     const { data: students = [], isLoading } = useStudents();
     const filteredStudents = useFilteredStudents(students);
 
-    const [ view, setView ] = useState("students");
+    const [view, setView] = useState("students");
 
     const { usingForm, openForm, screen, finishForm, mode } = useStudentsStore();
 
@@ -55,9 +56,11 @@ export default function AcademicMonitoring() {
                                     itemsPerPage={itemsPerPage}
                                     onPageChange={setCurrentPage}
                                 /> */}
+
+                                {/* View if no results are found */}
+                                {filteredStudents.length === 0 && <StudentsNoResults openCreateStudent={openForm} />}
                             </>
                         )}
-
 
                     </div>
 
