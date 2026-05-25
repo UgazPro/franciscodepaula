@@ -8,7 +8,8 @@ import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
-import StudentsNoResults from "../Students/views/StudentNoResultsView";
+import { EnrollmentForm } from "./form/EnrollmentForm";
+import WizardDialogComponent from "@/components/dialog/WizardDialogComponent";
 
 export default function AcademicMonitoring() {
 
@@ -18,6 +19,15 @@ export default function AcademicMonitoring() {
     const [view, setView] = useState("students");
 
     const { usingForm, openForm, screen, finishForm, mode } = useStudentsStore();
+
+    const handleWizardSubmit = async (data: any) => {
+        // Aquí puedes manejar la lógica de envío del formulario, como llamar a una API o actualizar el estado global
+        console.log("Datos del formulario:", data);
+        finishForm();
+    }
+
+    const [step, setStep] = useState(1);
+    const totalSteps = 3;
 
     return (
 
@@ -36,14 +46,34 @@ export default function AcademicMonitoring() {
                             setView={setView}
                         />
 
-                        <DialogComponent
+                        {/* <DialogComponent
                             openDialog={usingForm}
                             onClose={finishForm}
                             dialogTitle={mode === "create" ? "Agregar Estudiante" : "Editar Estudiante"}
-                            children={<StudentForm />}
+                            children={<EnrollmentForm open={usingForm} onClose={finishForm} onSubmit={handleWizardSubmit} />}
                             className="max-w-6xl"
                             dialogDescription="Complete los campos para agregar un nuevo estudiante a la institución"
-                        />
+                        /> */}
+
+                        <WizardDialogComponent
+                            openDialog={usingForm}
+                            onClose={finishForm}
+                            title="Inscripción de Estudiante"
+                            description="Complete los datos del estudiante"
+                            step={step}
+                            totalSteps={totalSteps}
+                            onNext={() => setStep(step + 1)}
+                            onBack={() => setStep(step - 1)}
+                            onFinish={finishForm}
+                        >
+                            <EnrollmentForm
+                                open={usingForm}
+                                onClose={finishForm}
+                                onSubmit={handleWizardSubmit}
+                                step={step}
+                                setStep={setStep}
+                            />
+                        </WizardDialogComponent>
 
                         {/* Vista de Tabla */}
                         {view === "students" && (
