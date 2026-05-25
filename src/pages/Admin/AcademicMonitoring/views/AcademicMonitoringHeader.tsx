@@ -24,7 +24,7 @@ export default function AcademicMonitoringHeader({ viewMode, setViewMode, openCr
                 <TabsComponent
                     tabs={[
                         { label: "Estudiantes", value: "students", icon: <User size={18} /> },
-                        { label: "Detalles", value: "details", icon: <Pencil size={18} /> }
+                        // { label: "Detalles", value: "details", icon: <Pencil size={18} /> }
                     ]}
                     activeTab={view}
                     onChange={(value) => setView(value)}
