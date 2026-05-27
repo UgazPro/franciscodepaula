@@ -6,7 +6,9 @@ export interface IStudent {
     personId:       number;
     birthCountry:   string;
     state:          string;
+    municipality:   string;
     parish:         string;
+    currentParish:  string;
     previousSchool: string;
     address:        string;
     status:         boolean;

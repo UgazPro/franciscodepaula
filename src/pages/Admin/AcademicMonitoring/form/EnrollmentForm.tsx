@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { User, FileText, UserCheck, ChevronLeft, ChevronRight, Check, Camera, X } from "lucide-react";
+import { User, FileText, UserCheck, ChevronLeft, ChevronRight, Check, Camera, X, Save } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { enrollmentSchema, type EnrollmentFormValues } from "./enrollment/enrollment.schema";
 import { step1ByName } from "./enrollment/steps/step1Fields.data";
@@ -11,20 +11,25 @@ import { step2ByName } from "./enrollment/steps/step2Fields.data";
 import { step3ByName } from "./enrollment/steps/step3Fields.data";
 import { EnrollmentFieldRenderer } from "./enrollment/EnrollmentFieldRenderer";
 import { useEnrollmentMutation } from "@/queries/useEnrollmentMutations";
+import { useUpdateStudent } from "@/queries/useUserMutations";
+import type { IStudent } from "@/services/users/user.interface";
 
 interface EnrollmentFormProps {
   open: boolean;
   onClose: () => void;
   initialData?: Partial<EnrollmentFormValues>;
   mode?: "create" | "edit";
+  selectedStudent?: IStudent;
   step: number;
   setStep: (step: number) => void;
+  totalSteps: number;
 }
 
-export function EnrollmentForm({ open, onClose, initialData, mode = "create", step, setStep }: EnrollmentFormProps) {
+export function EnrollmentForm({ open, onClose, initialData, mode = "create", selectedStudent, step, setStep, totalSteps }: EnrollmentFormProps) {
 
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
   const enrollmentMutation = useEnrollmentMutation();
+  const { mutateAsync: updateStudent } = useUpdateStudent();
 
   const form = useForm<EnrollmentFormValues>({
     resolver: zodResolver(enrollmentSchema),
@@ -59,6 +64,8 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", st
 
   const { trigger, setValue } = form;
 
+  const isEditMode = mode === "edit";
+
   const validateStep = async () => {
     let fieldsToValidate: (keyof EnrollmentFormValues)[] = [];
 
@@ -66,7 +73,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", st
       fieldsToValidate = ["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"];
     } else if (step === 2) {
       fieldsToValidate = ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
-    } else if (step === 3) {
+    } else if (!isEditMode && step === 3) {
       fieldsToValidate = [
         "representativeFirstNames", "representativeLastNames", "representativeIdentification",
         "representativeBirthDate", "representativeGender", "representativeEmail",
@@ -75,8 +82,43 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", st
     }
 
     const isValid = await trigger(fieldsToValidate);
-    if (isValid && step < 3) {
-      setStep(step + 1);
+    if (isValid) {
+      if (step < totalSteps) {
+        setStep(step + 1);
+      } else {
+        await submitEdit();
+      }
+    }
+  };
+
+  const submitEdit = async () => {
+    if (!selectedStudent) return;
+
+    const formData = form.getValues();
+    const payload = {
+      profilePhoto: formData.profilePhoto || "",
+      firstNames: formData.firstNames,
+      lastNames: formData.lastNames,
+      identificationNumber: formData.identificationNumber,
+      birthDate: formData.birthDate,
+      gender: formData.gender,
+      birthCountry: formData.birthCountry,
+      state: formData.state,
+      municipality: formData.municipality,
+      parish: formData.parish,
+      currentParish: formData.currentParish,
+      previousSchool: formData.previousSchool || "",
+      address: formData.address,
+      status: true,
+      admissionDate: formData.admissionDate || new Date(),
+    };
+
+    try {
+      await updateStudent({ id: selectedStudent.id, data: payload });
+      onClose();
+      resetForm();
+    } catch (error) {
+      console.error("Error al actualizar:", error);
     }
   };
 
@@ -126,12 +168,14 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", st
   const f2 = step2ByName;
   const f3 = step3ByName;
 
-  const isPending = enrollmentMutation.isPending;
+  const isPending = isEditMode ? false : enrollmentMutation.isPending;
+
+  const isLastStep = step === totalSteps;
 
   return (
     <div>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(sendForm)}>
+        <form onSubmit={isEditMode ? (e) => e.preventDefault() : form.handleSubmit(sendForm)}>
           <div className="space-y-6">
 
             {/* ==================== PASO 1: DATOS PERSONALES ==================== */}
@@ -210,7 +254,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", st
             )}
 
             {/* ==================== PASO 3: DATOS DEL REPRESENTANTE ==================== */}
-            {step === 3 && (
+            {!isEditMode && step === 3 && (
               <>
                 <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
                   <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
@@ -245,11 +289,17 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", st
                 <div />
               )}
 
-              {step < 3 ? (
+              {!isLastStep ? (
                 <Button type="button" onClick={validateStep}
                   className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
                   Siguiente
                   <ChevronRight size={16} className="ml-2" />
+                </Button>
+              ) : isEditMode ? (
+                <Button type="button" onClick={validateStep}
+                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
+                  <Save size={16} className="mr-2" />
+                  Guardar Cambios
                 </Button>
               ) : (
                 <Button type="submit" disabled={isPending}

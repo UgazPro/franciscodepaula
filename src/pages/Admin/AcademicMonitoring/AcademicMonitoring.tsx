@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import StudentDetailView from "../Students/detail/StudentDetailView";
 import { useStudentsStore } from "@/stores/students.store";
@@ -9,6 +9,7 @@ import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { EnrollmentForm } from "./form/EnrollmentForm";
 import WizardDialogComponent from "@/components/dialog/WizardDialogComponent";
 import StudentsNoResults from "../Students/views/StudentNoResultsView";
+import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 
 export default function AcademicMonitoring() {
 
@@ -17,7 +18,30 @@ export default function AcademicMonitoring() {
 
     const [view, setView] = useState("students");
 
-    const { usingForm, openForm, screen, finishForm, mode, step, setStep, totalSteps, closeForm } = useStudentsStore();
+    const { usingForm, openForm, screen, finishForm, mode, selectedStudent, step, setStep, closeForm } = useStudentsStore();
+
+    const formSteps = mode === "edit" ? 2 : 3;
+
+    const initialData = useMemo((): Partial<EnrollmentFormValues> | undefined => {
+        if (mode !== "edit" || !selectedStudent) return undefined;
+
+        return {
+            firstNames: selectedStudent.person.firstNames,
+            lastNames: selectedStudent.person.lastNames,
+            identificationNumber: selectedStudent.person.identificationNumber,
+            birthDate: new Date(selectedStudent.person.birthDate),
+            gender: selectedStudent.person.gender,
+            profilePhoto: selectedStudent.person.profilePhoto || "",
+            birthCountry: selectedStudent.birthCountry,
+            state: selectedStudent.state,
+            municipality: selectedStudent.municipality ?? "",
+            parish: selectedStudent.parish,
+            currentParish: selectedStudent.currentParish ?? "",
+            address: selectedStudent.address,
+            previousSchool: selectedStudent.previousSchool,
+            admissionDate: new Date(selectedStudent.admissionDate),
+        };
+    }, [mode, selectedStudent]);
 
     return (
 
@@ -36,29 +60,24 @@ export default function AcademicMonitoring() {
                             setView={setView}
                         />
 
-                        {/* <DialogComponent
-                            openDialog={usingForm}
-                            onClose={finishForm}
-                            dialogTitle={mode === "create" ? "Agregar Estudiante" : "Editar Estudiante"}
-                            children={<EnrollmentForm open={usingForm} onClose={finishForm} onSubmit={handleWizardSubmit} />}
-                            className="max-w-6xl"
-                            dialogDescription="Complete los campos para agregar un nuevo estudiante a la institución"
-                        /> */}
-
                         <WizardDialogComponent
                             openDialog={usingForm}
                             onClose={closeForm}
-                            title="Inscripción de Estudiante"
-                            description="Complete los datos del estudiante"
+                            title={mode === "create" ? "Inscripción de Estudiante" : "Editar Estudiante"}
+                            description={mode === "create" ? "Complete los datos del estudiante y representante" : "Modifique los datos del estudiante"}
                             step={step}
-                            totalSteps={totalSteps}
+                            totalSteps={formSteps}
                             showFooter={false}
                         >
                             <EnrollmentForm
                                 open={usingForm}
                                 onClose={finishForm}
+                                mode={mode}
+                                selectedStudent={selectedStudent ?? undefined}
+                                initialData={initialData}
                                 step={step}
                                 setStep={setStep}
+                                totalSteps={formSteps}
                             />
                         </WizardDialogComponent>
 
