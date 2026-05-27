@@ -1,117 +1,71 @@
 import { useState, useEffect } from "react";
-import { useForm, FormProvider } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import { Button } from "@/components/ui/button";
-import { User,  FileText,  UserCheck,  ChevronLeft,  ChevronRight,  Check, Camera, X, Upload } from "lucide-react";
+import { Form } from "@/components/ui/form";
+import { User, FileText, UserCheck, ChevronLeft, ChevronRight, Check, Camera, X } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-
-// ==================== ESQUEMAS DE VALIDACIÓN ====================
-
-const step1Schema = z.object({
-  // Datos Personales
-  firstNames: z.string().min(2, "Los nombres son requeridos"),
-  lastNames: z.string().min(2, "Los apellidos son requeridos"),
-  identificationNumber: z.string().min(6, "La cédula es requerida"),
-  birthDate: z.string().or(z.date()),
-  gender: z.string().min(1, "Seleccione un género"),
-  profilePhoto: z.string().optional(),
-});
-
-const step2Schema = z.object({
-  // Datos Generales
-  birthCountry: z.string().min(2, "El país de nacimiento es requerido"),
-  state: z.string().min(2, "El estado es requerido"),
-  parish: z.string().min(2, "La parroquia es requerida"),
-  address: z.string().min(5, "La dirección es requerida"),
-  previousSchool: z.string().optional(),
-  admissionDate: z.string().or(z.date()),
-});
-
-const step3Schema = z.object({
-  // Datos del Representante
-  representativeFirstNames: z.string().min(2, "Los nombres del representante son requeridos"),
-  representativeLastNames: z.string().min(2, "Los apellidos del representante son requeridos"),
-  representativeIdentification: z.string().min(6, "La cédula del representante es requerida"),
-  representativeBirthDate: z.string().or(z.date()),
-  representativeGender: z.string().min(1, "Seleccione el género"),
-  representativeEmail: z.string().email("Email inválido"),
-  representativePhone: z.string().min(10, "Teléfono requerido"),
-  representativeRelation: z.string().min(2, "Indique la relación con el estudiante"),
-  representativeProfession: z.string().optional(),
-  representativePhoto: z.string().optional(),
-});
-
-const studentWizardSchema = step1Schema.merge(step2Schema).merge(step3Schema);
-
-type StudentWizardFormValues = z.infer<typeof studentWizardSchema>;
+import { enrollmentSchema, type EnrollmentFormValues } from "./enrollment/enrollment.schema";
+import { step1ByName } from "./enrollment/steps/step1Fields.data";
+import { step2ByName } from "./enrollment/steps/step2Fields.data";
+import { step3ByName } from "./enrollment/steps/step3Fields.data";
+import { EnrollmentFieldRenderer } from "./enrollment/EnrollmentFieldRenderer";
+import { useEnrollmentMutation } from "@/queries/useEnrollmentMutations";
 
 interface EnrollmentFormProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: StudentWizardFormValues) => Promise<void>;
-  initialData?: Partial<StudentWizardFormValues>;
+  initialData?: Partial<EnrollmentFormValues>;
   mode?: "create" | "edit";
   step: number;
   setStep: (step: number) => void;
 }
 
-// Datos de ejemplo para selects
-const countries = ["Venezuela", "Colombia", "España", "Argentina", "México", "Perú", "Chile", "Ecuador"];
-const states = ["Amazonas", "Anzoátegui", "Apure", "Aragua", "Barinas", "Bolívar", "Carabobo", "Cojedes", "Delta Amacuro", "Falcón", "Guárico", "La Guaira", "Lara", "Mérida", "Miranda", "Monagas", "Nueva Esparta", "Portuguesa", "Sucre", "Táchira", "Trujillo", "Yaracuy", "Zulia", "Distrito Capital"];
-const parishes = ["Altagracia", "Antímano", "Candelaria", "Caricuao", "Catedral", "Coche", "El Junquito", "El Paraíso", "El Recreo", "El Valle", "La Pastora", "La Vega", "Macarao", "San Agustín", "San Bernardino", "San José", "San Juan", "San Pedro", "Santa Rosalía", "Santa Teresa", "Sucre", "23 de Enero"];
-const relations = ["Padre", "Madre", "Representante Legal", "Tío(a)", "Abuelo(a)", "Hermano(a) Mayor", "Otro"];
+export function EnrollmentForm({ open, onClose, initialData, mode = "create", step, setStep }: EnrollmentFormProps) {
 
-export function EnrollmentForm({ open,  onClose,  onSubmit,  initialData,  mode = "create", step, setStep }: EnrollmentFormProps) {
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
-  const [representativePhotoPreview, setRepresentativePhotoPreview] = useState<string | null>(null);
-  const [studentPhotoFile, setStudentPhotoFile] = useState<File | null>(null);
-  const [representativePhotoFile, setRepresentativePhotoFile] = useState<File | null>(null);
+  const enrollmentMutation = useEnrollmentMutation();
 
-  const methods = useForm<StudentWizardFormValues>({
-    // resolver: zodResolver(studentWizardSchema),
+  const form = useForm<EnrollmentFormValues>({
+    resolver: zodResolver(enrollmentSchema),
     defaultValues: {
       firstNames: "",
       lastNames: "",
       identificationNumber: "",
-      birthDate: "",
+      birthDate: new Date(),
       gender: "",
       profilePhoto: "",
       birthCountry: "",
       state: "",
+      municipality: "",
       parish: "",
+      currentParish: "",
       address: "",
       previousSchool: "",
-      admissionDate: new Date().toISOString().split('T')[0],
+      admissionDate: new Date(),
       representativeFirstNames: "",
       representativeLastNames: "",
       representativeIdentification: "",
-      representativeBirthDate: "",
+      representativeBirthDate: new Date(),
       representativeGender: "",
       representativeEmail: "",
       representativePhone: "",
       representativeRelation: "",
       representativeProfession: "",
-      representativePhoto: "",
       ...initialData,
     },
+    shouldUnregister: false,
   });
 
-  const { handleSubmit, formState: { errors }, trigger, watch, setValue } = methods;
+  const { trigger, setValue } = form;
 
-  // Validar paso actual y avanzar
   const validateStep = async () => {
+    let fieldsToValidate: (keyof EnrollmentFormValues)[] = [];
 
-    let fieldsToValidate: (keyof StudentWizardFormValues)[] = [];
-    
     if (step === 1) {
       fieldsToValidate = ["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"];
     } else if (step === 2) {
-      fieldsToValidate = ["birthCountry", "state", "parish", "address"];
+      fieldsToValidate = ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
     } else if (step === 3) {
       fieldsToValidate = [
         "representativeFirstNames", "representativeLastNames", "representativeIdentification",
@@ -119,46 +73,31 @@ export function EnrollmentForm({ open,  onClose,  onSubmit,  initialData,  mode 
         "representativePhone", "representativeRelation"
       ];
     }
-    
+
     const isValid = await trigger(fieldsToValidate);
-    if (isValid) {
-      if (step < 3) {
-        setStep(step + 1);
-      } else {
-        // Enviar formulario
-        setIsSubmitting(true);
-        try {
-          const formData = methods.getValues();
-          await onSubmit(formData);
-          onClose();
-          resetForm();
-        } catch (error) {
-          console.error("Error al guardar:", error);
-        } finally {
-          setIsSubmitting(false);
-        }
-      }
+    if (isValid && step < 3) {
+      setStep(step + 1);
     }
   };
 
-  const handleBack = () => {
-    if (step > 1) {
-      setStep(step - 1);
+  const sendForm = async (data: EnrollmentFormValues) => {
+    try {
+      await enrollmentMutation.mutateAsync(data);
+      onClose();
+      resetForm();
+    } catch (error) {
+      console.error("Error al guardar:", error);
     }
+  };
+
+  const goBack = () => {
+    if (step > 1) setStep(step - 1);
   };
 
   const resetForm = () => {
-    methods.reset();
+    form.reset();
     setStep(1);
     setStudentPhotoPreview(null);
-    setRepresentativePhotoPreview(null);
-    setStudentPhotoFile(null);
-    setRepresentativePhotoFile(null);
-  };
-
-  const handleClose = () => {
-    resetForm();
-    onClose();
   };
 
   const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -168,533 +107,162 @@ export function EnrollmentForm({ open,  onClose,  onSubmit,  initialData,  mode 
         alert("La imagen no puede superar 2MB");
         return;
       }
-      setStudentPhotoFile(file);
       const preview = URL.createObjectURL(file);
       setStudentPhotoPreview(preview);
       setValue("profilePhoto", preview);
     }
   };
 
-  const handleRepresentativePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("La imagen no puede superar 2MB");
-        return;
-      }
-      setRepresentativePhotoFile(file);
-      const preview = URL.createObjectURL(file);
-      setRepresentativePhotoPreview(preview);
-      setValue("representativePhoto", preview);
-    }
-  };
-
   const removeStudentPhoto = () => {
     setStudentPhotoPreview(null);
-    setStudentPhotoFile(null);
     setValue("profilePhoto", "");
   };
 
-  const removeRepresentativePhoto = () => {
-    setRepresentativePhotoPreview(null);
-    setRepresentativePhotoFile(null);
-    setValue("representativePhoto", "");
-  };
+  useEffect(() => {
+    form.clearErrors();
+  }, [step]);
+
+  const f1 = step1ByName;
+  const f2 = step2ByName;
+  const f3 = step3ByName;
+
+  const isPending = enrollmentMutation.isPending;
 
   return (
+    <div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(sendForm)}>
+          <div className="space-y-6">
 
-      <div>
+            {/* ==================== PASO 1: DATOS PERSONALES ==================== */}
+            {step === 1 && (
+              <>
+                <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
+                  <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
+                    <User size={20} className="text-(--darkBlueColor)" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos Personales del Estudiante</h3>
+                </div>
 
-        <FormProvider {...methods}>
-          <form onSubmit={handleSubmit(validateStep)}>
-            <div className="">
-              
-              {/* ==================== PASO 1: DATOS PERSONALES ==================== */}
-              {step === 1 && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <User size={20} className="text-blue-900" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                  <div className="flex justify-center md:justify-start">
+                    <div className="relative">
+                      <Avatar className="w-24 h-24 border-4 border-(--blueColor) shadow-lg">
+                        {studentPhotoPreview ? (
+                          <AvatarImage src={studentPhotoPreview} alt="Foto" />
+                        ) : (
+                          <AvatarFallback className="bg-linear-to-br from-(--darkBlueColor) to-(--blueColor) text-white text-2xl">
+                            <Camera size={24} />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <label className="absolute -bottom-2 -right-2 p-1.5 bg-(--greenColor) rounded-full cursor-pointer shadow-md hover:brightness-110 transition">
+                        <Camera size={16} className="text-white" />
+                        <input type="file" accept="image/*" className="hidden" onChange={handleStudentPhotoChange} />
+                      </label>
+                      {studentPhotoPreview && (
+                        <button type="button" onClick={removeStudentPhoto}
+                          className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full shadow-md hover:bg-red-600 transition">
+                          <X size={12} className="text-white" />
+                        </button>
+                      )}
                     </div>
-                    <h3 className="text-lg font-semibold text-blue-900">Datos Personales del Estudiante</h3>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Foto de perfil */}
-                    <div className="md:col-span-2 flex justify-center mb-4">
-                      <div className="relative">
-                        <Avatar className="w-28 h-28 border-4 border-blue-900 shadow-lg">
-                          {studentPhotoPreview ? (
-                            <AvatarImage src={studentPhotoPreview} alt="Foto" />
-                          ) : (
-                            <AvatarFallback className="bg-gradient-to-br from-blue-900 to-green-500 text-white text-2xl">
-                              <Camera size={28} />
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <label className="absolute -bottom-2 -right-2 p-1.5 bg-green-500 rounded-full cursor-pointer shadow-md hover:bg-green-600 transition">
-                          <Camera size={16} className="text-white" />
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleStudentPhotoChange}
-                          />
-                        </label>
-                        {studentPhotoPreview && (
-                          <button
-                            type="button"
-                            onClick={removeStudentPhoto}
-                            className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full shadow-md hover:bg-red-600 transition"
-                          >
-                            <X size={12} className="text-white" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
+                  <EnrollmentFieldRenderer field={f1.identificationNumber} />
+                </div>
 
-                    {/* Campos del paso 1 */}
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Nombres <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          {...methods.register("firstNames")}
-                          className={cn(
-                            "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                            errors.firstNames ? "border-red-500" : "border-gray-200"
-                          )}
-                          placeholder="Ej: María José"
-                        />
-                        {errors.firstNames && (
-                          <p className="text-red-500 text-xs mt-1">{errors.firstNames.message}</p>
-                        )}
-                      </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <EnrollmentFieldRenderer field={f1.firstNames} />
+                  <EnrollmentFieldRenderer field={f1.lastNames} />
+                </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Apellidos <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          {...methods.register("lastNames")}
-                          className={cn(
-                            "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                            errors.lastNames ? "border-red-500" : "border-gray-200"
-                          )}
-                          placeholder="Ej: González Pérez"
-                        />
-                        {errors.lastNames && (
-                          <p className="text-red-500 text-xs mt-1">{errors.lastNames.message}</p>
-                        )}
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <EnrollmentFieldRenderer field={f1.birthDate} />
+                  <EnrollmentFieldRenderer field={f1.gender} />
+                </div>
+              </>
+            )}
 
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Cédula <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          {...methods.register("identificationNumber")}
-                          className={cn(
-                            "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                            errors.identificationNumber ? "border-red-500" : "border-gray-200"
-                          )}
-                          placeholder="Ej: V-12345678"
-                        />
-                        {errors.identificationNumber && (
-                          <p className="text-red-500 text-xs mt-1">{errors.identificationNumber.message}</p>
-                        )}
-                      </div>
+            {/* ==================== PASO 2: DATOS GENERALES ==================== */}
+            {step === 2 && (
+              <>
+                <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
+                  <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
+                    <FileText size={20} className="text-(--darkBlueColor)" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos Generales del Estudiante</h3>
+                </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Fecha de Nacimiento <span className="text-red-500">*</span>
-                        </label>
-                        <input
-                          type="date"
-                          {...methods.register("birthDate")}
-                          className={cn(
-                            "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                            errors.birthDate ? "border-red-500" : "border-gray-200"
-                          )}
-                        />
-                        {errors.birthDate && (
-                          <p className="text-red-500 text-xs mt-1">{errors.birthDate.message}</p>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Género <span className="text-red-500">*</span>
-                        </label>
-                        <select
-                          {...methods.register("gender")}
-                          className={cn(
-                            "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                            errors.gender ? "border-red-500" : "border-gray-200"
-                          )}
-                        >
-                          <option value="">Seleccione un género</option>
-                          <option value="Masculino">Masculino</option>
-                          <option value="Femenino">Femenino</option>
-                          <option value="Otro">Otro</option>
-                        </select>
-                        {errors.gender && (
-                          <p className="text-red-500 text-xs mt-1">{errors.gender.message}</p>
-                        )}
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <EnrollmentFieldRenderer field={f2.birthCountry} />
+                  <EnrollmentFieldRenderer field={f2.state} />
+                  <EnrollmentFieldRenderer field={f2.municipality} />
+                  <EnrollmentFieldRenderer field={f2.parish} />
+                  <EnrollmentFieldRenderer field={f2.currentParish} />
+                  <EnrollmentFieldRenderer field={f2.previousSchool} />
+                  <EnrollmentFieldRenderer field={f2.admissionDate} />
+                  <div className="md:col-span-2">
+                    <EnrollmentFieldRenderer field={f2.address} />
                   </div>
                 </div>
+              </>
+            )}
+
+            {/* ==================== PASO 3: DATOS DEL REPRESENTANTE ==================== */}
+            {step === 3 && (
+              <>
+                <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
+                  <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
+                    <UserCheck size={20} className="text-(--darkBlueColor)" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos del Representante</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <EnrollmentFieldRenderer field={f3.representativeFirstNames} />
+                  <EnrollmentFieldRenderer field={f3.representativeLastNames} />
+                  <EnrollmentFieldRenderer field={f3.representativeIdentification} />
+                  <EnrollmentFieldRenderer field={f3.representativeBirthDate} />
+                  <EnrollmentFieldRenderer field={f3.representativeGender} />
+                  <EnrollmentFieldRenderer field={f3.representativeEmail} />
+                  <EnrollmentFieldRenderer field={f3.representativePhone} />
+                  <EnrollmentFieldRenderer field={f3.representativeRelation} />
+                  <EnrollmentFieldRenderer field={f3.representativeProfession} />
+                </div>
+              </>
+            )}
+
+            {/* ==================== BOTONES DE NAVEGACIÓN ==================== */}
+            <div className="flex justify-between pt-6 border-t border-(--lightBlueColor)/20">
+              {step > 1 ? (
+                <Button type="button" variant="outline" onClick={goBack}
+                  className="cursor-pointer border-(--lightBlueColor)/50 text-(--darkBlueColor) hover:bg-(--grayColor)">
+                  <ChevronLeft size={16} className="mr-2" />
+                  Anterior
+                </Button>
+              ) : (
+                <div />
               )}
 
-              {/* ==================== PASO 2: DATOS GENERALES ==================== */}
-              {step === 2 && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FileText size={20} className="text-blue-900" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-blue-900">Datos Generales del Estudiante</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        País de Nacimiento <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...methods.register("birthCountry")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.birthCountry ? "border-red-500" : "border-gray-200"
-                        )}
-                      >
-                        <option value="">Seleccione un país</option>
-                        {countries.map(country => (
-                          <option key={country} value={country}>{country}</option>
-                        ))}
-                      </select>
-                      {errors.birthCountry && (
-                        <p className="text-red-500 text-xs mt-1">{errors.birthCountry.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Estado de Nacimiento <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...methods.register("state")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.state ? "border-red-500" : "border-gray-200"
-                        )}
-                      >
-                        <option value="">Seleccione un estado</option>
-                        {states.map(state => (
-                          <option key={state} value={state}>{state}</option>
-                        ))}
-                      </select>
-                      {errors.state && (
-                        <p className="text-red-500 text-xs mt-1">{errors.state.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Parroquia de Nacimiento <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...methods.register("parish")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.parish ? "border-red-500" : "border-gray-200"
-                        )}
-                      >
-                        <option value="">Seleccione una parroquia</option>
-                        {parishes.map(parish => (
-                          <option key={parish} value={parish}>{parish}</option>
-                        ))}
-                      </select>
-                      {errors.parish && (
-                        <p className="text-red-500 text-xs mt-1">{errors.parish.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Parroquia donde Vive <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...methods.register("address")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.address ? "border-red-500" : "border-gray-200"
-                        )}
-                      >
-                        <option value="">Seleccione una parroquia</option>
-                        {parishes.map(parish => (
-                          <option key={parish} value={parish}>{parish}</option>
-                        ))}
-                      </select>
-                      {errors.address && (
-                        <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Dirección Completa <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        {...methods.register("address")}
-                        rows={3}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.address ? "border-red-500" : "border-gray-200"
-                        )}
-                        placeholder="Ej: Av. Principal, Casa #123, Urbanización Las Mercedes"
-                      />
-                      {errors.address && (
-                        <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>
-                      )}
-                    </div>
-
-                    <div className="md:col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Escuela Previa
-                      </label>
-                      <input
-                        {...methods.register("previousSchool")}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="Ej: U.E. Colegio San José"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha de Admisión
-                      </label>
-                      <input
-                        type="date"
-                        {...methods.register("admissionDate")}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* ==================== PASO 3: DATOS DEL REPRESENTANTE ==================== */}
-              {step === 3 && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <UserCheck size={20} className="text-blue-900" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-blue-900">Datos del Representante</h3>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                    {/* Foto del representante */}
-                    <div className="md:col-span-2 flex justify-center mb-4">
-                      <div className="relative">
-                        <Avatar className="w-24 h-24 border-4 border-blue-900 shadow-lg">
-                          {representativePhotoPreview ? (
-                            <AvatarImage src={representativePhotoPreview} alt="Foto Representante" />
-                          ) : (
-                            <AvatarFallback className="bg-gradient-to-br from-blue-900 to-green-500 text-white text-xl">
-                              <User size={28} />
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <label className="absolute -bottom-2 -right-2 p-1.5 bg-green-500 rounded-full cursor-pointer shadow-md hover:bg-green-600 transition">
-                          <Camera size={16} className="text-white" />
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={handleRepresentativePhotoChange}
-                          />
-                        </label>
-                        {representativePhotoPreview && (
-                          <button
-                            type="button"
-                            onClick={removeRepresentativePhoto}
-                            className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full shadow-md hover:bg-red-600 transition"
-                          >
-                            <X size={12} className="text-white" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Nombres <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        {...methods.register("representativeFirstNames")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeFirstNames ? "border-red-500" : "border-gray-200"
-                        )}
-                        placeholder="Ej: Carlos José"
-                      />
-                      {errors.representativeFirstNames && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeFirstNames.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Apellidos <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        {...methods.register("representativeLastNames")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeLastNames ? "border-red-500" : "border-gray-200"
-                        )}
-                        placeholder="Ej: González Rodríguez"
-                      />
-                      {errors.representativeLastNames && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeLastNames.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Cédula <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        {...methods.register("representativeIdentification")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeIdentification ? "border-red-500" : "border-gray-200"
-                        )}
-                        placeholder="Ej: V-87654321"
-                      />
-                      {errors.representativeIdentification && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeIdentification.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Fecha de Nacimiento <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        {...methods.register("representativeBirthDate")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeBirthDate ? "border-red-500" : "border-gray-200"
-                        )}
-                      />
-                      {errors.representativeBirthDate && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeBirthDate.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Género <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...methods.register("representativeGender")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeGender ? "border-red-500" : "border-gray-200"
-                        )}
-                      >
-                        <option value="">Seleccione un género</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Femenino">Femenino</option>
-                        <option value="Otro">Otro</option>
-                      </select>
-                      {errors.representativeGender && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeGender.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Email <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="email"
-                        {...methods.register("representativeEmail")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeEmail ? "border-red-500" : "border-gray-200"
-                        )}
-                        placeholder="Ej: correo@ejemplo.com"
-                      />
-                      {errors.representativeEmail && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeEmail.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Teléfono <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        {...methods.register("representativePhone")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativePhone ? "border-red-500" : "border-gray-200"
-                        )}
-                        placeholder="Ej: 0412-1234567"
-                      />
-                      {errors.representativePhone && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativePhone.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Relación con el Estudiante <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        {...methods.register("representativeRelation")}
-                        className={cn(
-                          "w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent",
-                          errors.representativeRelation ? "border-red-500" : "border-gray-200"
-                        )}
-                      >
-                        <option value="">Seleccione una relación</option>
-                        {relations.map(relation => (
-                          <option key={relation} value={relation}>{relation}</option>
-                        ))}
-                      </select>
-                      {errors.representativeRelation && (
-                        <p className="text-red-500 text-xs mt-1">{errors.representativeRelation.message}</p>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Profesión
-                      </label>
-                      <input
-                        {...methods.register("representativeProfession")}
-                        className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        placeholder="Ej: Ingeniero, Docente, Comerciante"
-                      />
-                    </div>
-                  </div>
-                </div>
+              {step < 3 ? (
+                <Button type="button" onClick={validateStep}
+                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
+                  Siguiente
+                  <ChevronRight size={16} className="ml-2" />
+                </Button>
+              ) : (
+                <Button type="submit" disabled={isPending}
+                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-60">
+                  {isPending ? "Guardando..." : "Finalizar"}
+                  {!isPending && <Check size={16} className="ml-2" />}
+                </Button>
               )}
             </div>
-          </form>
-        </FormProvider>
-      </div>
+
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 }

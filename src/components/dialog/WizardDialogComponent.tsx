@@ -13,37 +13,29 @@ interface WizardDialogComponentProps {
   step: number;
   totalSteps: number;
 
-  onNext: () => void;
-  onBack: () => void;
-  onFinish: () => void;
+  onNext?: () => void;
+  onBack?: () => void;
+  onFinish?: () => void;
 
   isSubmitting?: boolean;
+
+  showFooter?: boolean;
 
   children: React.ReactNode;
 }
 
-export default function WizardDialogComponent({
-  openDialog,
-  onClose,
-  title,
-  description,
-  step,
-  totalSteps,
-  onNext,
-  onBack,
-  onFinish,
-  isSubmitting,
-  children,
-}: WizardDialogComponentProps) {
+export default function WizardDialogComponent({ openDialog, onClose, title, description, step, totalSteps, onNext, onBack, onFinish, isSubmitting, showFooter = true, children, }: WizardDialogComponentProps) {
 
   const progress = (step / totalSteps) * 100;
 
   return (
+
     <Dialog open={openDialog} onOpenChange={onClose}>
-      <DialogContent className="p-0 overflow-hidden rounded-2xl max-w-3xl">
+
+      <DialogContent className="p-0 overflow-hidden rounded-2xl max-w-full lg:max-w-6xl">
 
         {/* HEADER */}
-        <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-900 to-blue-800 px-6 py-4">
+        <div className="sticky top-0 z-10 bg-linear-to-r from-blue-900 to-blue-800 px-6 py-4">
           <div className="flex justify-between items-start">
 
             <div>
@@ -89,30 +81,33 @@ export default function WizardDialogComponent({
           {children}
         </div>
 
-        {/* FOOTER */}
-        <div className="border-t px-6 py-3 flex justify-between bg-white">
-          <Button
-            variant="outline"
-            onClick={onBack}
-            disabled={step === 1}
-          >
-            <ChevronLeft size={16} className="mr-2" />
-            Anterior
-          </Button>
+        {showFooter && (
+          <div className="border-t px-6 py-3 flex justify-between bg-white">
+            <Button
+              variant="outline"
+              onClick={onBack}
+              disabled={step === 1}
+            >
+              <ChevronLeft size={16} className="mr-2" />
+              Anterior
+            </Button>
 
-          {step < totalSteps ? (
-            <Button onClick={onNext}>
-              Siguiente
-              <ChevronRight size={16} className="ml-2" />
-            </Button>
-          ) : (
-            <Button onClick={onFinish} disabled={isSubmitting}>
-              {isSubmitting ? "Guardando..." : "Finalizar"}
-              {!isSubmitting && <Check size={16} className="ml-2" />}
-            </Button>
-          )}
-        </div>
+            {step < totalSteps ? (
+              <Button onClick={onNext}>
+                Siguiente
+                <ChevronRight size={16} className="ml-2" />
+              </Button>
+            ) : (
+              <Button onClick={onFinish} disabled={isSubmitting}>
+                {isSubmitting ? "Guardando..." : "Finalizar"}
+                {!isSubmitting && <Check size={16} className="ml-2" />}
+              </Button>
+            )}
+          </div>
+        )}
       </DialogContent>
     </Dialog>
+
   );
+  
 }

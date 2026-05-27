@@ -12,6 +12,7 @@ export interface BaseField {
 export interface TextField extends BaseField {
   type: "text";
   inputType?: string;
+  placeholder?: string;
 }
 
 export interface TextareaField extends BaseField {

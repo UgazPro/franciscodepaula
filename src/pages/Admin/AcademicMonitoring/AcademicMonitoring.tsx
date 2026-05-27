@@ -1,7 +1,5 @@
 import { useState } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
-import DialogComponent from "@/components/dialog/DialogComponent";
-import StudentForm from "./form/StudentForm";
 import StudentDetailView from "../Students/detail/StudentDetailView";
 import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
@@ -10,6 +8,7 @@ import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { EnrollmentForm } from "./form/EnrollmentForm";
 import WizardDialogComponent from "@/components/dialog/WizardDialogComponent";
+import StudentsNoResults from "../Students/views/StudentNoResultsView";
 
 export default function AcademicMonitoring() {
 
@@ -18,16 +17,7 @@ export default function AcademicMonitoring() {
 
     const [view, setView] = useState("students");
 
-    const { usingForm, openForm, screen, finishForm, mode } = useStudentsStore();
-
-    const handleWizardSubmit = async (data: any) => {
-        // Aquí puedes manejar la lógica de envío del formulario, como llamar a una API o actualizar el estado global
-        console.log("Datos del formulario:", data);
-        finishForm();
-    }
-
-    const [step, setStep] = useState(1);
-    const totalSteps = 3;
+    const { usingForm, openForm, screen, finishForm, mode, step, setStep, totalSteps, closeForm } = useStudentsStore();
 
     return (
 
@@ -57,19 +47,16 @@ export default function AcademicMonitoring() {
 
                         <WizardDialogComponent
                             openDialog={usingForm}
-                            onClose={finishForm}
+                            onClose={closeForm}
                             title="Inscripción de Estudiante"
                             description="Complete los datos del estudiante"
                             step={step}
                             totalSteps={totalSteps}
-                            onNext={() => setStep(step + 1)}
-                            onBack={() => setStep(step - 1)}
-                            onFinish={finishForm}
+                            showFooter={false}
                         >
                             <EnrollmentForm
                                 open={usingForm}
                                 onClose={finishForm}
-                                onSubmit={handleWizardSubmit}
                                 step={step}
                                 setStep={setStep}
                             />

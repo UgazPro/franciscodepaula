@@ -41,7 +41,7 @@ export default function AcademicMonitoringHeader({ viewMode, setViewMode, openCr
                 />
                 <button
                     onClick={openCreateStudent}
-                    className="flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium"
+                    className="flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium cursor-pointer"
                 >
                     <UserPlus size={18} />
                     Inscribir Nuevo Estudiante

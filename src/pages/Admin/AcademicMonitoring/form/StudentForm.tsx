@@ -9,7 +9,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { studentSchema, type StudentFormValues } from "@/services/users/student.schema";
 import { studentLeftFields, studentMiddleFields, studentRightFields } from "@/services/users/userForm.data";
 import { FormComponent } from "@/components/form/FormComponent";
-import ProfilePictureComponent from "@/components/picture/ProfilePictureImage";
 
 export default function StudentsForm() {
 
@@ -171,13 +170,6 @@ export default function StudentsForm() {
                         <FormComponent
                             form={form}
                             fields={studentRightFields}
-                            otherType={
-                                <ProfilePictureComponent
-                                    imagePreview={imagePreview}
-                                    handleImageChange={handleImageChange}
-                                    handleRemoveFoto={handleRemoveFoto}
-                                />
-                            }
                         />
                     </div>
 

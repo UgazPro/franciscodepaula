@@ -27,6 +27,10 @@ interface StudentsStore {
   usingForm: boolean;
   openForm: () => void;
   closeForm: () => void;
+
+  step: number;
+  setStep: (step: number) => void;
+  totalSteps: number;
 }
 
 export const useStudentsStore = create<StudentsStore>((set) => ({
@@ -66,6 +70,13 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
 
   usingForm: false,
   openForm: () => set({ usingForm: true }),
-  closeForm: () => set({ usingForm: false }),
+  closeForm: () => set({ 
+    usingForm: false,
+    step: 1
+  }),
+
+  step: 1,
+  setStep: (step) => set({ step }),
+  totalSteps: 3,
 
 }));
