@@ -35,6 +35,7 @@ export const useAssignSection = () => {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["pending-enrollments"] });
+      qc.invalidateQueries({ queryKey: ["students"] });
     },
   });
 };

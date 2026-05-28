@@ -12,7 +12,7 @@ export default function Students() {
 
     const { data: students = [], isLoading } = useStudents();
 
-    const { viewMode, setViewMode, usingForm, openForm, screen, finishForm } = useStudentsStore();
+    const { viewMode, setViewMode, usingForm, openForm, screen, closeForm } = useStudentsStore();
 
     return (
 
