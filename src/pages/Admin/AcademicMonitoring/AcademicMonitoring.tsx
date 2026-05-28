@@ -1,13 +1,15 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import StudentDetailView from "../Students/detail/StudentDetailView";
 import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
+import EnrollmentsView from "./views/EnrollmentsView";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { EnrollmentForm } from "./form/EnrollmentForm";
 import WizardDialogComponent from "@/components/dialog/WizardDialogComponent";
+import { PaginationComponent } from "@/components/table/PaginationComponent";
 import StudentsNoResults from "../Students/views/StudentNoResultsView";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 
@@ -15,6 +17,30 @@ export default function AcademicMonitoring() {
 
     const { data: students = [], isLoading } = useStudents();
     const filteredStudents = useFilteredStudents(students);
+
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(6);
+
+    const searchTerm = useStudentsStore((s) => s.searchTerm);
+
+    useEffect(() => {
+      setCurrentPage(1);
+    }, [searchTerm]);
+
+    useEffect(() => {
+      const handleResize = () => {
+        setItemsPerPage(window.innerWidth >= 1024 ? 6 : 4);
+      };
+      handleResize();
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }, []);
+
+    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
+    const paginatedStudents = filteredStudents.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage,
+    );
 
     const [view, setView] = useState("students");
 
@@ -84,18 +110,30 @@ export default function AcademicMonitoring() {
                         {/* Vista de Tabla */}
                         {view === "students" && (
                             <>
-                                <StudentListView filteredStudents={filteredStudents} />
-                                {/* <PaginationComponent
+                                <StudentListView filteredStudents={paginatedStudents} />
+                                <PaginationComponent
                                     currentPage={currentPage}
                                     totalPages={totalPages}
-                                    totalItems={estudiantes.length}
+                                    totalItems={filteredStudents.length}
                                     itemsPerPage={itemsPerPage}
                                     onPageChange={setCurrentPage}
-                                /> */}
+                                />
 
                                 {/* View if no results are found */}
                                 {filteredStudents.length === 0 && <StudentsNoResults openCreateStudent={openForm} />}
                             </>
+                        )}
+
+                        {view === "representatives" && (
+                            <>
+                            
+                                
+                            
+                            </>
+                        )}
+
+                        {view === "enrollments" && (
+                            <EnrollmentsView />
                         )}
 
                     </div>

@@ -1,4 +1,4 @@
-import { X, User, MapPin, Cake, Calendar, Clock, CheckCircle, XCircle, School, History, ChevronRight, Edit, GraduationCap, Globe, Map, Landmark, ShieldCheck, BookOpen, Activity } from "lucide-react";
+import { X, User, UserCheck, MapPin, Cake, Calendar, Clock, CheckCircle, XCircle, School, History, ChevronRight, Edit, GraduationCap, Globe, Map, Landmark, ShieldCheck, BookOpen, Activity } from "lucide-react";
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -345,13 +345,16 @@ export default function StudentDetailView() {
                                 <div>
 
                                     <p className="text-sm text-gray-500 mb-1">
-                                        Sección
+                                        Nivel / Sección
                                     </p>
 
                                     <Badge className="bg-(--blueColor)/10 text-(--blueColor) border-(--blueColor)/20">
-                                        {selectedStudent.sectionId
-                                            ? `Sección ${selectedStudent.sectionId}`
-                                            : "Sin asignar"}
+                                        {(() => {
+                                            const enrollment = selectedStudent.enrollments?.[0];
+                                            return enrollment
+                                                ? `${enrollment.section.level.level} - ${enrollment.section.section}`
+                                                : "Sin asignar";
+                                        })()}
                                     </Badge>
 
                                 </div>
@@ -362,57 +365,61 @@ export default function StudentDetailView() {
 
                     </Card>
 
-                    {/* ASISTENCIA */}
+                    {/* REPRESENTANTE */}
                     <Card className="border order-(--lightBlueColor) shadow-sm">
 
                         <CardContent className="p-6">
 
-                            <div className="flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-2 mb-5">
 
-                                <div className="flex items-center gap-2">
+                                <UserCheck className="h-5 w-5 text-(--blueColor)" />
 
-                                    <Activity className="h-5 w-5 text-(--blueColor)" />
-
-                                    <h3 className="text-lg font-semibold text-(--blueColor)">
-                                        Asistencia
-                                    </h3>
-
-                                </div>
-
-                                <Badge className="bg-(--greenColor)/10 text-(--greenColor) border-(--greenColor)/20">
-                                    92%
-                                </Badge>
+                                <h3 className="text-lg font-semibold text-(--blueColor)">
+                                    Representante
+                                </h3>
 
                             </div>
 
-                            <div className="space-y-4">
-
-                                <Progress
-                                    value={92}
-                                    className="h-3"
-                                />
-
-                                <p className="text-sm text-gray-600">
-                                    Excelente rendimiento de asistencia.
-                                </p>
-
-                                <div className="pt-2 border-t border-gray-200">
-
-                                    <div className="flex items-center justify-between">
-
-                                        <span className="text-sm text-gray-500">
-                                            Clases asistidas
-                                        </span>
-
-                                        <span className="font-semibold text-(--blueColor)">
-                                            48
-                                        </span>
-
+                            {(() => {
+                                const rep = selectedStudent.representatives?.[0]?.representative;
+                                if (!rep) {
+                                    return (
+                                        <div className="text-center py-8">
+                                            <p className="text-gray-400">Sin representante asignado</p>
+                                        </div>
+                                    );
+                                }
+                                const repPerson = rep.user.person;
+                                return (
+                                    <div className="space-y-5">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-(--blueColor) to-(--darkBlueColor) flex items-center justify-center text-white font-bold shrink-0">
+                                                {repPerson.firstNames.charAt(0)}{repPerson.lastNames.charAt(0)}
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-gray-800">
+                                                    {repPerson.firstNames} {repPerson.lastNames}
+                                                </p>
+                                                <p className="text-sm text-gray-400">
+                                                    {rep.relationship || "Sin relación registrada"}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 mb-1">Cédula</p>
+                                            <p className="font-medium text-gray-800">{repPerson.identificationNumber}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 mb-1">Teléfono</p>
+                                            <p className="font-medium text-gray-800">{rep.user.phone || "No registrado"}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-gray-500 mb-1">Correo Electrónico</p>
+                                            <p className="font-medium text-gray-800">{rep.user.email || "No registrado"}</p>
+                                        </div>
                                     </div>
-
-                                </div>
-
-                            </div>
+                                );
+                            })()}
 
                         </CardContent>
 

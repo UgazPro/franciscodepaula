@@ -15,6 +15,31 @@ export interface IStudent {
     admissionDate:  Date;
     sectionId:      null;
     person:         Person;
+    enrollments?:   StudentEnrollment[];
+    representatives?: StudentRepresentative[];
+}
+
+export interface StudentEnrollment {
+    id: number;
+    section: {
+        id: number;
+        section: string;
+        level: { id: number; level: string };
+    };
+}
+
+export interface StudentRepresentative {
+    id: number;
+    representative: {
+        id: number;
+        relationship: string | null;
+        occupation: string | null;
+        user: {
+            email: string;
+            phone: string | null;
+            person: Person;
+        };
+    };
 }
 
 export interface Person {

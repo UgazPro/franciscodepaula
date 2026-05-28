@@ -9,7 +9,7 @@ import { enrollmentSchema, type EnrollmentFormValues } from "./enrollment/enroll
 import { step1ByName } from "./enrollment/steps/step1Fields.data";
 import { step2ByName } from "./enrollment/steps/step2Fields.data";
 import { step3ByName } from "./enrollment/steps/step3Fields.data";
-import { EnrollmentFieldRenderer } from "./enrollment/EnrollmentFieldRenderer";
+import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { useEnrollmentMutation } from "@/queries/useEnrollmentMutations";
 import { useUpdateStudent } from "@/queries/useUserMutations";
 import type { IStudent } from "@/services/users/user.interface";
@@ -213,17 +213,17 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                     </div>
                   </div>
 
-                  <EnrollmentFieldRenderer field={f1.identificationNumber} />
+                  <FieldRenderer field={f1.identificationNumber} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <EnrollmentFieldRenderer field={f1.firstNames} />
-                  <EnrollmentFieldRenderer field={f1.lastNames} />
+                  <FieldRenderer field={f1.firstNames} />
+                  <FieldRenderer field={f1.lastNames} />
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <EnrollmentFieldRenderer field={f1.birthDate} />
-                  <EnrollmentFieldRenderer field={f1.gender} />
+                  <FieldRenderer field={f1.birthDate} />
+                  <FieldRenderer field={f1.gender} />
                 </div>
               </>
             )}
@@ -239,15 +239,15 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <EnrollmentFieldRenderer field={f2.birthCountry} />
-                  <EnrollmentFieldRenderer field={f2.state} />
-                  <EnrollmentFieldRenderer field={f2.municipality} />
-                  <EnrollmentFieldRenderer field={f2.parish} />
-                  <EnrollmentFieldRenderer field={f2.currentParish} />
-                  <EnrollmentFieldRenderer field={f2.previousSchool} />
-                  <EnrollmentFieldRenderer field={f2.admissionDate} />
+                  <FieldRenderer field={f2.birthCountry} />
+                  <FieldRenderer field={f2.state} />
+                  <FieldRenderer field={f2.municipality} />
+                  <FieldRenderer field={f2.parish} />
+                  <FieldRenderer field={f2.currentParish} />
+                  <FieldRenderer field={f2.previousSchool} />
+                  <FieldRenderer field={f2.admissionDate} />
                   <div className="md:col-span-2">
-                    <EnrollmentFieldRenderer field={f2.address} />
+                    <FieldRenderer field={f2.address} />
                   </div>
                 </div>
               </>
@@ -264,15 +264,15 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <EnrollmentFieldRenderer field={f3.representativeFirstNames} />
-                  <EnrollmentFieldRenderer field={f3.representativeLastNames} />
-                  <EnrollmentFieldRenderer field={f3.representativeIdentification} />
-                  <EnrollmentFieldRenderer field={f3.representativeBirthDate} />
-                  <EnrollmentFieldRenderer field={f3.representativeGender} />
-                  <EnrollmentFieldRenderer field={f3.representativeEmail} />
-                  <EnrollmentFieldRenderer field={f3.representativePhone} />
-                  <EnrollmentFieldRenderer field={f3.representativeRelation} />
-                  <EnrollmentFieldRenderer field={f3.representativeProfession} />
+                  <FieldRenderer field={f3.representativeFirstNames} />
+                  <FieldRenderer field={f3.representativeLastNames} />
+                  <FieldRenderer field={f3.representativeIdentification} />
+                  <FieldRenderer field={f3.representativeBirthDate} />
+                  <FieldRenderer field={f3.representativeGender} />
+                  <FieldRenderer field={f3.representativeEmail} />
+                  <FieldRenderer field={f3.representativePhone} />
+                  <FieldRenderer field={f3.representativeRelation} />
+                  <FieldRenderer field={f3.representativeProfession} />
                 </div>
               </>
             )}

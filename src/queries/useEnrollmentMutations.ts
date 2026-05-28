@@ -15,6 +15,30 @@ export const useLinkStudentRepresentative = () => {
   });
 };
 
+export const useAssignSection = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ studentId, schoolYearId, sectionId, enrollmentDate }: {
+      studentId: number;
+      schoolYearId: number;
+      sectionId: number;
+      enrollmentDate?: Date;
+    }) => {
+      return postDataApi("/enrollment", {
+        studentId,
+        schoolYearId,
+        sectionId,
+        enrollmentDate: enrollmentDate || new Date(),
+        status: true,
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["pending-enrollments"] });
+    },
+  });
+};
+
 export const useEnrollmentMutation = () => {
   const qc = useQueryClient();
 

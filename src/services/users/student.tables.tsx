@@ -35,49 +35,30 @@ export const studentActionColumns = ({ startEdit, deleteStudent }: Actions): Col
             <span className="font-mono text-gray-800">{student.person.identificationNumber}</span>
         ),
     },
-    // {
-    //     header: "Grado/Sección",
-    //     render: (student) => (
-    //         <>
-    //             <span className="font-medium text-gray-800">
-    //                 {student.sectionId}
-    //             </span>
-    //             <span className="text-gray-400 ml-1">
-    //                 - Sección {student.sectionId}
-    //             </span>
-    //         </>
-    //     ),
-    // },
-    // {
-    //     header: "Representante",
-    //     accessor: "id",
-    //     className: "text-gray-600",
-    // },
-    // {
-    //     header: "Contacto",
-    //     render: (student) => (
-    //         <>
-    //             <p className="text-sm text-gray-600">{student.telefono}</p>
-    //             <p className="text-xs text-gray-400">{student.email}</p>
-    //         </>
-    //     ),
-    // },
-    // {
-    //     header: "Promedio",
-    //     render: (student) => (
-    //         <div className="flex items-center gap-2">
-    //             <div className="w-12 bg-gray-200 rounded-full h-1.5">
-    //                 <div
-    //                     className="bg-green-500 h-1.5 rounded-full"
-    //                     style={{ width: `${student.promedio}%` }}
-    //                 />
-    //             </div>
-    //             <span className="text-sm font-medium">
-    //                 {student.promedio}%
-    //             </span>
-    //         </div>
-    //     ),
-    // },
+    {
+        header: "Grado/Sección",
+        render: (student) => {
+            const enrollment = student.enrollments?.[0];
+            if (!enrollment) return <span className="text-gray-400">Sin asignar</span>;
+            return (
+                <span className="font-medium text-gray-800">
+                    {enrollment.section.level.level} - {enrollment.section.section}
+                </span>
+            );
+        },
+    },
+    {
+        header: "Representante",
+        render: (student) => {
+            const rep = student.representatives?.[0]?.representative;
+            if (!rep) return <span className="text-gray-400">Sin representante</span>;
+            return (
+                <span className="text-gray-600">
+                    {rep.user.person.firstNames} {rep.user.person.lastNames}
+                </span>
+            );
+        },
+    },
     {
         header: "Estado",
         render: (student) => (
@@ -140,49 +121,30 @@ export const studentColumns = () : Column<IStudent>[] => [
             <span className="font-mono text-gray-800">{student.person.identificationNumber}</span>
         ),
     },
-    // {
-    //     header: "Grado/Sección",
-    //     render: (student) => (
-    //         <>
-    //             <span className="font-medium text-gray-800">
-    //                 {student.sectionId}
-    //             </span>
-    //             <span className="text-gray-400 ml-1">
-    //                 - Sección {student.sectionId}
-    //             </span>
-    //         </>
-    //     ),
-    // },
-    // {
-    //     header: "Representante",
-    //     accessor: "id",
-    //     className: "text-gray-600",
-    // },
-    // {
-    //     header: "Contacto",
-    //     render: (student) => (
-    //         <>
-    //             <p className="text-sm text-gray-600">{student.telefono}</p>
-    //             <p className="text-xs text-gray-400">{student.email}</p>
-    //         </>
-    //     ),
-    // },
-    // {
-    //     header: "Promedio",
-    //     render: (student) => (
-    //         <div className="flex items-center gap-2">
-    //             <div className="w-12 bg-gray-200 rounded-full h-1.5">
-    //                 <div
-    //                     className="bg-green-500 h-1.5 rounded-full"
-    //                     style={{ width: `${student.promedio}%` }}
-    //                 />
-    //             </div>
-    //             <span className="text-sm font-medium">
-    //                 {student.promedio}%
-    //             </span>
-    //         </div>
-    //     ),
-    // },
+    {
+        header: "Grado/Sección",
+        render: (student) => {
+            const enrollment = student.enrollments?.[0];
+            if (!enrollment) return <span className="text-gray-400">Sin asignar</span>;
+            return (
+                <span className="font-medium text-gray-800">
+                    {enrollment.section.level.level} - {enrollment.section.section}
+                </span>
+            );
+        },
+    },
+    {
+        header: "Representante",
+        render: (student) => {
+            const rep = student.representatives?.[0]?.representative;
+            if (!rep) return <span className="text-gray-400">Sin representante</span>;
+            return (
+                <span className="text-gray-600">
+                    {rep.user.person.firstNames} {rep.user.person.lastNames}
+                </span>
+            );
+        },
+    },
     {
         header: "Estado",
         render: (student) => (

@@ -2,7 +2,8 @@ import SearchFilterComponent from "@/components/filters/SearchFilter";
 import TabsComponent from "@/components/tabs/TabsComponent";
 import type { ViewMode } from "@/services/users/user.interface";
 import { useStudentsStore } from "@/stores/students.store";
-import { Pencil, User, UserPlus } from "lucide-react";
+import { useEnrollmentsStore } from "@/stores/enrollments.store";
+import { Pencil, User, UserPlus, GraduationCap } from "lucide-react";
 import type { Dispatch, SetStateAction } from "react";
 
 interface StudentsHeaderProps {
@@ -15,7 +16,13 @@ interface StudentsHeaderProps {
 
 export default function AcademicMonitoringHeader({ viewMode, setViewMode, openCreateStudent, view, setView }: StudentsHeaderProps) {
 
-    const { searchTerm, setSearchTerm } = useStudentsStore();
+    const studentTerm = useStudentsStore((s) => s.searchTerm);
+    const setStudentTerm = useStudentsStore((s) => s.setSearchTerm);
+    const enrollmentTerm = useEnrollmentsStore((s) => s.searchTerm);
+    const setEnrollmentTerm = useEnrollmentsStore((s) => s.setSearchTerm);
+
+    const searchTerm = view === "enrollments" ? enrollmentTerm : studentTerm;
+    const setSearchTerm = view === "enrollments" ? setEnrollmentTerm : setStudentTerm;
 
     return (
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 mb-8">
@@ -24,7 +31,7 @@ export default function AcademicMonitoringHeader({ viewMode, setViewMode, openCr
                 <TabsComponent
                     tabs={[
                         { label: "Estudiantes", value: "students", icon: <User size={18} /> },
-                        // { label: "Detalles", value: "details", icon: <Pencil size={18} /> }
+                        { label: "Inscripciones", value: "enrollments", icon: <GraduationCap size={18} /> },
                     ]}
                     activeTab={view}
                     onChange={(value) => setView(value)}
