@@ -1,12 +1,17 @@
-import type { FormField } from "@/components/form/formComponent.interface";
+import type { FormField, OtherField } from "@/components/form/formComponent.interface";
 import { useFormContext, Controller } from "react-hook-form";
 import { cn } from "@/lib/utils";
-import type { EnrollmentFormValues } from "./enrollment.schema";
 import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
 import { SelectComponentForm } from "@/components/form/renderFormComponents/SelectComponent";
+import type { FieldValues, UseFormReturn } from "react-hook-form";
 
-interface EnrollmentFieldRendererProps {
+interface FieldRendererProps<T extends FieldValues = FieldValues> {
   field: FormField;
+  disabled?: boolean;
+  customFieldRenderer?: (
+    field: OtherField,
+    form: UseFormReturn<T>,
+  ) => React.ReactNode;
 }
 
 const inputBase =
@@ -18,12 +23,19 @@ const inputBaseArea =
 const labelStyle =
   "block text-sm font-medium text-(--darkBlueColor) mb-1";
 
-export function EnrollmentFieldRenderer({field,}: EnrollmentFieldRendererProps) {
-  const form = useFormContext<EnrollmentFormValues>();
+export function FieldRenderer<T extends FieldValues = FieldValues>({
+  field,
+  disabled,
+  customFieldRenderer,
+}: FieldRendererProps<T>) {
+  const form = useFormContext<T>();
 
-  const errorMessage = form.formState.errors[field.name as keyof EnrollmentFormValues]?.message as string | undefined;
-
+  const errorMessage = form.formState.errors[field.name as keyof T]?.message as string | undefined;
   const hasError = !!errorMessage;
+
+  if (field.type === "other") {
+    return customFieldRenderer?.(field as OtherField, form) ?? null;
+  }
 
   if (field.type === "date") {
     return (
@@ -33,7 +45,7 @@ export function EnrollmentFieldRenderer({field,}: EnrollmentFieldRendererProps) 
         </label>
         <Controller
           control={form.control}
-          name={field.name as keyof EnrollmentFormValues}
+          name={field.name as any}
           render={({ field: controllerField }) => (
             <CalendarFieldComponent
               value={controllerField.value as Date | undefined}
@@ -57,6 +69,7 @@ export function EnrollmentFieldRenderer({field,}: EnrollmentFieldRendererProps) 
           label={field.label}
           placeholder={field.placeholder || "Seleccione..."}
           options={field.options || []}
+          disabled={disabled}
           labelStyle={labelStyle}
         />
         {hasError && (
@@ -73,11 +86,11 @@ export function EnrollmentFieldRenderer({field,}: EnrollmentFieldRendererProps) 
           {field.label} <span className="text-red-500">*</span>
         </label>
         <textarea
-          {...form.register(field.name as keyof EnrollmentFormValues)}
+          {...form.register(field.name as any)}
           rows={3}
           className={cn(
             inputBaseArea,
-            hasError ? "border-red-500" : "border-(--lightBlueColor)/30"
+            hasError ? "border-red-500" : "border-(--lightBlueColor)/30",
           )}
           placeholder="Ej: Av. Principal, Casa #123, Urbanización Las Mercedes"
         />
@@ -96,11 +109,11 @@ export function EnrollmentFieldRenderer({field,}: EnrollmentFieldRendererProps) 
         </label>
         <input
           type={field.inputType || "text"}
-          {...form.register(field.name as keyof EnrollmentFormValues)}
-          placeholder={(field as any).placeholder || `Ingrese ${field.label.toLowerCase()}`}
+          {...form.register(field.name as any, { valueAsNumber: field.inputType === "number" })}
+          placeholder={field.placeholder || `Ingrese ${field.label.toLowerCase()}`}
           className={cn(
             inputBase,
-            hasError ? "border-red-500" : "border-(--lightBlueColor)/30"
+            hasError ? "border-red-500" : "border-(--lightBlueColor)/30",
           )}
         />
         {hasError && (

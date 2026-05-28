@@ -16,7 +16,7 @@ export default function AdminLayout() {
                 <AdminHeader />
 
                 {/* Main Content */}
-                <main className="flex-1 px-4 md:px-6 py-4 md:py-6 overflow-x-hidden">
+                <main className="flex-1 px-4 md:px-6 pt-4 md:pt-6 overflow-x-hidden">
                     <div className="max-w-7xl mx-auto">
                         <Outlet />
                     </div>

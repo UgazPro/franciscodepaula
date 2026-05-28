@@ -16,7 +16,7 @@ export function PaginationComponent({ currentPage, totalPages, totalItems, items
     const end = Math.min(currentPage * itemsPerPage, totalItems);
 
     return (
-        <div className="px-6 py-4 border-t border-gray-100 flex justify-between items-center">
+        <div className="px-6 pt-4 border-t border-gray-100 flex justify-between items-center">
 
             <p className="text-sm text-gray-500">
                 Mostrando {start} - {end} de {totalItems}

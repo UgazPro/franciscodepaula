@@ -12,7 +12,7 @@ export default function AdminFooter() {
                         {/* Logo e institución */}
                         <div>
                             <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-900 to-green-500 rounded-lg flex items-center justify-center">
+                                <div className="w-8 h-8 bg-linear-to-br from-blue-900 to-green-500 rounded-lg flex items-center justify-center">
                                     <span className="text-white font-bold text-xs">UEP</span>
                                 </div>
                                 <span className="font-semibold text-gray-800 text-sm">
