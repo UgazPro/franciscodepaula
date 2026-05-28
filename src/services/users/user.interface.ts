@@ -42,6 +42,16 @@ export interface StudentRepresentative {
     };
 }
 
+export interface IStaff {
+    id: number;
+    email: string;
+    phone: string | null;
+    status: boolean;
+    person: Person;
+    role: { id: number; role: string };
+    employee: { id: number } | null;
+}
+
 export interface Person {
     id:                   number;
     profilePhoto:         string;

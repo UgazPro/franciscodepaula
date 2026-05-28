@@ -1,4 +1,3 @@
-import React from 'react';
 import { Heart, Users, BookOpen, Shield, Lightbulb, Handshake } from 'lucide-react';
 
 export function ValuesSection() {
@@ -14,7 +13,7 @@ export function ValuesSection() {
   return (
     <section id="valores" className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl md:text-4xl font-bold text-center text-blue-900 mb-4">
+        <h2 className="text-3xl md:text-4xl font-bold text-center text-(--darkBlueColor) mb-4">
           Nuestros Valores
         </h2>
         <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
@@ -24,12 +23,12 @@ export function ValuesSection() {
           {values.map((value, index) => (
             <div
               key={index}
-              className="group bg-gray-50 rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
+              className="group bg-(--grayColor) rounded-xl p-6 text-center hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
             >
-              <div className="inline-flex p-3 bg-blue-100 rounded-full mb-4 group-hover:bg-green-500 transition-colors">
-                <value.icon className="text-blue-900 group-hover:text-white" size={28} />
+              <div className="inline-flex p-3 bg-(--lightBlueColor)/30 rounded-full mb-4 group-hover:bg-(--greenColor) transition-colors">
+                <value.icon className="text-(--darkBlueColor) group-hover:text-white" size={28} />
               </div>
-              <h3 className="text-xl font-bold text-blue-900 mb-2">{value.title}</h3>
+              <h3 className="text-xl font-bold text-(--darkBlueColor) mb-2">{value.title}</h3>
               <p className="text-gray-600">{value.description}</p>
             </div>
           ))}
@@ -37,5 +36,4 @@ export function ValuesSection() {
       </div>
     </section>
   );
-};
-
+}
