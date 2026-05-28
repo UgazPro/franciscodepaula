@@ -6,6 +6,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
 import ErrorMessage from "@/components/form/renderFormComponents/ErrorMessage";
+import LogoComponent from "@/components/logo/LogoComponent";
 
 export default function Login() {
 
@@ -39,9 +40,7 @@ export default function Login() {
                         <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 space-y-6 border border-white/20">
 
                             <div className="flex justify-center mb-4">
-                                <div className="h-20 w-20 flex items-center justify-center shrink-0">
-                                    <img src="logoF.png" alt="Logo" className="text-white" />
-                                </div>
+                                <LogoComponent className="h-20 w-20" />
                             </div>
 
                             <div className="text-center space-y-2">

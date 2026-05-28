@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 import { sidebarData } from "./AdminSidebar.data";
 import { LogOut, Menu, X } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
+import LogoComponent from "@/components/logo/LogoComponent";
 
 export default function AdminSidebar() {
 
@@ -27,9 +28,7 @@ export default function AdminSidebar() {
         <div className="w-full px-3 pt-4">
           {/* Logo/Header */}
           <div className="flex items-center mb-8 rounded-lg group-hover:bg-blue-800/50 mt-3 transition-colors duration-300">
-            <div className="h-10 w-10 flex items-center justify-center shrink-0">
-              <img src="logoF.png" alt="Logo" className="text-white" />
-            </div>
+            <LogoComponent className="h-10 w-10" />
             <div className="ml-3 overflow-hidden whitespace-nowrap opacity-0 group-hover:opacity-100 transition-all duration-300 transform -translate-x-2 group-hover:translate-x-0">
               <span className="text-sm font-bold">Francisco de Paula</span>
               <span className="text-xs block text-green-300">Salazar Acosta</span>

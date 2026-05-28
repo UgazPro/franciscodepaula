@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router";
 import { LogIn } from "lucide-react";
 import NavBar from "../../components/navbars/NavBar";
+import LogoComponent from "@/components/logo/LogoComponent";
 
 export default function Header() {
     const location = useLocation();
@@ -52,9 +53,7 @@ export default function Header() {
                     to={isAdminPage ? "/admin" : "/"}
                     className="flex items-center space-x-2 md:space-x-3 group"
                 >
-                    <div className="h-11 w-11 flex items-center justify-center shrink-0">
-                        <img src="logoF.png" alt="Logo" className="text-white" />
-                    </div>
+                    <LogoComponent className="h-11 w-11" />
 
                     {/* Title */}
                     <div className="flex flex-col leading-tight">
