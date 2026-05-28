@@ -44,7 +44,7 @@ export default function AcademicMonitoring() {
 
     const [view, setView] = useState("students");
 
-    const { usingForm, openForm, screen, finishForm, mode, selectedStudent, step, setStep, closeForm } = useStudentsStore();
+    const { usingForm, openForm, screen, mode, selectedStudent, step, setStep, closeForm } = useStudentsStore();
 
     const formSteps = mode === "edit" ? 2 : 3;
 
@@ -97,7 +97,7 @@ export default function AcademicMonitoring() {
                         >
                             <EnrollmentForm
                                 open={usingForm}
-                                onClose={finishForm}
+                                onClose={closeForm}
                                 mode={mode}
                                 selectedStudent={selectedStudent ?? undefined}
                                 initialData={initialData}

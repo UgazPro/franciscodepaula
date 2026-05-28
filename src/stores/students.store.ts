@@ -19,7 +19,6 @@ interface StudentsStore {
 
   startCreate: () => void;
   startEdit: (student: IStudent) => void;
-  finishForm: () => void;
 
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -59,12 +58,6 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
     usingForm: true,
   }),
 
-  finishForm: () => set({
-    usingForm: false,
-    selectedStudent: null,
-    mode: "create",
-  }),
-
   searchTerm: "",
   setSearchTerm: (v) => set({ searchTerm: v }),
 
@@ -72,7 +65,9 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
   openForm: () => set({ usingForm: true }),
   closeForm: () => set({ 
     usingForm: false,
-    step: 1
+    step: 1,
+    selectedStudent: null,
+    mode: "create",
   }),
 
   step: 1,
