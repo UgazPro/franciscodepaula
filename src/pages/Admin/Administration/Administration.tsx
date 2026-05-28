@@ -13,7 +13,7 @@ import type {
 import AdministrationHeader from "./components/AdministrationHeader";
 import DashboardView from "./views/DashboardView";
 import NominasView from "./views/PayrollView";
-import PagosView from "./views/PaymentsView";
+import PaymentsView from "./views/PaymentsView";
 import BecasView from "./views/ScholarshipsView";
 
 export default function Administracion() {
@@ -34,7 +34,7 @@ export default function Administracion() {
     const [personal] = useState<Personal[]>(personalData);
     const [nominas, setNominas] = useState<Nomina[]>([]);
     const [registrosHoras, setRegistrosHoras] = useState<RegistroHoras[]>([]);
-    const [pagos, setPagos] = useState<PagoRepresentante[]>(pagosData);
+    const [pagos] = useState<PagoRepresentante[]>(pagosData);
     const [becas] = useState<Beca[]>(becasData);
     const [estudiantes] = useState<Estudiante[]>(estudiantesData);
 
@@ -140,23 +140,6 @@ export default function Administracion() {
         return { totalPendiente, totalPagado, totalVencido, totalConBecas };
     };
 
-    const getEstadoColor = (estado: string) => {
-        switch (estado) {
-            case "pagado": return "bg-green-100 text-green-700";
-            case "pendiente": return "bg-yellow-100 text-yellow-700";
-            case "vencido": return "bg-red-100 text-red-700";
-            default: return "bg-gray-100 text-gray-700";
-        }
-    };
-
-    const handleRegistrarPago = (pagoId: number) => {
-        setPagos(pagos.map(p =>
-            p.id === pagoId
-                ? { ...p, estado: "pagado", fechaPago: new Date().toISOString().split('T')[0] }
-                : p
-        ));
-    };
-
     const actualizarTasaDolar = () => {
         const nuevaTasa = 42.15 + (Math.random() * 2 - 1);
         setTasaDolar({
@@ -235,26 +218,7 @@ export default function Administracion() {
                 />
             )}
 
-            {activeTab === "pagos" && (
-                <PagosView
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    calcularTotalesPagos={calcularTotalesPagos}
-                    paginatedData={paginatedData}
-                    totalPages={totalPages}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                    filteredData={filteredData}
-                    itemsPerPage={itemsPerPage}
-                    estudiantes={estudiantes}
-                    becas={becas}
-                    getEstadoColor={getEstadoColor}
-                    handleRegistrarPago={handleRegistrarPago}
-                    setShowPagoModal={setShowPagoModal}
-                    setSelectedItem={setSelectedItem}
-                    setShowReciboModal={setShowReciboModal}
-                />
-            )}
+            {activeTab === "pagos" && <PaymentsView />}
 
             {activeTab === "becas" && (
                 <BecasView

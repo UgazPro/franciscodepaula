@@ -1,5 +1,6 @@
 import { DollarSign, TrendingUp, TrendingDown, Home, Briefcase, CreditCard, Award, RefreshCw } from "lucide-react";
 import type { TasaDolar, AdminTab } from "@/services/administration/administration.types";
+import TabsComponent, { type TabItem } from "@/components/tabs/TabsComponent";
 
 interface Props {
     activeTab: AdminTab;
@@ -9,30 +10,16 @@ interface Props {
 }
 
 export default function AdministrationHeader({ activeTab, setActiveTab, tasaDolar, actualizarTasaDolar }: Props) {
-    const tabs = [
-        { id: "dashboard" as const, label: "Dashboard", icon: Home },
-        { id: "nominas" as const, label: "Nóminas", icon: Briefcase },
-        { id: "pagos" as const, label: "Pagos", icon: CreditCard },
-        { id: "becas" as const, label: "Becas", icon: Award },
+    const tabItems: TabItem<AdminTab>[] = [
+        { value: "dashboard", label: "Dashboard", icon: <Home size={18} /> },
+        { value: "nominas", label: "Nóminas", icon: <Briefcase size={18} /> },
+        { value: "pagos", label: "Pagos", icon: <CreditCard size={18} /> },
+        { value: "becas", label: "Becas", icon: <Award size={18} /> },
     ];
 
     return (
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-            <div className="flex flex-wrap gap-2 border-b border-gray-200">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-t-lg transition ${activeTab === tab.id
-                            ? "bg-white text-blue-900 border-b-2 border-green-500"
-                            : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
-                            }`}
-                    >
-                        <tab.icon size={18} />
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
+            <TabsComponent tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} />
 
             <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-xl p-4 shadow-lg">
                 <div className="flex items-center gap-4">
