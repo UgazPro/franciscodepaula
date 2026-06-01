@@ -1,10 +1,10 @@
 import { useLoginMutation } from "@/queries/useAuthMutations";
 import { zodResolver } from "@hookform/resolvers/zod";
-import type { AuthLoginData } from "@/services/auth/auth.interface";
-import { LoginSchema } from "@/services/auth/auth.schema";
+import { LoginSchema, type LoginFormValues } from "@/services/auth/auth.schema";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Link } from "react-router";
+import { Loader2 } from "lucide-react";
 import ErrorMessage from "@/components/form/renderFormComponents/ErrorMessage";
 import LogoComponent from "@/components/logo/LogoComponent";
 
@@ -13,17 +13,24 @@ export default function Login() {
     const [loginErrorMessage, setLoginErrorMessage] = useState("");
 
     const loginMutation = useLoginMutation();
+    const { isPending } = loginMutation;
 
-    const { register, handleSubmit, formState: { errors } } = useForm<AuthLoginData>({
+    const form = useForm<LoginFormValues>({
         resolver: zodResolver(LoginSchema),
+        defaultValues: {
+            email: "",
+            password: "",
+        },
+        shouldUnregister: false,
     });
 
-    const onSubmit = async (data: AuthLoginData) => {
+    const { register, handleSubmit, formState: { errors } } = form;
+
+    const onSubmit = async (data: LoginFormValues) => {
         try {
-            console.log(data)
             await loginMutation.mutateAsync(data);
         } catch (error: any) {
-            setLoginErrorMessage(error.message || "Error al iniciar sesión");
+            setLoginErrorMessage("Usuario Inválido");
             setTimeout(() => setLoginErrorMessage(""), 2500);
         }
     };
@@ -79,9 +86,11 @@ export default function Login() {
 
                             <button
                                 type="submit"
-                                className="w-full bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={isPending}
+                                className="w-full bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold py-3 rounded-xl transition-all transform hover:scale-[1.02] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
                             >
-                                Iniciar Sesión
+                                {isPending && <Loader2 size={18} className="animate-spin" />}
+                                {isPending ? "Iniciando sesión..." : "Iniciar Sesión"}
                             </button>
 
                             <div className="flex justify-center items-center gap-4 pt-2">

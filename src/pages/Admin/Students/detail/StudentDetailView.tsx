@@ -352,7 +352,7 @@ export default function StudentDetailView() {
                                         {(() => {
                                             const enrollment = selectedStudent.enrollments?.[0];
                                             return enrollment
-                                                ? `${enrollment.section.level.level} - ${enrollment.section.section}`
+                                                ? `${enrollment.section.highSchoolLevel.level} - ${enrollment.section.section}`
                                                 : "Sin asignar";
                                         })()}
                                     </Badge>

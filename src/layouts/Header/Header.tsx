@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Link, useLocation } from "react-router";
-import { LogIn } from "lucide-react";
+import { LogIn, ArrowLeft } from "lucide-react";
 import NavBar from "../../components/navbars/NavBar";
 import LogoComponent from "@/components/logo/LogoComponent";
 
@@ -77,6 +77,16 @@ export default function Header() {
                             Iniciar Sesión
                         </Link>
                     </div>
+                )}
+
+                {isLoginPage && (
+                    <Link
+                        to="/"
+                        className="flex items-center gap-1.5 text-gray-500 hover:text-blue-900 transition-colors text-sm"
+                    >
+                        <ArrowLeft size={16} />
+                        Volver
+                    </Link>
                 )}
 
             </div>

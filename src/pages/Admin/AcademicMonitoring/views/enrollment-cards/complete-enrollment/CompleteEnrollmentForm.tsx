@@ -67,7 +67,7 @@ export function CompleteEnrollmentForm() {
     const field = formFieldsByName.sectionId;
     if (field.type === "select") {
       field.options = filteredSections.map((s: any) => ({
-        label: `${s.section} - ${s.level?.level ?? ""}`,
+        label: `${s.section} - ${s.highSchoolLevel?.level ?? ""}`,
         value: s.id,
       }));
     }

@@ -42,7 +42,7 @@ export const studentActionColumns = ({ startEdit, deleteStudent }: Actions): Col
             if (!enrollment) return <span className="text-gray-400">Sin asignar</span>;
             return (
                 <span className="font-medium text-gray-800">
-                    {enrollment.section.level.level} - {enrollment.section.section}
+                    {enrollment.section.highSchoolLevel.level} - {enrollment.section.section}
                 </span>
             );
         },
@@ -128,7 +128,7 @@ export const studentColumns = () : Column<IStudent>[] => [
             if (!enrollment) return <span className="text-gray-400">Sin asignar</span>;
             return (
                 <span className="font-medium text-gray-800">
-                    {enrollment.section.level.level} - {enrollment.section.section}
+                    {enrollment.section.highSchoolLevel.level} - {enrollment.section.section}
                 </span>
             );
         },
