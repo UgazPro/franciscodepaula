@@ -21,7 +21,10 @@ export interface IStudent {
 
 export interface StudentEnrollment {
     id: number;
-        section: {
+    schoolYearId: number;
+    sectionId: number;
+    enrollmentDate: string | null;
+    section: {
         id: number;
         section: string;
         highSchoolLevel: { id: number; level: string };

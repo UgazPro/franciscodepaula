@@ -1,6 +1,6 @@
 import type { FormField } from "@/components/form/formComponent.interface";
 
-export const formFields: FormField[] = [
+export const step4Fields: FormField[] = [
   {
     name: "schoolYearId",
     label: "Año Escolar",
@@ -29,6 +29,6 @@ export const formFields: FormField[] = [
   },
 ];
 
-export const formFieldsByName = Object.fromEntries(
-  formFields.map((f) => [f.name, f]),
+export const step4ByName = Object.fromEntries(
+  step4Fields.map((f) => [f.name, f]),
 ) as Record<string, FormField>;

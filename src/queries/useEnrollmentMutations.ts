@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postDataApi } from "@/services/api";
+import { postDataApi, putDataApi } from "@/services/api";
 
 export const useCreateRepresentative = () => {
   return useMutation({
@@ -45,7 +45,7 @@ export const useEnrollmentMutation = () => {
 
   return useMutation({
     mutationFn: async (formData: any) => {
-      // 1. Crear estudiante
+      // 1. Crear estudiante (status: true = activo este año escolar)
       const studentPayload = {
         profilePhoto: formData.profilePhoto || "",
         firstNames: formData.firstNames,
@@ -66,8 +66,6 @@ export const useEnrollmentMutation = () => {
 
       const student = await postDataApi("/users/students", studentPayload);
 
-      console.log("Respuesta del estudiante:", student);
-
       if (!student || !student.id) {
         throw new Error("Error al crear el estudiante");
       }
@@ -86,11 +84,7 @@ export const useEnrollmentMutation = () => {
         studentIdentification: formData.identificationNumber,
       };
 
-      console.log("Payload del representante:", representativePayload);
-
       const representative = await postDataApi("/users/representatives", representativePayload);
-
-      console.log("Respuesta del representante:", representative);
 
       if (!representative || !representative.id) {
         throw new Error("Error al crear el representante");
@@ -102,10 +96,30 @@ export const useEnrollmentMutation = () => {
         representativeId: representative.id,
       });
 
-      console.log("Estudiante y representante vinculados:", { student, representative });
+      // 4. Asignar sección (año escolar, nivel, sección, fecha)
+      await postDataApi("/enrollment", {
+        studentId: student.id,
+        schoolYearId: formData.schoolYearId,
+        sectionId: formData.sectionId,
+        enrollmentDate: formData.enrollmentDate || new Date(),
+        status: true,
+      });
 
       return { student, representative };
     },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["pending-enrollments"] });
+    },
+  });
+};
+
+export const useUpdateEnrollment = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      putDataApi(`/enrollment/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
     },

@@ -1,55 +1,50 @@
 import { useState, useMemo, useEffect } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
-import StudentDetailView from "../Students/detail/StudentDetailView";
 import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
+import StudentDetailView from "../Students/detail/StudentDetailView";
 import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
-import EnrollmentsView from "./views/EnrollmentsView";
-import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { EnrollmentForm } from "./form/EnrollmentForm";
-import WizardDialogComponent from "@/components/dialog/WizardDialogComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import StudentsNoResults from "../Students/views/StudentNoResultsView";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 
 export default function AcademicMonitoring() {
-
     const { data: students = [], isLoading } = useStudents();
-    const filteredStudents = useFilteredStudents(students);
+    const { screen, searchTerm, mode, selectedStudent, step, setStep, closeForm } = useStudentsStore();
+
+    const filteredStudents = useMemo(() => {
+        if (!searchTerm.trim()) return students;
+        const term = searchTerm.toLowerCase();
+        return (students as any[]).filter((s: any) => {
+            const fn = s.person?.firstNames?.toLowerCase() ?? "";
+            const ln = s.person?.lastNames?.toLowerCase() ?? "";
+            const id = s.person?.identificationNumber?.toLowerCase() ?? "";
+            return fn.includes(term) || ln.includes(term) || id.includes(term);
+        });
+    }, [students, searchTerm]);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(6);
-
-    const searchTerm = useStudentsStore((s) => s.searchTerm);
+    const itemsPerPage = 5;
 
     useEffect(() => {
-      setCurrentPage(1);
+        setCurrentPage(1);
     }, [searchTerm]);
-
-    useEffect(() => {
-      const handleResize = () => {
-        setItemsPerPage(window.innerWidth >= 1024 ? 6 : 4);
-      };
-      handleResize();
-      window.addEventListener("resize", handleResize);
-      return () => window.removeEventListener("resize", handleResize);
-    }, []);
 
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = filteredStudents.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage,
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
     );
 
-    const [view, setView] = useState("students");
-
-    const { usingForm, openForm, screen, mode, selectedStudent, step, setStep, closeForm } = useStudentsStore();
-
-    const formSteps = mode === "edit" ? 2 : 3;
+    const formSteps = 4;
 
     const initialData = useMemo((): Partial<EnrollmentFormValues> | undefined => {
         if (mode !== "edit" || !selectedStudent) return undefined;
+
+        const rep = selectedStudent.representatives?.[0]?.representative;
+        const enrollment = selectedStudent.enrollments?.[0];
 
         return {
             firstNames: selectedStudent.person.firstNames,
@@ -66,49 +61,46 @@ export default function AcademicMonitoring() {
             address: selectedStudent.address,
             previousSchool: selectedStudent.previousSchool,
             admissionDate: new Date(selectedStudent.admissionDate),
+            representativeFirstNames: rep?.user?.person?.firstNames ?? "",
+            representativeLastNames: rep?.user?.person?.lastNames ?? "",
+            representativeIdentification: rep?.user?.person?.identificationNumber ?? "",
+            representativeBirthDate: rep?.user?.person?.birthDate ? new Date(rep.user.person.birthDate) : new Date(),
+            representativeGender: rep?.user?.person?.gender ?? "",
+            representativeEmail: rep?.user?.email ?? "",
+            representativePhone: rep?.user?.phone ?? "",
+            representativeRelation: rep?.relationship ?? "",
+            representativeProfession: rep?.occupation ?? "",
+            schoolYearId: enrollment?.schoolYearId ?? undefined as any,
+            levelId: enrollment?.section?.highSchoolLevel?.id ?? undefined as any,
+            sectionId: enrollment?.sectionId ?? undefined as any,
+            enrollmentDate: enrollment?.enrollmentDate ? new Date(enrollment.enrollmentDate) : new Date(),
         };
     }, [mode, selectedStudent]);
 
+    const isFormOpen = screen === "form";
+    const isDetailOpen = screen === "detail";
+
     return (
-
         <div className="w-full h-full">
-
             <PageTransitionComponent
-
                 primaryChildren={
-
                     <div className="space-y-6">
-
-                        {/* Header de la sección */}
-                        <AcademicMonitoringHeader
-                            openCreateStudent={openForm}
-                            view={view}
-                            setView={setView}
-                        />
-
-                        <WizardDialogComponent
-                            openDialog={usingForm}
-                            onClose={closeForm}
-                            title={mode === "create" ? "Inscripción de Estudiante" : "Editar Estudiante"}
-                            description={mode === "create" ? "Complete los datos del estudiante y representante" : "Modifique los datos del estudiante"}
-                            step={step}
-                            totalSteps={formSteps}
-                            showFooter={false}
-                        >
-                            <EnrollmentForm
-                                open={usingForm}
-                                onClose={closeForm}
-                                mode={mode}
-                                selectedStudent={selectedStudent ?? undefined}
-                                initialData={initialData}
-                                step={step}
-                                setStep={setStep}
-                                totalSteps={formSteps}
-                            />
-                        </WizardDialogComponent>
-
-                        {/* Vista de Tabla */}
-                        {view === "students" && (
+                        <AcademicMonitoringHeader />
+                        {isLoading ? (
+                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+                                Cargando estudiantes...
+                            </div>
+                        ) : paginatedStudents.length === 0 ? (
+                            <>
+                                {filteredStudents.length === 0 && !searchTerm ? (
+                                    <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
+                                ) : (
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+                                        No se encontraron estudiantes
+                                    </div>
+                                )}
+                            </>
+                        ) : (
                             <>
                                 <StudentListView filteredStudents={paginatedStudents} />
                                 <PaginationComponent
@@ -118,39 +110,32 @@ export default function AcademicMonitoring() {
                                     itemsPerPage={itemsPerPage}
                                     onPageChange={setCurrentPage}
                                 />
-
-                                {/* View if no results are found */}
-                                {filteredStudents.length === 0 && <StudentsNoResults openCreateStudent={openForm} />}
                             </>
                         )}
-
-                        {view === "representatives" && (
-                            <>
-                            
-                                
-                            
-                            </>
-                        )}
-
-                        {view === "enrollments" && (
-                            <EnrollmentsView />
-                        )}
-
                     </div>
-
                 }
 
                 secondaryChildren={
-                    <div>
-                        {screen === "detail" && <div className="h-full overflow-y-auto"><StudentDetailView /></div>}
-                    </div>
+                    isDetailOpen ? (
+                        <div className="h-full overflow-y-auto">
+                            <StudentDetailView />
+                        </div>
+                    ) : isFormOpen ? (
+                        <EnrollmentForm
+                            open={isFormOpen}
+                            onClose={closeForm}
+                            mode={mode}
+                            selectedStudent={selectedStudent ?? undefined}
+                            initialData={initialData}
+                            step={step}
+                            setStep={setStep}
+                            totalSteps={formSteps}
+                        />
+                    ) : null
                 }
 
-                toggle={screen === "detail" ? true : false}
-
+                toggle={isDetailOpen || isFormOpen}
             />
-
         </div>
-
     );
 }

@@ -48,6 +48,13 @@ export const step3Schema = z.object({
   representativeProfession: z.string().optional(),
 });
 
-export const enrollmentSchema = step1Schema.merge(step2Schema).merge(step3Schema);
+export const step4Schema = z.object({
+  schoolYearId: z.number({ message: "Selecciona un año escolar" }),
+  levelId: z.number({ message: "Selecciona un nivel" }),
+  sectionId: z.number({ message: "Selecciona una sección" }),
+  enrollmentDate: z.date({ message: "Selecciona una fecha" }),
+});
+
+export const enrollmentSchema = step1Schema.merge(step2Schema).merge(step3Schema).merge(step4Schema);
 
 export type EnrollmentFormValues = z.infer<typeof enrollmentSchema>;
