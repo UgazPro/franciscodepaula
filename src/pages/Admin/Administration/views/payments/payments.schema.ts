@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const step1Schema = z.object({
   studentId: z.number({ message: "Selecciona un estudiante" }),
-  chargeTypeId: z.number({ message: "Selecciona un tipo de deuda" }),
+  feeId: z.number({ message: "Selecciona un tipo de deuda" }),
   totalAmount: z
     .number({ message: "Ingresa un monto válido" })
     .positive("El monto debe ser mayor a 0"),
@@ -19,6 +19,10 @@ export const step2Schema = z.object({
   reference: z.string().optional(),
 });
 
-export const paymentSchema = step1Schema.merge(step2Schema);
+export const extendedSchema = z.object({
+  exchangeRate: z.number().optional(),
+});
+
+export const paymentSchema = step1Schema.merge(step2Schema).merge(extendedSchema);
 
 export type PaymentFormValues = z.input<typeof paymentSchema>;

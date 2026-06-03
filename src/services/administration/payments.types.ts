@@ -9,10 +9,11 @@ export interface PaymentResponse {
   payerName: string | null;
   payerIdentification: string | null;
   payerPhone: string | null;
+  description: string | null;
   status: boolean;
   paymentMethod: PaymentMethod;
   exchange: Exchange | null;
-  charges: StudentChargeResponse[];
+  paymentReferences: PaymentReferenceResponse[];
 }
 
 export interface PaymentMethod {
@@ -27,26 +28,31 @@ export interface PaymentMethod {
   active: boolean;
 }
 
-export interface ChargeType {
+export interface FeeResponse {
   id: number;
   name: string;
-  description: string | null;
+  schoolYearId: number;
+  value: number;
+  createdAt: string;
+  schoolYear?: {
+    id: number;
+    name: string;
+  };
 }
 
-export interface Exchange {
+export interface PaymentReferenceResponse {
   id: number;
-  rate: number;
-  date: string;
+  studentFeeId: number;
+  paymentId: number;
+  studentFee: StudentFeeResponse;
+  enrollments: PaymentEnrollmentResponse[];
 }
 
-export interface StudentChargeResponse {
+export interface StudentFeeResponse {
   id: number;
   studentId: number;
-  paymentId: number | null;
-  chargeTypeId: number;
-  schoolYearId: number | null;
-  description: string | null;
-  createdAt: string;
+  feeId: number;
+  status: boolean | null;
   student: {
     id: number;
     personId: number;
@@ -59,12 +65,36 @@ export interface StudentChargeResponse {
       profilePhoto: string | null;
     };
   };
-  chargeType: ChargeType;
+  fee: FeeResponse;
+}
+
+export interface PaymentEnrollmentResponse {
+  id: number;
+  studentId: number;
+  referenceId: number | null;
+  student: {
+    id: number;
+    personId: number;
+    status: boolean;
+    person: {
+      id: number;
+      firstNames: string;
+      lastNames: string;
+      identificationNumber: string;
+      profilePhoto: string | null;
+    };
+  };
+}
+
+export interface Exchange {
+  id: number;
+  rate: number;
+  date: string;
 }
 
 export interface PaymentFormValues {
   studentId: number;
-  chargeTypeId: number;
+  feeId: number;
   description: string;
   totalAmount: number;
   currency: "USD" | "VES";

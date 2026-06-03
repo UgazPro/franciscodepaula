@@ -3,27 +3,29 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { ChevronLeft, ChevronRight, Check, CreditCard, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, CreditCard, User, ArrowLeft } from "lucide-react";
 import { paymentSchema, type PaymentFormValues } from "./payments.schema";
 import { step1ByName } from "./payments-step1.data";
 import { step2ByName } from "./payments-step2.data";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import StudentAutocomplete from "./StudentAutocomplete";
-import { usePaymentMethods, useChargeTypes } from "@/hooks/usePayments";
-import { useCreatePayment } from "@/queries/usePaymentMutations";
+import { usePaymentMethods, useFees, useExchangeRate } from "@/hooks/usePayments";
+import { useCreatePayment, useCreateExchange } from "@/queries/usePaymentMutations";
 import { usePaymentsStore } from "@/stores/payments.store";
 
 export default function PaymentForm() {
   const { data: paymentMethods = [] } = usePaymentMethods();
-  const { data: chargeTypes = [] } = useChargeTypes();
+  const { data: fees = [] } = useFees();
+  const { data: latestExchange } = useExchangeRate();
   const { mutateAsync: createPayment, isPending } = useCreatePayment();
+  const { mutateAsync: createExchange } = useCreateExchange();
   const { step, setStep, setScreen } = usePaymentsStore();
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
     defaultValues: {
       studentId: undefined as any,
-      chargeTypeId: undefined as any,
+      feeId: undefined as any,
       totalAmount: undefined as any,
       currency: "VES",
       paymentMethodId: undefined as any,
@@ -37,33 +39,57 @@ export default function PaymentForm() {
     shouldUnregister: false,
   });
 
-  const { trigger } = form;
+  const { trigger, watch, setValue } = form;
+
+  const selectedFeeId = watch("feeId");
+  const selectedCurrency = watch("currency");
+  const watchedExchangeRate = watch("exchangeRate");
 
   useEffect(() => {
     form.clearErrors();
   }, [step]);
 
+  const selectedFee = useMemo(
+    () => (fees ?? []).find((f: any) => f.id === selectedFeeId),
+    [fees, selectedFeeId],
+  );
+
+  // Pre-fill default exchange rate when switching to VES
+  useEffect(() => {
+    if (selectedCurrency === "VES" && !watchedExchangeRate && latestExchange?.rate) {
+      setValue("exchangeRate", Number(latestExchange.rate));
+    }
+  }, [selectedCurrency, selectedFeeId, latestExchange]);
+
+  // Auto-compute totalAmount whenever inputs change
+  useEffect(() => {
+    if (!selectedFee) return;
+    const baseValue = Number(selectedFee.value);
+    if (selectedCurrency === "VES") {
+      const rate = watchedExchangeRate ?? (latestExchange ? Number(latestExchange.rate) : 0);
+      setValue("totalAmount", baseValue * rate);
+    } else {
+      setValue("totalAmount", baseValue);
+    }
+  }, [selectedFee, selectedCurrency, watchedExchangeRate, latestExchange, setValue]);
+
   const f1 = useMemo(() => {
-    const field = step1ByName.paymentMethodId;
-    if (field.type === "select") {
-      field.options = (paymentMethods ?? []).map((pm: any) => ({
+    const pmField = step1ByName.paymentMethodId;
+    if (pmField.type === "select") {
+      pmField.options = (paymentMethods ?? []).map((pm: any) => ({
         label: pm.type,
         value: pm.id,
       }));
     }
-    return step1ByName;
-  }, [paymentMethods]);
-
-  const chargeTypeField = useMemo(() => {
-    const field = step1ByName.chargeTypeId;
-    if (field.type === "select") {
-      field.options = (chargeTypes ?? []).map((ct: any) => ({
-        label: ct.name,
-        value: ct.id,
+    const feeField = step1ByName.feeId;
+    if (feeField.type === "select") {
+      feeField.options = (fees ?? []).map((f: any) => ({
+        label: `${f.name}${f.schoolYear?.name ? ` (${f.schoolYear.name})` : ""}`,
+        value: f.id,
       }));
     }
     return step1ByName;
-  }, [chargeTypes]);
+  }, [paymentMethods, fees]);
 
   const f2 = step2ByName;
 
@@ -71,7 +97,10 @@ export default function PaymentForm() {
     let fieldsToValidate: (keyof PaymentFormValues)[] = [];
 
     if (step === 1) {
-      fieldsToValidate = ["studentId", "chargeTypeId", "totalAmount", "currency", "paymentMethodId", "paymentDate"];
+      fieldsToValidate = ["studentId", "feeId", "totalAmount", "currency", "paymentMethodId", "paymentDate"];
+      if (selectedCurrency === "VES") {
+        fieldsToValidate.push("exchangeRate");
+      }
     } else if (step === 2) {
       fieldsToValidate = [];
     }
@@ -84,22 +113,30 @@ export default function PaymentForm() {
 
   const onSubmit = async (data: PaymentFormValues) => {
     try {
-      await createPayment({
-        data: {
-          paymentMethodId: data.paymentMethodId,
-          totalAmount: data.totalAmount,
-          currency: data.currency,
-          paymentDate: data.paymentDate,
-          status: true,
-          studentId: data.studentId,
-          chargeTypeId: data.chargeTypeId,
-          description: data.description,
-          ...(data.reference ? { reference: data.reference } : {}),
-          ...(data.payerName ? { payerName: data.payerName } : {}),
-          ...(data.payerIdentification ? { payerIdentification: data.payerIdentification } : {}),
-          ...(data.payerPhone ? { payerPhone: data.payerPhone } : {}),
-        },
-      });
+      let payload: any = {
+        paymentMethodId: data.paymentMethodId,
+        totalAmount: data.totalAmount,
+        currency: data.currency,
+        paymentDate: data.paymentDate,
+        status: true,
+        studentId: data.studentId,
+        feeId: data.feeId,
+        description: data.description,
+        ...(data.reference ? { reference: data.reference } : {}),
+        ...(data.payerName ? { payerName: data.payerName } : {}),
+        ...(data.payerIdentification ? { payerIdentification: data.payerIdentification } : {}),
+        ...(data.payerPhone ? { payerPhone: data.payerPhone } : {}),
+      };
+
+      if (data.currency === "VES" && data.exchangeRate) {
+        const exchange = await createExchange({
+          rate: data.exchangeRate,
+          date: new Date(),
+        });
+        payload.exchangeId = exchange.id;
+      }
+
+      await createPayment({ data: payload });
       setStep(1);
       setScreen("list");
     } catch (error) {
@@ -107,8 +144,25 @@ export default function PaymentForm() {
     }
   };
 
+  const handleBack = () => {
+    setStep(1);
+    setScreen("list");
+  };
+
   return (
-    <Form {...form}>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-(--lightBlueColor)/20">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="p-2 hover:bg-(--grayColor) rounded-lg transition cursor-pointer"
+        >
+          <ArrowLeft size={20} className="text-(--darkBlueColor)" />
+        </button>
+        <h2 className="text-lg font-semibold text-(--darkBlueColor)">Registro de Pago</h2>
+      </div>
+
+      <Form {...form}>
       <form>
         <div className="space-y-6">
           {/* ==================== PASO 1: DATOS DEL PAGO ==================== */}
@@ -130,10 +184,25 @@ export default function PaymentForm() {
                     }
                   />
                 </div>
-                <FieldRenderer field={chargeTypeField.chargeTypeId} />
-                <FieldRenderer field={f1.totalAmount} />
+                <FieldRenderer field={f1.feeId} />
+                <FieldRenderer field={f1.totalAmount} disabled />
                 <FieldRenderer field={f1.currency} />
                 <FieldRenderer field={f1.paymentDate} />
+                {selectedCurrency === "VES" && (
+                  <div className="md:col-span-2">
+                    <div className="bg-(--lightBlueColor)/5 border border-(--lightBlueColor)/20 rounded-lg p-3 flex items-center gap-3">
+                      <span className="text-sm font-medium text-(--darkBlueColor)">Tasa del Día:</span>
+                      <span className="text-sm text-gray-500">1 USD =</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        {...form.register("exchangeRate", { valueAsNumber: true })}
+                        className="w-28 px-3 h-9 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) text-sm"
+                      />
+                      <span className="text-sm text-gray-500">Bs.</span>
+                    </div>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:col-span-2">
                   <FieldRenderer field={f1.paymentMethodId} />
                   <FieldRenderer field={f1.description} />
@@ -201,5 +270,6 @@ export default function PaymentForm() {
         </div>
       </form>
     </Form>
+    </div>
   );
 }

@@ -13,6 +13,18 @@ export const useCreatePayment = () => {
   });
 };
 
+export const useCreateExchange = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { rate: number; date: Date }) =>
+      postDataApi("/payments/exchange", data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["exchange-rate"] });
+    },
+  });
+};
+
 export const useDeletePayment = () => {
   const qc = useQueryClient();
 

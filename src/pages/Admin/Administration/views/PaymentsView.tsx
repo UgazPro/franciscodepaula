@@ -3,7 +3,7 @@ import { useMemo, useState } from "react";
 import SummaryCard from "../components/SummaryCard";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
-import WizardDialogComponent from "@/components/dialog/WizardDialogComponent";
+import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { usePayments } from "@/hooks/usePayments";
 import { useDeletePayment } from "@/queries/usePaymentMutations";
 import { usePaymentsStore } from "@/stores/payments.store";
@@ -23,10 +23,11 @@ export default function PaymentsView() {
     if (!searchTerm.trim()) return payments as PaymentResponse[];
     const term = searchTerm.toLowerCase();
     return (payments as PaymentResponse[]).filter((p) => {
-      const charge = p.charges?.[0];
+      const ref = p.paymentReferences?.[0];
+      const person = ref?.studentFee?.student?.person;
       const name =
-        `${charge?.student?.person?.firstNames ?? ""} ${charge?.student?.person?.lastNames ?? ""}`.toLowerCase();
-      const concept = charge?.chargeType?.name?.toLowerCase() ?? "";
+        `${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`.toLowerCase();
+      const concept = ref?.studentFee?.fee?.name?.toLowerCase() ?? "";
       return name.includes(term) || concept.includes(term) || (p.reference?.toLowerCase() ?? "").includes(term);
     });
   }, [payments, searchTerm]);
@@ -48,81 +49,69 @@ export default function PaymentsView() {
   const columns = paymentColumns({ onDelete: (id) => deletePayment(id) });
 
   return (
-    <>
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Buscar por estudiante o concepto..."
-                value={searchTerm}
-                onChange={(e) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
-              />
+    <PageTransitionComponent
+      primaryChildren={
+        <div className="space-y-4">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1 relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <input
+                  type="text"
+                  placeholder="Buscar por estudiante o concepto..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
+                />
+              </div>
+              <button
+                onClick={() => setScreen("form")}
+                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
+              >
+                <Plus size={18} />
+                Registrar Pago
+              </button>
             </div>
-            <button
-              onClick={() => setScreen("form")}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
-            >
-              <Plus size={18} />
-              Registrar Pago
-            </button>
           </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <SummaryCard title="Pendiente" value={`Bs. ${totales.totalPendiente.toFixed(2)}`} icon={Clock} color="yellow" />
+            <SummaryCard title="Pagado" value={`Bs. ${totales.totalPagado.toFixed(2)}`} icon={CheckCircle} color="green" />
+            <SummaryCard title="Vencido" value={`Bs. ${totales.totalVencido.toFixed(2)}`} icon={AlertCircle} color="red" />
+            <SummaryCard title="Ahorro por Becas" value="Bs. 0.00" icon={Award} color="blue" />
+          </div>
+
+          {isLoading ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+              Cargando pagos...
+            </div>
+          ) : paginatedData.length === 0 ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+              {searchTerm ? "No se encontraron pagos" : "No hay pagos registrados"}
+            </div>
+          ) : (
+            <>
+              <TableComponent data={paginatedData} columns={columns} />
+              <PaginationComponent
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredData.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </>
+          )}
         </div>
+      }
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryCard title="Pendiente" value={`Bs. ${totales.totalPendiente.toFixed(2)}`} icon={Clock} color="yellow" />
-          <SummaryCard title="Pagado" value={`Bs. ${totales.totalPagado.toFixed(2)}`} icon={CheckCircle} color="green" />
-          <SummaryCard title="Vencido" value={`Bs. ${totales.totalVencido.toFixed(2)}`} icon={AlertCircle} color="red" />
-          <SummaryCard title="Ahorro por Becas" value="Bs. 0.00" icon={Award} color="blue" />
-        </div>
+      secondaryChildren={
+        <PaymentForm />
+      }
 
-        {isLoading ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-            Cargando pagos...
-          </div>
-        ) : paginatedData.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-            {searchTerm ? "No se encontraron pagos" : "No hay pagos registrados"}
-          </div>
-        ) : (
-          <>
-            <TableComponent data={paginatedData} columns={columns} />
-            <PaginationComponent
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={filteredData.length}
-              itemsPerPage={itemsPerPage}
-              onPageChange={setCurrentPage}
-            />
-          </>
-        )}
-      </div>
-
-      {screen === "form" && (
-        <WizardDialogComponent
-          openDialog={true}
-          onClose={() => {
-            setStep(1);
-            setScreen("list");
-          }}
-          title="Registrar Pago"
-          description="Complete los datos del pago"
-          step={step}
-          totalSteps={2}
-          onNext={() => {}}
-          onBack={() => {}}
-          onFinish={() => {}}
-          showFooter={false}
-        >
-          <PaymentForm />
-        </WizardDialogComponent>
-      )}
-    </>
+      toggle={screen === "form"}
+    />
   );
 }

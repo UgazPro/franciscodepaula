@@ -17,10 +17,19 @@ export const usePaymentMethods = () => {
   });
 };
 
-export const useChargeTypes = () => {
+export const useFees = () => {
   return useQuery({
-    queryKey: ["charge-types"],
-    queryFn: () => getDataApi("/payments/charge-types"),
+    queryKey: ["fees"],
+    queryFn: () => getDataApi("/payments/fees"),
     staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useExchangeRate = () => {
+  return useQuery({
+    queryKey: ["exchange-rate"],
+    queryFn: () => getDataApi("/payments/exchange"),
+    staleTime: 1000 * 60 * 5,
+    select: (data: any[]) => data?.[0] ?? null,
   });
 };

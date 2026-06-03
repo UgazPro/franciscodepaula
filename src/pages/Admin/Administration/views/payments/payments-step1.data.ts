@@ -7,8 +7,8 @@ export const step1Fields: FormField[] = [
     type: "other",
   },
   {
-    name: "chargeTypeId",
-    label: "Tipo de Deuda",
+    name: "feeId",
+    label: "Tipo de Pago",
     type: "select",
     placeholder: "Seleccione tipo de deuda",
     options: [],
@@ -16,6 +16,14 @@ export const step1Fields: FormField[] = [
   {
     name: "totalAmount",
     label: "Monto",
+    type: "text",
+    inputType: "number",
+    placeholder: "0.00",
+    disabled: true,
+  },
+  {
+    name: "exchangeRate",
+    label: "Tasa del Día (Bs./USD)",
     type: "text",
     inputType: "number",
     placeholder: "0.00",
