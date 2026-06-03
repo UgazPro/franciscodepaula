@@ -1,6 +1,7 @@
 import SearchFilterComponent from "@/components/filters/SearchFilter";
 import { useStudentsStore } from "@/stores/students.store";
 import { UserPlus } from "lucide-react";
+import FilterDropdown from "./FilterDropdown";
 
 export default function AcademicMonitoringHeader() {
     const searchTerm = useStudentsStore((s) => s.searchTerm);
@@ -15,6 +16,7 @@ export default function AcademicMonitoringHeader() {
                     placeHolder="Buscar por nombre, apellido o cédula..."
                     width="w-92"
                 />
+                <FilterDropdown />
                 <button
                     onClick={() => useStudentsStore.getState().startCreate()}
                     className="flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium cursor-pointer"

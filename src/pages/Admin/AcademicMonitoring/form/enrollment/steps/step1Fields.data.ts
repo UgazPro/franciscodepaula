@@ -32,7 +32,6 @@ export const step1Fields: FormField[] = [
     options: [
       { label: "Masculino", value: "Masculino" },
       { label: "Femenino", value: "Femenino" },
-      { label: "Otro", value: "Otro" },
     ],
   },
 ];

@@ -9,20 +9,34 @@ import { EnrollmentForm } from "./form/EnrollmentForm";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import StudentsNoResults from "../Students/views/StudentNoResultsView";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
+import type { IStudent } from "@/services/users/user.interface";
 
 export default function AcademicMonitoring() {
-    const { data: students = [], isLoading } = useStudents();
-    const { screen, searchTerm, mode, selectedStudent, step, setStep, closeForm } = useStudentsStore();
+    const {
+      screen, searchTerm, mode, selectedStudent, step, setStep, closeForm,
+      filterView, filterLevelId, filterSection, filterGender,
+      filterAgeMode, filterAgeMin, filterAgeMax, filterAgeExact,
+    } = useStudentsStore();
+
+    const { data: students = [], isLoading } = useStudents({
+      view: filterView,
+      levelId: filterLevelId ?? undefined,
+      section: filterSection ?? undefined,
+      gender: filterGender ?? undefined,
+      ageMin: filterAgeMode === "range" ? (filterAgeMin ?? undefined) : undefined,
+      ageMax: filterAgeMode === "range" ? (filterAgeMax ?? undefined) : undefined,
+      ageExact: filterAgeMode === "exact" ? (filterAgeExact ?? undefined) : undefined,
+    });
 
     const filteredStudents = useMemo(() => {
-        if (!searchTerm.trim()) return students;
-        const term = searchTerm.toLowerCase();
-        return (students as any[]).filter((s: any) => {
-            const fn = s.person?.firstNames?.toLowerCase() ?? "";
-            const ln = s.person?.lastNames?.toLowerCase() ?? "";
-            const id = s.person?.identificationNumber?.toLowerCase() ?? "";
-            return fn.includes(term) || ln.includes(term) || id.includes(term);
-        });
+      if (!searchTerm.trim()) return students;
+      const term = searchTerm.toLowerCase();
+      return (students as IStudent[]).filter((s) => {
+        const fn = s.person?.firstNames?.toLowerCase() ?? "";
+        const ln = s.person?.lastNames?.toLowerCase() ?? "";
+        const id = s.person?.identificationNumber?.toLowerCase() ?? "";
+        return fn.includes(term) || ln.includes(term) || id.includes(term);
+      });
     }, [students, searchTerm]);
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -30,7 +44,7 @@ export default function AcademicMonitoring() {
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm]);
+    }, [searchTerm, filterView, filterLevelId, filterSection, filterGender, filterAgeMin, filterAgeMax, filterAgeExact]);
 
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = filteredStudents.slice(
