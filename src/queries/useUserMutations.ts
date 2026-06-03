@@ -35,3 +35,15 @@ export const useDeleteStudent = () => {
     },
   });
 };
+
+export const useUpdateRepresentative = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      putDataApi(`/users/representatives/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["students"] });
+    },
+  });
+};

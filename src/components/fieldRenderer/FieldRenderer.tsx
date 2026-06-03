@@ -109,10 +109,12 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
         </label>
         <input
           type={field.inputType || "text"}
+          disabled={disabled}
           {...form.register(field.name as any, { valueAsNumber: field.inputType === "number" })}
           placeholder={field.placeholder || `Ingrese ${field.label.toLowerCase()}`}
           className={cn(
             inputBase,
+            disabled && "bg-gray-100 cursor-not-allowed opacity-70",
             hasError ? "border-red-500" : "border-(--lightBlueColor)/30",
           )}
         />
