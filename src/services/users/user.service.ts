@@ -29,8 +29,15 @@ export const getStaff = async () : Promise<IStaff[]> => {
     return await getDataApi(`${usersUrl}/staff`);
 };
 
-
-
-
+export const checkIdentification = async (
+  value: string,
+  excludePersonId?: number,
+): Promise<{ exists: boolean }> => {
+  const qs = new URLSearchParams({ value });
+  if (excludePersonId !== undefined) {
+    qs.set('excludePersonId', String(excludePersonId));
+  }
+  return await getDataApi(`${usersUrl}/check-identification?${qs.toString()}`);
+};
 
 

@@ -15,6 +15,7 @@ import StepperComponent from "@/components/stepper/StepperComponent";
 import { useEnrollmentMutation, useUpdateEnrollment } from "@/queries/useEnrollmentMutations";
 import { useUpdateStudent, useUpdateRepresentative } from "@/queries/useUserMutations";
 import { useSchoolYears, useLevels, useSections } from "@/hooks/useSchoolYears";
+import { checkIdentification } from "@/services/users/user.service";
 import type { IStudent } from "@/services/users/user.interface";
 
 interface EnrollmentFormProps {
@@ -155,19 +156,81 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     }
 
     const isValid = await trigger(fieldsToValidate);
-    if (isValid) {
-      if (step < totalSteps) {
+    if (!isValid) return;
+
+    // Duplicate identification checks (edit mode only)
+    if (isEditMode) {
+      if (step === 1) {
+        const { exists } = await checkIdentification(
+          form.getValues("identificationNumber"),
+          selectedStudent?.personId,
+        );
+        if (exists) {
+          form.setError("identificationNumber", {
+            type: "manual",
+            message: "Esta cédula ya está registrada por otro estudiante o usuario",
+          });
+          return;
+        }
+      }
+      if (step === 3) {
+        const repPersonId =
+          selectedStudent?.representatives?.[0]?.representative?.user?.person?.id;
+        const { exists } = await checkIdentification(
+          form.getValues("representativeIdentification"),
+          repPersonId,
+        );
+        if (exists) {
+          form.setError("representativeIdentification", {
+            type: "manual",
+            message: "Esta cédula ya está registrada por otro estudiante o usuario",
+          });
+          return;
+        }
+      }
+    }
+
+    if (step < totalSteps) {
         setStep(step + 1);
       } else {
         await submitEdit();
       }
-    }
   };
 
   const submitEdit = async () => {
     if (!selectedStudent) return;
 
     const formData = form.getValues();
+
+    // Final duplicate safety checks
+    const { exists: studentIdExists } = await checkIdentification(
+      formData.identificationNumber,
+      selectedStudent.personId,
+    );
+    if (studentIdExists) {
+      form.setError("identificationNumber", {
+        type: "manual",
+        message: "Esta cédula ya está registrada por otro estudiante o usuario",
+      });
+      return;
+    }
+
+    const repPersonId =
+      selectedStudent.representatives?.[0]?.representative?.user?.person?.id;
+    if (repPersonId) {
+      const { exists: repIdExists } = await checkIdentification(
+        formData.representativeIdentification,
+        repPersonId,
+      );
+      if (repIdExists) {
+        form.setError("representativeIdentification", {
+          type: "manual",
+          message: "Esta cédula ya está registrada por otro estudiante o usuario",
+        });
+        return;
+      }
+    }
+
     const studentPayload = {
       profilePhoto: formData.profilePhoto || "",
       firstNames: formData.firstNames,

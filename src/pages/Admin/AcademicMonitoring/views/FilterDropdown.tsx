@@ -80,10 +80,9 @@ export default function FilterDropdown() {
   }, [filterLevelId, filterSection, filterGender, filterAgeMode, filterAgeMin, filterAgeMax, filterAgeExact]);
 
   const pillClass = (active: boolean) =>
-    `px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer select-none ${
-      active
-        ? "bg-(--blueColor) text-white shadow-sm"
-        : "border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor)"
+    `px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer select-none ${active
+      ? "bg-(--blueColor) text-white shadow-sm"
+      : "border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor)"
     }`;
 
   const sectionLabel = (label: string) => (
@@ -158,78 +157,85 @@ export default function FilterDropdown() {
 
         <div className="border-t border-(--lightBlueColor)/20" />
 
-        {/* Género */}
-        <div className="space-y-1.5">
-          {sectionLabel("Género")}
-          <div className="flex flex-wrap gap-1.5">
-            {GENDER_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => setFilterGender(filterGender === opt.value ? null : opt.value)}
-                className={pillClass(filterGender === opt.value)}
-              >
-                {opt.label}
-              </button>
-            ))}
-            <button
-              onClick={() => setFilterGender(null)}
-              className={pillClass(filterGender === null)}
-            >
-              Todos
-            </button>
-          </div>
-        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {/* Género */}
+          <div className="space-y-1.5">
+            {sectionLabel("Género")}
+            <div className="flex flex-col space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {GENDER_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setFilterGender(filterGender === opt.value ? null : opt.value)}
+                    className={pillClass(filterGender === opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="">
+                <button
+                  onClick={() => setFilterGender(null)}
+                  className={pillClass(filterGender === null)}
+                >
+                  Todos
+                </button>
+              </div>
 
-        {/* Edad */}
-        <div className="space-y-1.5">
-          {sectionLabel("Edad")}
-          <div className="flex gap-1.5 mb-1">
-            <button
-              onClick={() => setFilterAgeMode("range")}
-              className={pillClass(filterAgeMode === "range")}
-            >
-              Rango
-            </button>
-            <button
-              onClick={() => setFilterAgeMode("exact")}
-              className={pillClass(filterAgeMode === "exact")}
-            >
-              Exacta
-            </button>
-          </div>
-          {filterAgeMode === "range" ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                min={0}
-                max={99}
-                placeholder="Min"
-                value={filterAgeMin ?? ""}
-                onChange={(e) => setFilterAgeMin(e.target.value ? Number(e.target.value) : null)}
-                className="w-full px-3 py-1.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
-              />
-              <span className="text-(--lightBlueColor) text-sm">a</span>
-              <input
-                type="number"
-                min={0}
-                max={99}
-                placeholder="Max"
-                value={filterAgeMax ?? ""}
-                onChange={(e) => setFilterAgeMax(e.target.value ? Number(e.target.value) : null)}
-                className="w-full px-3 py-1.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
-              />
             </div>
-          ) : (
-            <input
-              type="number"
-              min={0}
-              max={99}
-              placeholder="Edad exacta"
-              value={filterAgeExact ?? ""}
-              onChange={(e) => setFilterAgeExact(e.target.value ? Number(e.target.value) : null)}
-              className="w-full px-3 py-1.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
-            />
-          )}
+          </div>
+
+          {/* Edad */}
+          <div className="space-y-1.5">
+            {sectionLabel("Edad")}
+            <div className="flex gap-1.5 mb-1">
+              <button
+                onClick={() => setFilterAgeMode("range")}
+                className={pillClass(filterAgeMode === "range")}
+              >
+                Rango
+              </button>
+              <button
+                onClick={() => setFilterAgeMode("exact")}
+                className={pillClass(filterAgeMode === "exact")}
+              >
+                Exacta
+              </button>
+            </div>
+            {filterAgeMode === "range" ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  placeholder="Min"
+                  value={filterAgeMin ?? ""}
+                  onChange={(e) => setFilterAgeMin(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full px-3 py-1.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
+                />
+                <span className="text-(--lightBlueColor) text-sm">a</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={99}
+                  placeholder="Max"
+                  value={filterAgeMax ?? ""}
+                  onChange={(e) => setFilterAgeMax(e.target.value ? Number(e.target.value) : null)}
+                  className="w-full px-3 py-1.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
+                />
+              </div>
+            ) : (
+              <input
+                type="number"
+                min={0}
+                max={99}
+                placeholder="Edad exacta"
+                value={filterAgeExact ?? ""}
+                onChange={(e) => setFilterAgeExact(e.target.value ? Number(e.target.value) : null)}
+                className="w-full px-3 py-1.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
+              />
+            )}
+          </div>
         </div>
 
         {/* Limpiar */}

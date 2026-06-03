@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
+import TabsComponent from "@/components/tabs/TabsComponent";
 import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "../Students/views/StudentsListView";
@@ -8,35 +9,46 @@ import AcademicMonitoringHeader from "./views/AcademicMonitoringHeader";
 import { EnrollmentForm } from "./form/EnrollmentForm";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import StudentsNoResults from "../Students/views/StudentNoResultsView";
+import SchoolYearPanel from "./views/SchoolYearPanel";
+import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 import type { IStudent } from "@/services/users/user.interface";
 
+type ActiveTab = "estudiantes" | "school-year";
+
+const tabs = [
+    { value: "estudiantes" as const, label: "Estudiantes" },
+    { value: "school-year" as const, label: "Año Escolar" },
+];
+
 export default function AcademicMonitoring() {
+    const [activeTab, setActiveTab] = useState<ActiveTab>("estudiantes");
+
     const {
-      screen, searchTerm, mode, selectedStudent, step, setStep, closeForm,
-      filterView, filterLevelId, filterSection, filterGender,
-      filterAgeMode, filterAgeMin, filterAgeMax, filterAgeExact,
+        screen, searchTerm, mode, selectedStudent, step, setStep, closeForm,
+        filterView, filterLevelId, filterSection, filterGender,
+        filterAgeMode, filterAgeMin, filterAgeMax, filterAgeExact,
     } = useStudentsStore();
 
     const { data: students = [], isLoading } = useStudents({
-      view: filterView,
-      levelId: filterLevelId ?? undefined,
-      section: filterSection ?? undefined,
-      gender: filterGender ?? undefined,
-      ageMin: filterAgeMode === "range" ? (filterAgeMin ?? undefined) : undefined,
-      ageMax: filterAgeMode === "range" ? (filterAgeMax ?? undefined) : undefined,
-      ageExact: filterAgeMode === "exact" ? (filterAgeExact ?? undefined) : undefined,
+        view: filterView,
+        levelId: filterLevelId ?? undefined,
+        section: filterSection ?? undefined,
+        gender: filterGender ?? undefined,
+        ageMin: filterAgeMode === "range" ? (filterAgeMin ?? undefined) : undefined,
+        ageMax: filterAgeMode === "range" ? (filterAgeMax ?? undefined) : undefined,
+        ageExact: filterAgeMode === "exact" ? (filterAgeExact ?? undefined) : undefined,
     });
 
     const filteredStudents = useMemo(() => {
-      if (!searchTerm.trim()) return students;
-      const term = searchTerm.toLowerCase();
-      return (students as IStudent[]).filter((s) => {
-        const fn = s.person?.firstNames?.toLowerCase() ?? "";
-        const ln = s.person?.lastNames?.toLowerCase() ?? "";
-        const id = s.person?.identificationNumber?.toLowerCase() ?? "";
-        return fn.includes(term) || ln.includes(term) || id.includes(term);
-      });
+        if (!searchTerm.trim()) return students;
+        const term = searchTerm.toLowerCase();
+        return (students as IStudent[]).filter((s) => {
+            const fn = s.person?.firstNames?.toLowerCase() ?? "";
+            const ln = s.person?.lastNames?.toLowerCase() ?? "";
+            const id = s.person?.identificationNumber?.toLowerCase() ?? "";
+            return fn.includes(term) || ln.includes(term) || id.includes(term);
+        });
     }, [students, searchTerm]);
 
     const [currentPage, setCurrentPage] = useState(1);
@@ -91,65 +103,80 @@ export default function AcademicMonitoring() {
         };
     }, [mode, selectedStudent]);
 
-    const isFormOpen = screen === "form";
-    const isDetailOpen = screen === "detail";
+    const isFormOpen = activeTab === "estudiantes" && screen === "form";
+    const isDetailOpen = activeTab === "estudiantes" && screen === "detail";
 
     return (
-        <div className="w-full h-full">
-            <PageTransitionComponent
-                primaryChildren={
-                    <div className="space-y-6">
-                        <AcademicMonitoringHeader />
-                        {isLoading ? (
-                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-                                Cargando estudiantes...
-                            </div>
-                        ) : paginatedStudents.length === 0 ? (
+        <div className="w-full h-full flex flex-col gap-4">
+            <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+
+            {activeTab === "estudiantes" ? (
+                <div className="flex-1 min-h-0">
+                    <PageTransitionComponent
+                        primaryChildren={
                             <>
-                                {filteredStudents.length === 0 && !searchTerm ? (
-                                    <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
-                                ) : (
-                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-                                        No se encontraron estudiantes
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <AcademicMonitoringHeader />
                                     </div>
+                                    <PdfExportButton students={filteredStudents} />
+                                </div>
+                                {isLoading ? (
+                                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+                                        Cargando estudiantes...
+                                    </div>
+                                ) : paginatedStudents.length === 0 ? (
+                                    <>
+                                        {filteredStudents.length === 0 && !searchTerm ? (
+                                            <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
+                                        ) : (
+                                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
+                                                No se encontraron estudiantes
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <>
+                                        <StudentListView filteredStudents={paginatedStudents} />
+                                        <PaginationComponent
+                                            currentPage={currentPage}
+                                            totalPages={totalPages}
+                                            totalItems={filteredStudents.length}
+                                            itemsPerPage={itemsPerPage}
+                                            onPageChange={setCurrentPage}
+                                        />
+                                    </>
                                 )}
                             </>
-                        ) : (
-                            <>
-                                <StudentListView filteredStudents={paginatedStudents} />
-                                <PaginationComponent
-                                    currentPage={currentPage}
-                                    totalPages={totalPages}
-                                    totalItems={filteredStudents.length}
-                                    itemsPerPage={itemsPerPage}
-                                    onPageChange={setCurrentPage}
+                        }
+
+                        secondaryChildren={
+                            isDetailOpen ? (
+                                <div className="h-full overflow-y-auto">
+                                    <StudentDetailView />
+                                </div>
+                            ) : isFormOpen ? (
+                                <EnrollmentForm
+                                    open={isFormOpen}
+                                    onClose={closeForm}
+                                    mode={mode}
+                                    selectedStudent={selectedStudent ?? undefined}
+                                    initialData={initialData}
+                                    step={step}
+                                    setStep={setStep}
+                                    totalSteps={formSteps}
                                 />
-                            </>
-                        )}
-                    </div>
-                }
+                            ) : null
+                        }
 
-                secondaryChildren={
-                    isDetailOpen ? (
-                        <div className="h-full overflow-y-auto">
-                            <StudentDetailView />
-                        </div>
-                    ) : isFormOpen ? (
-                        <EnrollmentForm
-                            open={isFormOpen}
-                            onClose={closeForm}
-                            mode={mode}
-                            selectedStudent={selectedStudent ?? undefined}
-                            initialData={initialData}
-                            step={step}
-                            setStep={setStep}
-                            totalSteps={formSteps}
-                        />
-                    ) : null
-                }
-
-                toggle={isDetailOpen || isFormOpen}
-            />
+                        toggle={isDetailOpen || isFormOpen}
+                    />
+                </div>
+            ) : (
+                <div className="flex-1 min-h-0">
+                    <SchoolYearPanel />
+                </div>
+            )}
         </div>
     );
 }

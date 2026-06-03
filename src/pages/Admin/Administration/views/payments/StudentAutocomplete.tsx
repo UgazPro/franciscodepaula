@@ -5,7 +5,7 @@ import { Search } from "lucide-react";
 import type { PaymentFormValues } from "./payments.schema";
 
 export default function StudentAutocomplete() {
-  const { data: students = [] } = useStudents();
+  const { data: students = [] } = useStudents({ view: "pending" });
   const { setValue, formState } = useFormContext<PaymentFormValues>();
 
   const [query, setQuery] = useState("");
