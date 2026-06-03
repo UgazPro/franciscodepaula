@@ -15,8 +15,10 @@ import StepperComponent from "@/components/stepper/StepperComponent";
 import { useEnrollmentMutation, useUpdateEnrollment } from "@/queries/useEnrollmentMutations";
 import { useUpdateStudent, useUpdateRepresentative } from "@/queries/useUserMutations";
 import { useSchoolYears, useLevels, useSections } from "@/hooks/useSchoolYears";
+import { useCountries, useStates, useMunicipalities, useParishes } from "@/hooks/useLocations";
 import { checkIdentification } from "@/services/users/user.service";
 import type { IStudent } from "@/services/users/user.interface";
+import AutocompleteField from "@/components/locationAutocomplete/AutocompleteField";
 
 interface EnrollmentFormProps {
   open: boolean;
@@ -87,6 +89,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
   const schoolYearId = watch("schoolYearId");
   const levelId = watch("levelId");
+  const birthCountry = watch("birthCountry");
+  const state = watch("state");
+  const municipality = watch("municipality");
   const isLevelDisabled = !schoolYearId;
   const isSectionDisabled = !schoolYearId || !levelId;
 
@@ -130,6 +135,22 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     return step4ByName;
   }, [filteredSections]);
 
+  const { data: countries = [] } = useCountries();
+  const venezuela = countries.find((c: any) => c.name === "Venezuela");
+  const { data: states = [] } = useStates(venezuela?.id);
+  const zuliaState = states.find((s: any) => s.name === "Zulia");
+  const { data: municipalities = [] } = useMunicipalities(zuliaState?.id);
+
+  const selectedMunicipalityObj = municipalities.find(
+    (m: any) => m.name === municipality,
+  );
+  const { data: parishes = [] } = useParishes(selectedMunicipalityObj?.id);
+
+  const countryOptions = countries.map((c: any) => ({ label: c.name, value: c.name }));
+  const stateOptions = states.map((s: any) => ({ label: s.name, value: s.name }));
+  const municipalityOptions = municipalities.map((m: any) => ({ label: m.name, value: m.name }));
+  const parishOptions = parishes.map((p: any) => ({ label: p.name, value: p.name }));
+
   useEffect(() => {
     form.clearErrors();
   }, [step]);
@@ -137,6 +158,33 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   useEffect(() => {
     form.setValue("sectionId", undefined as any);
   }, [schoolYearId, levelId]);
+
+  useEffect(() => {
+    if (!isEditMode && !initialData?.birthCountry) {
+      form.setValue("birthCountry", "Venezuela");
+    }
+  }, []);
+
+  useEffect(() => {
+    const subscription = form.watch((values, { name }) => {
+      if (name === "birthCountry" && values.birthCountry !== "Venezuela") {
+        form.setValue("state", "");
+        form.setValue("municipality", "");
+        form.setValue("parish", "");
+        form.setValue("currentParish", "");
+      }
+      if (name === "state" && values.state !== "Zulia") {
+        form.setValue("municipality", "");
+        form.setValue("parish", "");
+        form.setValue("currentParish", "");
+      }
+      if (name === "municipality") {
+        form.setValue("parish", "");
+        form.setValue("currentParish", "");
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   const validateStep = async () => {
     let fieldsToValidate: (keyof EnrollmentFormValues)[] = [];
@@ -330,6 +378,64 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const f2 = step2ByName;
   const f3 = step3ByName;
 
+  const locationFieldRenderer = (field: any) => {
+    const isVenezuela = birthCountry === "Venezuela";
+
+    switch (field.name) {
+      case "birthCountry":
+        return (
+          <AutocompleteField
+            name="birthCountry"
+            label="País de Nacimiento"
+            options={countryOptions}
+            placeholder="Escriba para buscar..."
+          />
+        );
+      case "state":
+        return (
+          <AutocompleteField
+            name="state"
+            label="Estado de Nacimiento"
+            options={stateOptions}
+            placeholder={isVenezuela ? "Escriba para buscar..." : "Escriba un estado"}
+            disabled={!birthCountry}
+          />
+        );
+      case "municipality":
+        return (
+          <AutocompleteField
+            name="municipality"
+            label="Municipio"
+            options={municipalityOptions}
+            placeholder={isVenezuela ? "Escriba para buscar..." : "Escriba un municipio"}
+            disabled={!state}
+          />
+        );
+      case "parish":
+        return (
+          <AutocompleteField
+            name="parish"
+            label="Parroquia de Nacimiento"
+            options={parishOptions}
+            placeholder="Escriba una parroquia"
+            disabled={!municipality}
+          />
+        );
+      case "currentParish":
+        return (
+          <AutocompleteField
+            name="currentParish"
+            label="Parroquia donde Vive"
+            options={parishOptions}
+            placeholder="Escriba una parroquia"
+            disabled={!municipality}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   const isPending = isEditMode ? false : enrollmentMutation.isPending;
 
   const isLastStep = isEditMode ? step === totalSteps : step === totalSteps;
@@ -409,11 +515,11 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
             {/* ==================== PASO 2: DATOS GENERALES ==================== */}
             {step === 2 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FieldRenderer field={f2.birthCountry} />
-                <FieldRenderer field={f2.state} />
-                <FieldRenderer field={f2.municipality} />
-                <FieldRenderer field={f2.parish} />
-                <FieldRenderer field={f2.currentParish} />
+                <FieldRenderer field={f2.birthCountry} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={f2.state} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={f2.municipality} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={f2.parish} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={f2.currentParish} customFieldRenderer={locationFieldRenderer} />
                 <FieldRenderer field={f2.previousSchool} />
                 <FieldRenderer field={f2.admissionDate} />
                 <div className="md:col-span-2">
