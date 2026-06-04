@@ -45,14 +45,14 @@ export const useEnrollmentMutation = () => {
 
   return useMutation({
     mutationFn: async (formData: any) => {
-      // 1. Crear estudiante (status: true = activo este año escolar)
-      const studentPayload = {
-        profilePhoto: formData.profilePhoto || "",
+      const payload: any = {
+        // Student
         firstNames: formData.firstNames,
         lastNames: formData.lastNames,
         identificationNumber: formData.identificationNumber,
         birthDate: formData.birthDate,
         gender: formData.gender,
+        profilePhoto: formData.profilePhoto || "",
         birthCountry: formData.birthCountry,
         state: formData.state,
         municipality: formData.municipality,
@@ -60,52 +60,32 @@ export const useEnrollmentMutation = () => {
         currentParish: formData.currentParish,
         previousSchool: formData.previousSchool || "",
         address: formData.address,
-        status: true,
         admissionDate: formData.admissionDate || new Date(),
-      };
 
-      const student = await postDataApi("/users/students", studentPayload);
+        // Representative mode
+        representativeMode: formData.representativeMode || "create",
 
-      if (!student || !student.id) {
-        throw new Error("Error al crear el estudiante");
-      }
-
-      // 2. Crear representante (password = cédula del estudiante, backend la hashea)
-      const representativePayload = {
-        firstNames: formData.representativeFirstNames,
-        lastNames: formData.representativeLastNames,
-        identificationNumber: formData.representativeIdentification,
-        birthDate: formData.representativeBirthDate,
-        gender: formData.representativeGender,
-        email: formData.representativeEmail,
-        phone: formData.representativePhone,
-        relationship: formData.representativeRelation,
-        occupation: formData.representativeProfession || "",
-        studentIdentification: formData.identificationNumber,
-      };
-
-      const representative = await postDataApi("/users/representatives", representativePayload);
-
-      if (!representative || !representative.id) {
-        throw new Error("Error al crear el representante");
-      }
-
-      // 3. Vincular estudiante ↔ representante
-      await postDataApi("/enrollment/representatives", {
-        studentId: student.id,
-        representativeId: representative.id,
-      });
-
-      // 4. Asignar sección (año escolar, nivel, sección, fecha)
-      await postDataApi("/enrollment", {
-        studentId: student.id,
+        // Enrollment
         schoolYearId: formData.schoolYearId,
         sectionId: formData.sectionId,
         enrollmentDate: formData.enrollmentDate || new Date(),
-        status: true,
-      });
+      };
 
-      return { student, representative };
+      if (payload.representativeMode === "create") {
+        payload.representativeFirstNames = formData.representativeFirstNames;
+        payload.representativeLastNames = formData.representativeLastNames;
+        payload.representativeIdentification = formData.representativeIdentification;
+        payload.representativeBirthDate = formData.representativeBirthDate;
+        payload.representativeGender = formData.representativeGender;
+        payload.representativeEmail = formData.representativeEmail;
+        payload.representativePhone = formData.representativePhone;
+        payload.representativeRelation = formData.representativeRelation;
+        payload.representativeProfession = formData.representativeProfession || "";
+      } else {
+        payload.existingRepresentativeId = formData.existingRepresentative?.id;
+      }
+
+      return await postDataApi("/enrollment/full", payload);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });

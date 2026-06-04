@@ -6,7 +6,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useStudentsStore } from "@/stores/students.store";
-import { useSchoolYears, useLevels, useSections } from "@/hooks/useSchoolYears";
+import { useActiveSchoolYear, useLevels, useSections } from "@/hooks/useSchoolYears";
 
 const VIEW_OPTIONS = [
   { value: "active", label: "Activos" },
@@ -43,14 +43,9 @@ export default function FilterDropdown() {
     clearFilters,
   } = useStudentsStore();
 
-  const { data: schoolYears = [] } = useSchoolYears();
+  const { data: activeSchoolYear } = useActiveSchoolYear();
   const { data: levels = [] } = useLevels();
   const { data: allSections = [] } = useSections();
-
-  const activeSchoolYear = useMemo(
-    () => (schoolYears as any[]).find((sy: any) => sy.isActive),
-    [schoolYears],
-  );
 
   const sections = useMemo(() => {
     if (!activeSchoolYear) return [];

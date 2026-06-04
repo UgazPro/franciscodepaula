@@ -24,11 +24,27 @@ export interface StudentEnrollment {
     schoolYearId: number;
     sectionId: number;
     enrollmentDate: string | null;
+    status: boolean | null;
     section: {
         id: number;
         section: string;
         highSchoolLevel: { id: number; level: string };
     };
+}
+
+export interface IRepresentative {
+    id: number;
+    relationship: string | null;
+    occupation: string | null;
+    email: string;
+    phone: string | null;
+    person: {
+        id: number;
+        firstNames: string;
+        lastNames: string;
+        identificationNumber: string;
+    };
+    studentCount: number;
 }
 
 export interface StudentRepresentative {

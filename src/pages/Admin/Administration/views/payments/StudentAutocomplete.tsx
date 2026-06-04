@@ -3,15 +3,30 @@ import { useFormContext } from "react-hook-form";
 import { useStudents } from "@/hooks/useUsers";
 import { Search } from "lucide-react";
 import type { PaymentFormValues } from "./payments.schema";
+import type { IStudent } from "@/services/users/user.interface";
 
-export default function StudentAutocomplete() {
-  const { data: students = [] } = useStudents({ view: "pending" });
-  const { setValue, formState } = useFormContext<PaymentFormValues>();
+interface StudentAutocompleteProps {
+  onSelect?: (student: IStudent) => void;
+}
+
+export default function StudentAutocomplete({ onSelect }: StudentAutocompleteProps) {
+  const { data: students = [] } = useStudents({ view: "all" });
+  const { setValue, formState, watch } = useFormContext<PaymentFormValues>();
+  const studentId = watch("studentId");
 
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [selectedLabel, setSelectedLabel] = useState("");
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // Clear internal display state when form resets
+  useEffect(() => {
+    if (!studentId) {
+      setQuery("");
+      setSelectedLabel("");
+      setIsOpen(false);
+    }
+  }, [studentId]);
 
   const filtered = students
     .filter((s: any) => {
@@ -28,9 +43,10 @@ export default function StudentAutocomplete() {
       setSelectedLabel(label);
       setQuery(label);
       setValue("studentId", student.id, { shouldValidate: true });
+      onSelect?.(student);
       setIsOpen(false);
     },
-    [setValue],
+    [setValue, onSelect],
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -26,13 +26,8 @@ export const getImagesApi = async (url: string) => {
 };
 
 export const postDataApi = async (url: string, data: any) => {
-    try {
-        return await api.post(url, data).then((res) => {
-            return res.data;
-        });
-    } catch (error) {
-        console.log(error);
-    }
+    const res = await api.post(url, data);
+    return res.data;
 };
 
 export const putDataApi = async (endpoint: string, data: any) => {

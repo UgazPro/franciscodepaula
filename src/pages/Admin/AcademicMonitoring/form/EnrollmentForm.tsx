@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { ChevronLeft, ChevronRight, Check, Camera, X, ArrowLeft } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Camera, X, ArrowLeft, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { enrollmentSchema, type EnrollmentFormValues } from "./enrollment/enrollment.schema";
 import { step1ByName } from "./enrollment/steps/step1Fields.data";
@@ -14,10 +14,10 @@ import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import StepperComponent from "@/components/stepper/StepperComponent";
 import { useEnrollmentMutation, useUpdateEnrollment } from "@/queries/useEnrollmentMutations";
 import { useUpdateStudent, useUpdateRepresentative } from "@/queries/useUserMutations";
-import { useSchoolYears, useLevels, useSections } from "@/hooks/useSchoolYears";
+import { useLevels, useSections, useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import { useCountries, useStates, useMunicipalities, useParishes } from "@/hooks/useLocations";
-import { checkIdentification } from "@/services/users/user.service";
-import type { IStudent } from "@/services/users/user.interface";
+import { checkIdentification, searchRepresentatives } from "@/services/users/user.service";
+import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 import AutocompleteField from "@/components/locationAutocomplete/AutocompleteField";
 
 interface EnrollmentFormProps {
@@ -44,7 +44,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const { mutateAsync: updateStudent } = useUpdateStudent();
   const { mutateAsync: updateRepresentative } = useUpdateRepresentative();
   const { mutateAsync: updateEnrollment } = useUpdateEnrollment();
-  const { data: schoolYears = [] } = useSchoolYears();
+  const { data: activeSchoolYear } = useActiveSchoolYear();
   const { data: levels = [] } = useLevels();
   const { data: sections = [] } = useSections();
 
@@ -65,6 +65,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       address: "",
       previousSchool: "",
       admissionDate: new Date(),
+      representativeMode: "create" as const,
       representativeFirstNames: "",
       representativeLastNames: "",
       representativeIdentification: "",
@@ -74,6 +75,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       representativePhone: "",
       representativeRelation: "",
       representativeProfession: "",
+      existingRepresentative: undefined,
       schoolYearId: undefined as any,
       levelId: undefined as any,
       sectionId: undefined as any,
@@ -92,19 +94,19 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const birthCountry = watch("birthCountry");
   const state = watch("state");
   const municipality = watch("municipality");
+  const representativeMode = watch("representativeMode");
   const isLevelDisabled = !schoolYearId;
   const isSectionDisabled = !schoolYearId || !levelId;
 
   const schoolYearField = useMemo(() => {
     const field = step4ByName.schoolYearId;
     if (field.type === "select") {
-      field.options = (schoolYears ?? []).map((sy: any) => ({
-        label: sy.name,
-        value: sy.id,
-      }));
+      field.options = activeSchoolYear
+        ? [{ label: activeSchoolYear.name, value: activeSchoolYear.id }]
+        : [];
     }
     return step4ByName;
-  }, [schoolYears]);
+  }, [activeSchoolYear]);
 
   const levelField = useMemo(() => {
     const field = step4ByName.levelId;
@@ -151,9 +153,75 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const municipalityOptions = municipalities.map((m: any) => ({ label: m.name, value: m.name }));
   const parishOptions = parishes.map((p: any) => ({ label: p.name, value: p.name }));
 
+  // ── Representative search state ──
+  const [repSearchQuery, setRepSearchQuery] = useState("");
+  const [repSearchResults, setRepSearchResults] = useState<IRepresentative[]>([]);
+  const [repSearchOpen, setRepSearchOpen] = useState(false);
+  const [repHighlightIdx, setRepHighlightIdx] = useState(-1);
+  const repSearchRef = useRef<HTMLDivElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const fetchReps = useCallback(async (query: string) => {
+    try {
+      const results = await searchRepresentatives(query || undefined);
+      setRepSearchResults(results ?? []);
+      setRepSearchOpen(true);
+      setRepHighlightIdx(-1);
+    } catch {
+      setRepSearchResults([]);
+    }
+  }, []);
+
+  const handleRepSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const q = e.target.value;
+    setRepSearchQuery(q);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchReps(q), 300);
+  };
+
+  const selectRepresentative = (rep: IRepresentative) => {
+    setValue("existingRepresentative", rep as any);
+    setRepSearchQuery(`${rep.person.firstNames} ${rep.person.lastNames} - ${rep.person.identificationNumber}`);
+    setRepSearchOpen(false);
+    setRepSearchResults([]);
+  };
+
+  const handleRepKeyDown = (e: React.KeyboardEvent) => {
+    if (!repSearchOpen || repSearchResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setRepHighlightIdx((prev) => (prev < repSearchResults.length - 1 ? prev + 1 : 0));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setRepHighlightIdx((prev) => (prev > 0 ? prev - 1 : repSearchResults.length - 1));
+    } else if (e.key === "Enter" && repHighlightIdx >= 0) {
+      e.preventDefault();
+      selectRepresentative(repSearchResults[repHighlightIdx]);
+    } else if (e.key === "Escape") {
+      setRepSearchOpen(false);
+    }
+  };
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (repSearchRef.current && !repSearchRef.current.contains(e.target as Node)) {
+        setRepSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
   useEffect(() => {
     form.clearErrors();
   }, [step]);
+
+  useEffect(() => {
+    if (activeSchoolYear && !initialData?.schoolYearId) {
+      form.setValue("schoolYearId", activeSchoolYear.id);
+    }
+  }, [activeSchoolYear, initialData?.schoolYearId]);
 
   useEffect(() => {
     form.setValue("sectionId", undefined as any);
@@ -194,11 +262,17 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     } else if (step === 2) {
       fieldsToValidate = ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
     } else if (step === 3) {
-      fieldsToValidate = [
-        "representativeFirstNames", "representativeLastNames", "representativeIdentification",
-        "representativeBirthDate", "representativeGender", "representativeEmail",
-        "representativePhone", "representativeRelation",
-      ];
+      fieldsToValidate = ["representativeMode"] as any;
+      if (representativeMode === "create") {
+        fieldsToValidate = [
+          "representativeMode",
+          "representativeFirstNames", "representativeLastNames", "representativeIdentification",
+          "representativeBirthDate", "representativeGender", "representativeEmail",
+          "representativePhone", "representativeRelation",
+        ] as any;
+      } else {
+        fieldsToValidate = ["representativeMode", "existingRepresentative"] as any;
+      }
     } else if (step === 4) {
       fieldsToValidate = ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
     }
@@ -221,7 +295,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           return;
         }
       }
-      if (step === 3) {
+      if (step === 3 && representativeMode === "create") {
         const repPersonId =
           selectedStudent?.representatives?.[0]?.representative?.user?.person?.id;
         const { exists } = await checkIdentification(
@@ -331,8 +405,12 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
       onClose();
       resetForm();
-    } catch (error) {
-      console.error("Error al actualizar:", error);
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error al actualizar";
+      alert(message);
     }
   };
 
@@ -341,8 +419,12 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       await enrollmentMutation.mutateAsync(data);
       onClose();
       resetForm();
-    } catch (error) {
-      console.error("Error al guardar:", error);
+    } catch (error: any) {
+      const message =
+        error?.response?.data?.message ||
+        error?.message ||
+        "Error al guardar";
+      alert(message);
     }
   };
 
@@ -354,6 +436,8 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     form.reset();
     setStep(1);
     setStudentPhotoPreview(null);
+    setRepSearchQuery("");
+    setRepSearchResults([]);
   };
 
   const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -375,7 +459,6 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   };
 
   const f1 = step1ByName;
-  const f2 = step2ByName;
   const f3 = step3ByName;
 
   const locationFieldRenderer = (field: any) => {
@@ -430,6 +513,92 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
             placeholder="Escriba una parroquia"
             disabled={!municipality}
           />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const step3FieldRenderer = (field: any) => {
+    switch (field.name) {
+      case "representativeMode":
+        return (
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-(--darkBlueColor)">¿El representante ya existe?</label>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setValue("representativeMode", "create"); setValue("existingRepresentative", undefined as any); setRepSearchQuery(""); }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer ${
+                  representativeMode === "create"
+                    ? "bg-(--blueColor) text-white shadow-sm"
+                    : "border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor)"
+                }`}
+              >
+                Nuevo Representante
+              </button>
+              <button
+                type="button"
+                onClick={() => { setValue("representativeMode", "existing"); }}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer ${
+                  representativeMode === "existing"
+                    ? "bg-(--blueColor) text-white shadow-sm"
+                    : "border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor)"
+                }`}
+              >
+                Ya existe
+              </button>
+            </div>
+            {form.formState.errors.representativeMode && (
+              <p className="text-sm text-red-500">{form.formState.errors.representativeMode.message}</p>
+            )}
+          </div>
+        );
+      case "existingRepresentative":
+        if (representativeMode !== "existing") return null;
+        return (
+          <div ref={repSearchRef} className="space-y-2 relative">
+            <label className="text-sm font-medium text-(--darkBlueColor)">Buscar representante por nombre o cédula</label>
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-(--lightBlueColor)" />
+              <input
+                type="text"
+                value={repSearchQuery}
+                onChange={handleRepSearchChange}
+                onKeyDown={handleRepKeyDown}
+                onFocus={() => { if (repSearchResults.length > 0) setRepSearchOpen(true); }}
+                placeholder="Escriba para buscar..."
+                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
+              />
+            </div>
+            {repSearchOpen && repSearchResults.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-(--lightBlueColor)/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                {repSearchResults.map((rep, i) => (
+                  <button
+                    type="button"
+                    key={rep.id}
+                    onMouseDown={() => selectRepresentative(rep)}
+                    className={`w-full text-left px-4 py-3 text-sm transition cursor-pointer ${
+                      i === repHighlightIdx
+                        ? "bg-(--blueColor)/10 text-(--darkBlueColor)"
+                        : "hover:bg-(--grayColor) text-(--darkBlueColor)"
+                    }`}
+                  >
+                    <div className="font-medium">{rep.person.firstNames} {rep.person.lastNames}</div>
+                    <div className="text-xs text-(--lightBlueColor) flex gap-3 mt-0.5">
+                      <span>{rep.person.identificationNumber}</span>
+                      <span>{rep.relationship}</span>
+                      <span>{rep.studentCount} estudiante(s)</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+            {/* Hidden field error */}
+            {form.formState.errors.existingRepresentative && (
+              <p className="text-sm text-red-500">{form.formState.errors.existingRepresentative.message as string}</p>
+            )}
+          </div>
         );
       default:
         return null;
@@ -515,31 +684,41 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
             {/* ==================== PASO 2: DATOS GENERALES ==================== */}
             {step === 2 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FieldRenderer field={f2.birthCountry} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={f2.state} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={f2.municipality} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={f2.parish} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={f2.currentParish} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={f2.previousSchool} />
-                <FieldRenderer field={f2.admissionDate} />
+                <FieldRenderer field={step2ByName.birthCountry} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={step2ByName.state} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={step2ByName.municipality} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={step2ByName.parish} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={step2ByName.currentParish} customFieldRenderer={locationFieldRenderer} />
+                <FieldRenderer field={step2ByName.previousSchool} />
+                <FieldRenderer field={step2ByName.admissionDate} />
                 <div className="md:col-span-2">
-                  <FieldRenderer field={f2.address} />
+                  <FieldRenderer field={step2ByName.address} />
                 </div>
               </div>
             )}
 
             {/* ==================== PASO 3: DATOS DEL REPRESENTANTE ==================== */}
             {step === 3 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FieldRenderer field={f3.representativeFirstNames} />
-                <FieldRenderer field={f3.representativeLastNames} />
-                <FieldRenderer field={f3.representativeIdentification} />
-                <FieldRenderer field={f3.representativeBirthDate} />
-                <FieldRenderer field={f3.representativeGender} />
-                <FieldRenderer field={f3.representativeEmail} />
-                <FieldRenderer field={f3.representativePhone} />
-                <FieldRenderer field={f3.representativeRelation} />
-                <FieldRenderer field={f3.representativeProfession} />
+              <div className="space-y-5">
+                <FieldRenderer field={f3.representativeMode} customFieldRenderer={step3FieldRenderer} />
+
+                {representativeMode === "existing" && (
+                  <FieldRenderer field={f3.existingRepresentative} customFieldRenderer={step3FieldRenderer} />
+                )}
+
+                {representativeMode !== "existing" && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <FieldRenderer field={f3.representativeFirstNames} />
+                    <FieldRenderer field={f3.representativeLastNames} />
+                    <FieldRenderer field={f3.representativeIdentification} />
+                    <FieldRenderer field={f3.representativeBirthDate} />
+                    <FieldRenderer field={f3.representativeGender} />
+                    <FieldRenderer field={f3.representativeEmail} />
+                    <FieldRenderer field={f3.representativePhone} />
+                    <FieldRenderer field={f3.representativeRelation} />
+                    <FieldRenderer field={f3.representativeProfession} />
+                  </div>
+                )}
               </div>
             )}
 

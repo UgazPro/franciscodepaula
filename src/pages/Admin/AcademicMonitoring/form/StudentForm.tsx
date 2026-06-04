@@ -17,7 +17,7 @@ export default function StudentsForm() {
 
     const user = useUserData();
 
-    const { selectedStudent, mode, finishForm } = useStudentsStore();
+    const { selectedStudent, mode, closeForm } = useStudentsStore();
 
     const { mutateAsync: createStudent } = useCreateStudent();
     const { mutateAsync: updateStudent } = useUpdateStudent();
@@ -137,7 +137,7 @@ export default function StudentsForm() {
 
         console.log(payload);
 
-        finishForm();
+        closeForm();
     };
 
     return (
@@ -180,7 +180,7 @@ export default function StudentsForm() {
                     <Button
                         type="button" variant="outline" 
                         className="border-(--lightBlueColor) text-(--darkBlueColor) hover:bg-(--grayColor) cursor-pointer"
-                        onClick={finishForm}
+                        onClick={closeForm}
                     >
                         Cancelar
                     </Button>

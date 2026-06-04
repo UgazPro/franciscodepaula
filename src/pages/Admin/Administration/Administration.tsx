@@ -3,6 +3,7 @@ import {
     X, Receipt, Trash2, Printer
 } from "lucide-react";
 import { useAdministrationStore } from "@/stores/administration.store";
+import { usePaymentsStore } from "@/stores/payments.store";
 import {
     personalData, estudiantesData, pagosData, becasData,
     getDiasHabiles, generarRegistrosHoras, getCurrentPeriod, getQuincenaDates
@@ -93,6 +94,13 @@ export default function Administracion() {
 
         generarNominas();
     }, [selectedPeriodo, personal]);
+
+    // Reset forms and tabs when navigating from sidebar (component re-mounts)
+    useEffect(() => {
+        usePaymentsStore.getState().setScreen("list");
+        usePaymentsStore.getState().setStep(1);
+        useAdministrationStore.getState().setActiveTab("dashboard");
+    }, []);
 
     const filteredData: any[] = useMemo(() => {
         if (activeTab === "nominas") {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import StudentAutocomplete from "./StudentAutocomplete";
 import { usePaymentMethods, useFees, useExchangeRate } from "@/hooks/usePayments";
 import { useCreatePayment, useCreateExchange } from "@/queries/usePaymentMutations";
 import { usePaymentsStore } from "@/stores/payments.store";
+import type { IStudent } from "@/services/users/user.interface";
 
 export default function PaymentForm() {
   const { data: paymentMethods = [] } = usePaymentMethods();
@@ -19,7 +20,8 @@ export default function PaymentForm() {
   const { data: latestExchange } = useExchangeRate();
   const { mutateAsync: createPayment, isPending } = useCreatePayment();
   const { mutateAsync: createExchange } = useCreateExchange();
-  const { step, setStep, setScreen } = usePaymentsStore();
+  const { screen, step, setStep, setScreen } = usePaymentsStore();
+  const [selectedStudent, setSelectedStudent] = useState<IStudent | null>(null);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -39,15 +41,37 @@ export default function PaymentForm() {
     shouldUnregister: false,
   });
 
-  const { trigger, watch, setValue } = form;
+  const { trigger, watch, setValue, reset } = form;
 
   const selectedFeeId = watch("feeId");
   const selectedCurrency = watch("currency");
   const watchedExchangeRate = watch("exchangeRate");
+  const selectedPaymentMethodId = watch("paymentMethodId");
 
   useEffect(() => {
     form.clearErrors();
   }, [step]);
+
+  // Reset form when opening for a new payment
+  useEffect(() => {
+    if (screen === "form") {
+      reset({
+        studentId: undefined as any,
+        feeId: undefined as any,
+        totalAmount: undefined as any,
+        currency: "VES",
+        paymentMethodId: undefined as any,
+        description: "",
+        paymentDate: new Date(),
+        payerName: "",
+        payerIdentification: "",
+        payerPhone: "",
+        reference: "",
+      });
+      setSelectedStudent(null);
+      setStep(1);
+    }
+  }, [screen, reset, setStep]);
 
   const selectedFee = useMemo(
     () => (fees ?? []).find((f: any) => f.id === selectedFeeId),
@@ -61,6 +85,11 @@ export default function PaymentForm() {
     }
   }, [selectedCurrency, selectedFeeId, latestExchange]);
 
+  // Reset fee when student changes
+  useEffect(() => {
+    setValue("feeId", undefined as any);
+  }, [selectedStudent]);
+
   // Auto-compute totalAmount whenever inputs change
   useEffect(() => {
     if (!selectedFee) return;
@@ -73,6 +102,22 @@ export default function PaymentForm() {
     }
   }, [selectedFee, selectedCurrency, watchedExchangeRate, latestExchange, setValue]);
 
+  const hasActiveEnrollment = useMemo(
+    () => selectedStudent?.enrollments?.some((e) => e.status === true) ?? false,
+    [selectedStudent],
+  );
+
+  const filteredFees = useMemo(
+    () =>
+      (fees ?? []).filter((f: any) => {
+        if (f.name === "Inscripción") {
+          return !hasActiveEnrollment && f.schoolYear?.isActive;
+        }
+        return true;
+      }),
+    [fees, hasActiveEnrollment],
+  );
+
   const f1 = useMemo(() => {
     const pmField = step1ByName.paymentMethodId;
     if (pmField.type === "select") {
@@ -83,13 +128,13 @@ export default function PaymentForm() {
     }
     const feeField = step1ByName.feeId;
     if (feeField.type === "select") {
-      feeField.options = (fees ?? []).map((f: any) => ({
+      feeField.options = filteredFees.map((f: any) => ({
         label: `${f.name}${f.schoolYear?.name ? ` (${f.schoolYear.name})` : ""}`,
         value: f.id,
       }));
     }
     return step1ByName;
-  }, [paymentMethods, fees]);
+  }, [paymentMethods, filteredFees]);
 
   const f2 = step2ByName;
 
@@ -106,7 +151,21 @@ export default function PaymentForm() {
     }
 
     const isValid = await trigger(fieldsToValidate);
-    if (isValid && step < 2) {
+    if (!isValid) return;
+
+    // Validate: cannot pay Inscripción if already enrolled
+    if (step === 1) {
+      const fee = (fees ?? []).find((f: any) => f.id === selectedFeeId);
+      if (fee?.name === "Inscripción" && hasActiveEnrollment) {
+        form.setError("feeId", {
+          type: "manual",
+          message: "Este estudiante ya está inscrito",
+        });
+        return;
+      }
+    }
+
+    if (step < 2) {
       setStep(step + 1);
     }
   };
@@ -180,7 +239,7 @@ export default function PaymentForm() {
                   <FieldRenderer
                     field={f1.studentSearch}
                     customFieldRenderer={(f) =>
-                      f.name === "studentSearch" ? <StudentAutocomplete /> : null
+                      f.name === "studentSearch" ? <StudentAutocomplete onSelect={setSelectedStudent} /> : null
                     }
                   />
                 </div>
@@ -225,7 +284,7 @@ export default function PaymentForm() {
                 <FieldRenderer field={f2.payerName} />
                 <FieldRenderer field={f2.payerIdentification} />
                 <FieldRenderer field={f2.payerPhone} />
-                <FieldRenderer field={f2.reference} />
+                {selectedPaymentMethodId !== 1 && <FieldRenderer field={f2.reference} />}
               </div>
             </>
           )}

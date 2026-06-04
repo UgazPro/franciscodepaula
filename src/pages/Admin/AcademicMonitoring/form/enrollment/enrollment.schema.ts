@@ -22,30 +22,87 @@ export const step2Schema = z.object({
   address: z.string().min(5, "La dirección es requerida"),
 });
 
-export const step3Schema = z.object({
-  representativeFirstNames: z
-    .string()
-    .min(2, "Los nombres del representante son requeridos"),
-  representativeLastNames: z
-    .string()
-    .min(2, "Los apellidos del representante son requeridos"),
-  representativeIdentification: z
-    .string()
-    .min(6, "La cédula del representante es requerida"),
-  representativeBirthDate: z.date().refine((date) => !isNaN(date.getTime()), {
-    message: "La fecha de nacimiento del representante es requerida",
-  }),
-  representativeGender: z
-    .string()
-    .min(1, "Seleccione el género del representante"),
-  representativeEmail: z.string().email("Email inválido"),
-  representativePhone: z
-    .string()
-    .min(10, "El teléfono del representante es requerido"),
-  representativeRelation: z
-    .string()
-    .min(2, "Indique la relación con el estudiante"),
+export const step3BaseSchema = z.object({
+  representativeMode: z.enum(["create", "existing"]),
+  representativeFirstNames: z.string().optional(),
+  representativeLastNames: z.string().optional(),
+  representativeIdentification: z.string().optional(),
+  representativeBirthDate: z.date().or(z.string()).optional(),
+  representativeGender: z.string().optional(),
+  representativeEmail: z.string().optional(),
+  representativePhone: z.string().optional(),
+  representativeRelation: z.string().optional(),
   representativeProfession: z.string().optional(),
+  existingRepresentative: z.any().optional(),
+});
+
+export const step3Schema = step3BaseSchema.superRefine((data, ctx) => {
+  if (data.representativeMode === "create") {
+    if (!data.representativeFirstNames || data.representativeFirstNames.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Los nombres del representante son requeridos",
+        path: ["representativeFirstNames"],
+      });
+    }
+    if (!data.representativeLastNames || data.representativeLastNames.length < 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Los apellidos del representante son requeridos",
+        path: ["representativeLastNames"],
+      });
+    }
+    if (!data.representativeIdentification || data.representativeIdentification.length < 6) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La cédula del representante es requerida",
+        path: ["representativeIdentification"],
+      });
+    }
+    if (!data.representativeBirthDate || isNaN(new Date(data.representativeBirthDate as any).getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "La fecha de nacimiento del representante es requerida",
+        path: ["representativeBirthDate"],
+      });
+    }
+    if (!data.representativeGender) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Seleccione el género del representante",
+        path: ["representativeGender"],
+      });
+    }
+    if (!data.representativeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.representativeEmail)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Email inválido",
+        path: ["representativeEmail"],
+      });
+    }
+    if (!data.representativePhone || data.representativePhone.length < 10) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "El teléfono del representante es requerido",
+        path: ["representativePhone"],
+      });
+    }
+    if (!data.representativeRelation) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Indique la relación con el estudiante",
+        path: ["representativeRelation"],
+      });
+    }
+  } else if (data.representativeMode === "existing") {
+    if (!data.existingRepresentative) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Seleccione un representante existente",
+        path: ["existingRepresentative"],
+      });
+    }
+  }
 });
 
 export const step4Schema = z.object({

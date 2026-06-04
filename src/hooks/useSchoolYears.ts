@@ -24,3 +24,11 @@ export const useSections = () => {
     staleTime: 1000 * 60 * 5,
   });
 };
+
+export const useActiveSchoolYear = () => {
+  return useQuery({
+    queryKey: ["active-school-year"],
+    queryFn: () => getDataApi("/school-year/active"),
+    staleTime: 1000 * 60 * 5,
+  });
+};

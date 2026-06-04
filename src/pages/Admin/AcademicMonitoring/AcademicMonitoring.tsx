@@ -58,6 +58,11 @@ export default function AcademicMonitoring() {
         setCurrentPage(1);
     }, [searchTerm, filterView, filterLevelId, filterSection, filterGender, filterAgeMin, filterAgeMax, filterAgeExact]);
 
+    // Reset form/detail when navigating from sidebar (component re-mounts)
+    useEffect(() => {
+        useStudentsStore.getState().closeForm();
+    }, []);
+
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = filteredStudents.slice(
         (currentPage - 1) * itemsPerPage,

@@ -23,6 +23,8 @@ const inputBaseArea =
 const labelStyle =
   "block text-sm font-medium text-(--darkBlueColor) mb-1";
 
+const selectStyle = "text-sm font-medium text-(--darkBlueColor) block";
+
 export function FieldRenderer<T extends FieldValues = FieldValues>({
   field,
   disabled,
@@ -70,7 +72,7 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
           placeholder={field.placeholder || "Seleccione..."}
           options={field.options || []}
           disabled={disabled}
-          labelStyle={labelStyle}
+          labelStyle={selectStyle}
         />
         {hasError && (
           <p className="text-red-500 text-xs mt-1">{errorMessage}</p>

@@ -9,6 +9,7 @@ export const useCreatePayment = () => {
       postDataApi("/payments", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payments"] });
+      qc.invalidateQueries({ queryKey: ["students"] });
     },
   });
 };

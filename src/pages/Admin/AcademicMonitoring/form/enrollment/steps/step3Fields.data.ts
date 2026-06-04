@@ -7,6 +7,12 @@ export const relations = [
 
 export const step3Fields: FormField[] = [
   {
+    name: "representativeMode",
+    label: "¿El representante ya existe?",
+    type: "other",
+  },
+  // Fields for "create" mode (hidden when mode is "existing")
+  {
     name: "representativeFirstNames",
     label: "Nombres",
     type: "text",
@@ -64,6 +70,12 @@ export const step3Fields: FormField[] = [
     label: "Profesión",
     type: "text",
     placeholder: "Ej: Ingeniero, Docente, Comerciante",
+  },
+  // Field for "existing" mode (shown when mode is "existing")
+  {
+    name: "existingRepresentative",
+    label: "Buscar representante",
+    type: "other",
   },
 ];
 

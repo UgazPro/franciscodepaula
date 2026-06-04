@@ -1,5 +1,5 @@
 import { getDataApi } from "../api";
-import type { IStudent, IStaff } from "./user.interface";
+import type { IStudent, IStaff, IRepresentative } from "./user.interface";
 
 const usersUrl = '/users';
 const studentsUrl = '/users/students';
@@ -38,6 +38,11 @@ export const checkIdentification = async (
     qs.set('excludePersonId', String(excludePersonId));
   }
   return await getDataApi(`${usersUrl}/check-identification?${qs.toString()}`);
+};
+
+export const searchRepresentatives = async (search?: string): Promise<IRepresentative[]> => {
+  const qs = search ? `?search=${encodeURIComponent(search)}` : '';
+  return await getDataApi(`${usersUrl}/representatives${qs}`);
 };
 
 
