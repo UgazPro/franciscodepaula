@@ -23,11 +23,11 @@ export default function PaymentsView() {
     if (!searchTerm.trim()) return payments as PaymentResponse[];
     const term = searchTerm.toLowerCase();
     return (payments as PaymentResponse[]).filter((p) => {
-      const ref = p.paymentReferences?.[0];
-      const person = ref?.studentFee?.student?.person;
+      const studentFee = p.studentFees?.[0];
+      const person = studentFee?.student?.person;
       const name =
         `${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`.toLowerCase();
-      const concept = ref?.studentFee?.fee?.name?.toLowerCase() ?? "";
+      const concept = studentFee?.fee?.name?.toLowerCase() ?? "";
       return name.includes(term) || concept.includes(term) || (p.reference?.toLowerCase() ?? "").includes(term);
     });
   }, [payments, searchTerm]);

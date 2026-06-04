@@ -46,7 +46,6 @@ export default function PaymentForm() {
   const selectedFeeId = watch("feeId");
   const selectedCurrency = watch("currency");
   const watchedExchangeRate = watch("exchangeRate");
-  const selectedPaymentMethodId = watch("paymentMethodId");
 
   useEffect(() => {
     form.clearErrors();
@@ -284,7 +283,7 @@ export default function PaymentForm() {
                 <FieldRenderer field={f2.payerName} />
                 <FieldRenderer field={f2.payerIdentification} />
                 <FieldRenderer field={f2.payerPhone} />
-                {selectedPaymentMethodId !== 1 && <FieldRenderer field={f2.reference} />}
+                <FieldRenderer field={f2.reference} />
               </div>
             </>
           )}

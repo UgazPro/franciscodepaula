@@ -13,7 +13,7 @@ export interface PaymentResponse {
   status: boolean;
   paymentMethod: PaymentMethod;
   exchange: Exchange | null;
-  paymentReferences: PaymentReferenceResponse[];
+  studentFees: StudentFeeResponse[];
 }
 
 export interface PaymentMethod {
@@ -40,18 +40,11 @@ export interface FeeResponse {
   };
 }
 
-export interface PaymentReferenceResponse {
-  id: number;
-  studentFeeId: number;
-  paymentId: number;
-  studentFee: StudentFeeResponse;
-  enrollments: PaymentEnrollmentResponse[];
-}
-
 export interface StudentFeeResponse {
   id: number;
   studentId: number;
   feeId: number;
+  paymentId: number;
   status: boolean | null;
   student: {
     id: number;
@@ -66,24 +59,6 @@ export interface StudentFeeResponse {
     };
   };
   fee: FeeResponse;
-}
-
-export interface PaymentEnrollmentResponse {
-  id: number;
-  studentId: number;
-  referenceId: number | null;
-  student: {
-    id: number;
-    personId: number;
-    status: boolean;
-    person: {
-      id: number;
-      firstNames: string;
-      lastNames: string;
-      identificationNumber: string;
-      profilePhoto: string | null;
-    };
-  };
 }
 
 export interface Exchange {

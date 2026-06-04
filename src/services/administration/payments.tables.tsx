@@ -11,8 +11,8 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
   {
     header: "Estudiante",
     render: (payment) => {
-      const ref = payment.paymentReferences?.[0];
-      const person = ref?.studentFee?.student?.person;
+      const studentFee = payment.studentFees?.[0];
+      const person = studentFee?.student?.person;
       return (
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
@@ -31,10 +31,10 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
   {
     header: "Concepto",
     render: (payment) => {
-      const ref = payment.paymentReferences?.[0];
+      const studentFee = payment.studentFees?.[0];
       return (
         <span className="text-gray-800">
-          {ref?.studentFee?.fee?.name ?? payment.description ?? "—"}
+          {studentFee?.fee?.name ?? payment.description ?? "—"}
         </span>
       );
     },
