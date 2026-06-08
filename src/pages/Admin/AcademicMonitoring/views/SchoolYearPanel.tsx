@@ -216,6 +216,10 @@ export default function SchoolYearPanel() {
     );
   };
 
+  const handleDeleteLevel = (id: number) => {
+    deleteLevel.mutate(id);
+  };
+
   const openCreateLevel = () => {
     setEditLevelData(null);
     setLevelDialogOpen(true);
@@ -224,10 +228,6 @@ export default function SchoolYearPanel() {
   const openEditLevel = (level: any) => {
     setEditLevelData({ id: level.id, level: level.level });
     setLevelDialogOpen(true);
-  };
-
-  const handleDeleteLevel = (id: number) => {
-    deleteLevel.mutate(id);
   };
 
   if (loadingYears) {

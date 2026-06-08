@@ -159,7 +159,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const [repSearchOpen, setRepSearchOpen] = useState(false);
   const [repHighlightIdx, setRepHighlightIdx] = useState(-1);
   const repSearchRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const fetchReps = useCallback(async (query: string) => {
     try {

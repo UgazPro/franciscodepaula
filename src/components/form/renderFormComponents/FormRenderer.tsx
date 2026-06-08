@@ -5,12 +5,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { SelectComponentForm } from "./SelectComponent";
 import { CalendarFieldComponent } from "./CalendarFieldComponent";
 
-export function FormRenderer({
-    field,
-    form,
-}: any) {
+interface FormRendererProps {
+    field: any;
+    form: any;
+}
 
-const inputStyle = `
+export function FormRenderer({ field, form, }: FormRendererProps) {
+
+    const inputStyle = `
 w-full
 px-4
 py-2

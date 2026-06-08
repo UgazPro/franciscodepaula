@@ -24,14 +24,14 @@ export const step2Schema = z.object({
 
 export const step3BaseSchema = z.object({
   representativeMode: z.enum(["create", "existing"]),
-  representativeFirstNames: z.string().optional(),
-  representativeLastNames: z.string().optional(),
-  representativeIdentification: z.string().optional(),
+  representativeFirstNames: z.string().min(2, "Los nombres del representante son requeridos"),
+  representativeLastNames: z.string().min(2, "Los nombres del representante son requeridos"),
+  representativeIdentification: z.string().min(6, "La cédula del representante es requerida"),
   representativeBirthDate: z.date().or(z.string()).optional(),
   representativeGender: z.string().optional(),
-  representativeEmail: z.string().optional(),
+  representativeEmail: z.email("Email inválido").optional(),
   representativePhone: z.string().optional(),
-  representativeRelation: z.string().optional(),
+  representativeRelation: z.string().nonempty("Indique la relación con el estudiante"),
   representativeProfession: z.string().optional(),
   existingRepresentative: z.any().optional(),
 });
