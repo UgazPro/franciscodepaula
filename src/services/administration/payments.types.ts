@@ -34,6 +34,8 @@ export interface FeeResponse {
   schoolYearId: number;
   value: number;
   createdAt: string;
+  startAt: string;
+  endAt: string;
   schoolYear?: {
     id: number;
     name: string;

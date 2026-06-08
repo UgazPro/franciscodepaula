@@ -194,7 +194,8 @@ export default function PaymentForm() {
         payload.exchangeId = exchange.id;
       }
 
-      await createPayment({ data: payload });
+      const paymentRes = await createPayment({ data: payload });
+      if (paymentRes?.success === false) return;
       setStep(1);
       setScreen("list");
     } catch (error) {

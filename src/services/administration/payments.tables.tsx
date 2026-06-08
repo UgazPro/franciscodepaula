@@ -29,12 +29,12 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     },
   },
   {
-    header: "Concepto",
+    header: "Tipo de Pago",
     render: (payment) => {
       const studentFee = payment.studentFees?.[0];
       return (
         <span className="text-gray-800">
-          {studentFee?.fee?.name ?? payment.description ?? "—"}
+          {studentFee?.fee?.name ?? "—"}
         </span>
       );
     },

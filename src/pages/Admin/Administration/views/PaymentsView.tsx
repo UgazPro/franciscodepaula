@@ -1,4 +1,4 @@
-import { Plus, Search, Clock, CheckCircle, AlertCircle, Award } from "lucide-react";
+import { Plus, Search, Clock, CheckCircle, AlertCircle, Award, FileDown, Loader2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import SummaryCard from "../components/SummaryCard";
 import { TableComponent } from "@/components/table/TableComponent";
@@ -10,13 +10,17 @@ import { usePaymentsStore } from "@/stores/payments.store";
 import { paymentColumns } from "@/services/administration/payments.tables";
 import type { PaymentResponse } from "@/services/administration/payments.types";
 import PaymentForm from "./payments/PaymentForm";
+import PaymentsFilter from "./PaymentsFilter";
+import { generatePaymentsPdf } from "@/utils/pdfGenerator";
 
 export default function PaymentsView() {
-  const { data: payments = [], isLoading } = usePayments();
+  const { filters } = usePaymentsStore();
+  const { data: payments = [], isLoading } = usePayments(filters);
   const { mutateAsync: deletePayment } = useDeletePayment();
   const { screen, searchTerm, setSearchTerm, setScreen, step, setStep } = usePaymentsStore();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pdfLoading, setPdfLoading] = useState(false);
   const itemsPerPage = 6;
 
   const filteredData = useMemo(() => {
@@ -27,8 +31,9 @@ export default function PaymentsView() {
       const person = studentFee?.student?.person;
       const name =
         `${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`.toLowerCase();
+      const ci = (person?.identificationNumber ?? "").toLowerCase();
       const concept = studentFee?.fee?.name?.toLowerCase() ?? "";
-      return name.includes(term) || concept.includes(term) || (p.reference?.toLowerCase() ?? "").includes(term);
+      return name.includes(term) || ci.includes(term) || concept.includes(term) || (p.reference?.toLowerCase() ?? "").includes(term);
     });
   }, [payments, searchTerm]);
 
@@ -67,13 +72,38 @@ export default function PaymentsView() {
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
                 />
               </div>
-              <button
-                onClick={() => setScreen("form")}
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
-              >
-                <Plus size={18} />
-                Registrar Pago
-              </button>
+              <div className="flex items-center gap-2">
+                <PaymentsFilter />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    setPdfLoading(true);
+                    try {
+                      await generatePaymentsPdf(filteredData as any);
+                    } catch (error) {
+                      console.error("Error generating PDF:", error);
+                    } finally {
+                      setPdfLoading(false);
+                    }
+                  }}
+                  disabled={pdfLoading || filteredData.length === 0}
+                  className="flex items-center gap-2 px-4 py-2.5 border border-(--blueColor)/30 text-(--blueColor) rounded-xl hover:bg-(--blueColor)/5 hover:border-(--blueColor)/50 transition shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {pdfLoading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <FileDown size={18} />
+                  )}
+                  {pdfLoading ? "Generando..." : "PDF"}
+                </button>
+                <button
+                  onClick={() => setScreen("form")}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
+                >
+                  <Plus size={18} />
+                  Registrar Pago
+                </button>
+              </div>
             </div>
           </div>
 

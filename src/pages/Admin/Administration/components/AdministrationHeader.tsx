@@ -21,7 +21,7 @@ export default function AdministrationHeader({ activeTab, setActiveTab, tasaDola
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <TabsComponent tabs={tabItems} activeTab={activeTab} onChange={setActiveTab} />
 
-            <div className="bg-gradient-to-r from-blue-900 to-blue-800 rounded-xl p-4 shadow-lg">
+            <div className="bg-linear-to-r from-blue-900 to-blue-800 rounded-xl p-4 shadow-lg">
                 <div className="flex items-center gap-4">
                     <div className="bg-white/20 p-3 rounded-xl">
                         <DollarSign size={28} className="text-green-400" />

@@ -2,6 +2,7 @@ import jsPDF from "jspdf";
 import { applyPlugin } from "jspdf-autotable";
 import type { HookData } from "jspdf-autotable";
 import type { IStudent } from "@/services/users/user.interface";
+import type { PaymentResponse } from "@/services/administration/payments.types";
 
 applyPlugin(jsPDF);
 
@@ -133,4 +134,110 @@ export async function generateStudentPdf(students: IStudent[]): Promise<void> {
   });
 
   doc.save(`estudiantes_${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+export async function generatePaymentsPdf(payments: PaymentResponse[]): Promise<void> {
+  const doc = new jsPDF("landscape", "mm", "letter");
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  const logoData = await loadLogo();
+
+  doc.addImage(logoData, "PNG", 14, 10, 28, 28);
+
+  doc.setFontSize(18);
+  doc.setFont("helvetica", "bold");
+  doc.text("Registro de Pagos", 48, 22);
+
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "normal");
+  doc.text(
+    `Generado: ${new Date().toLocaleDateString("es-ES", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    })}`,
+    48,
+    30,
+  );
+
+  doc.setFontSize(9);
+  doc.text(`Total de pagos: ${payments.length}`, 48, 36);
+
+  const tableRows = payments.map((p) => {
+    const studentFee = p.studentFees?.[0];
+    const person = studentFee?.student?.person;
+    const studentName = person
+      ? `${person.firstNames} ${person.lastNames}`
+      : "—";
+    const ci = person?.identificationNumber ?? "—";
+    const feeName = studentFee?.fee?.name ?? "—";
+    const currencySymbol = p.currency === "VES" ? "Bs." : "$";
+    const amount = `${currencySymbol} ${Number(p.totalAmount).toFixed(2)}`;
+    const method = p.paymentMethod?.type ?? "—";
+    const date = p.paymentDate
+      ? new Date(p.paymentDate).toLocaleDateString("es-ES", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        })
+      : "—";
+    const reference = p.reference ?? "—";
+    const status = p.status ? "Pagado" : "Anulado";
+
+    return [studentName, ci, feeName, amount, method, date, reference, status];
+  });
+
+  doc.autoTable({
+    head: [
+      [
+        "Estudiante",
+        "Identificación",
+        "Tipo de Pago",
+        "Monto",
+        "Método de Pago",
+        "Fecha",
+        "Referencia",
+        "Estado",
+      ],
+    ],
+    body: tableRows,
+    startY: 44,
+    styles: {
+      fontSize: 8,
+      cellPadding: 2.5,
+    },
+    headStyles: {
+      fillColor: [12, 18, 143],
+      textColor: [255, 255, 255],
+      fontStyle: "bold",
+      fontSize: 8.5,
+    },
+    alternateRowStyles: {
+      fillColor: [245, 247, 250],
+    },
+    columnStyles: {
+      0: { cellWidth: 55 },
+      1: { cellWidth: 28 },
+      2: { cellWidth: 30 },
+      3: { cellWidth: 28 },
+      4: { cellWidth: 30 },
+      5: { cellWidth: 28 },
+      6: { cellWidth: 30 },
+      7: { cellWidth: 20 },
+    },
+    margin: { left: 14, right: 14 },
+    didDrawPage: (data: HookData) => {
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(128, 128, 128);
+      doc.text(
+        `Página ${data.pageNumber}`,
+        pageWidth - 20,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: "center" },
+      );
+    },
+  });
+
+  doc.save(`pagos_${new Date().toISOString().slice(0, 10)}.pdf`);
 }
