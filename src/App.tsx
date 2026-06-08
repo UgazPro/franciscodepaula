@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router';
+import { Toaster } from 'react-hot-toast';
 import './App.css';
 import Home from './pages/Home/Home';
 import Login from './pages/Login/Login';
@@ -10,12 +11,17 @@ import Teachers from './pages/Admin/Teachers/Teachers';
 import Administration from './pages/Admin/Administration/Administration';
 import AppLayout from './layouts/App/AppLayout';
 import ProtectedRoute from './ProtectedRoute';
+import { useAxiosInterceptor } from './services/interceptor';
 
 function App() {
+  
+  useAxiosInterceptor();
 
   return (
 
     <>
+
+      <Toaster />
 
       <BrowserRouter>
 

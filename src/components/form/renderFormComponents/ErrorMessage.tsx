@@ -1,6 +1,9 @@
+interface ErrorMessageProps {
+    children: React.ReactNode;
+    form?: any;
+}
 
-
-export default function ErrorMessage({children, form} : {children: React.ReactNode, form?: any}) {
+export default function ErrorMessage({children, form}: ErrorMessageProps) {
 
     return (
 
