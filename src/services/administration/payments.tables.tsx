@@ -29,6 +29,15 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     },
   },
   {
+    header: "Pagado por",
+    render: (payment) => (
+      <div>
+        <p className="font-medium text-gray-800">{payment.payerName ?? "—"}</p>
+        <p className="text-xs text-gray-400">{payment.payerIdentification ?? ""}</p>
+      </div>
+    ),
+  },
+  {
     header: "Tipo de Pago",
     render: (payment) => {
       const studentFee = payment.studentFees?.[0];

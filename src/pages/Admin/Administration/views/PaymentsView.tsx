@@ -1,10 +1,10 @@
-import { Plus, Search, Clock, CheckCircle, AlertCircle, Award, FileDown, Loader2 } from "lucide-react";
+import { Plus, Search, Award, FileDown, Loader2, DollarSign, TrendingUp } from "lucide-react";
 import { useMemo, useState } from "react";
 import SummaryCard from "../components/SummaryCard";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
-import { usePayments } from "@/hooks/usePayments";
+import { usePayments, useExchangeRate } from "@/hooks/usePayments";
 import { useDeletePayment } from "@/queries/usePaymentMutations";
 import { usePaymentsStore } from "@/stores/payments.store";
 import { paymentColumns } from "@/services/administration/payments.tables";
@@ -18,6 +18,9 @@ export default function PaymentsView() {
   const { data: payments = [], isLoading } = usePayments(filters);
   const { mutateAsync: deletePayment } = useDeletePayment();
   const { screen, searchTerm, setSearchTerm, setScreen, step, setStep } = usePaymentsStore();
+
+  const { data: latestExchange } = useExchangeRate();
+  const exchangeRate = latestExchange?.rate ? Number(latestExchange.rate) : 0;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pdfLoading, setPdfLoading] = useState(false);
@@ -33,7 +36,10 @@ export default function PaymentsView() {
         `${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`.toLowerCase();
       const ci = (person?.identificationNumber ?? "").toLowerCase();
       const concept = studentFee?.fee?.name?.toLowerCase() ?? "";
-      return name.includes(term) || ci.includes(term) || concept.includes(term) || (p.reference?.toLowerCase() ?? "").includes(term);
+      const payerName = (p.payerName ?? "").toLowerCase();
+      const payerCi = (p.payerIdentification ?? "").toLowerCase();
+      const ref = (p.reference ?? "").toLowerCase();
+      return name.includes(term) || ci.includes(term) || concept.includes(term) || ref.includes(term) || payerName.includes(term) || payerCi.includes(term);
     });
   }, [payments, searchTerm]);
 
@@ -44,12 +50,26 @@ export default function PaymentsView() {
   );
 
   const totales = useMemo(() => {
-    const allPayments = payments as PaymentResponse[];
-    const pagado = allPayments.filter((p) => p.status).reduce((s, p) => s + Number(p.totalAmount), 0);
-    const pendiente = 0;
-    const vencido = 0;
-    return { totalPagado: pagado, totalPendiente: pendiente, totalVencido: vencido };
-  }, [payments]);
+    const data = filteredData as PaymentResponse[];
+
+    let totalUSD = 0;
+    let totalVES = 0;
+
+    for (const p of data) {
+      const amount = Number(p.totalAmount);
+      if (p.currency === "USD") {
+        totalUSD += amount;
+      } else {
+        totalVES += amount;
+      }
+    }
+
+    const totalCombinedUSD = exchangeRate > 0
+      ? totalUSD + (totalVES / exchangeRate)
+      : totalUSD;
+
+    return { totalUSD, totalVES, totalCombinedUSD, count: data.length };
+  }, [filteredData, exchangeRate]);
 
   const columns = paymentColumns({ onDelete: (id) => deletePayment(id) });
 
@@ -108,10 +128,10 @@ export default function PaymentsView() {
           </div>
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <SummaryCard title="Pendiente" value={`Bs. ${totales.totalPendiente.toFixed(2)}`} icon={Clock} color="yellow" />
-            <SummaryCard title="Pagado" value={`Bs. ${totales.totalPagado.toFixed(2)}`} icon={CheckCircle} color="green" />
-            <SummaryCard title="Vencido" value={`Bs. ${totales.totalVencido.toFixed(2)}`} icon={AlertCircle} color="red" />
-            <SummaryCard title="Ahorro por Becas" value="Bs. 0.00" icon={Award} color="blue" />
+            <SummaryCard title="Total en USD" value={`$ ${totales.totalUSD.toFixed(2)}`} icon={DollarSign} color="blue" />
+            <SummaryCard title="Total en VES" value={`Bs. ${totales.totalVES.toFixed(2)}`} icon={TrendingUp} color="green" />
+            <SummaryCard title="Total Combinado" value={`$ ${totales.totalCombinedUSD.toFixed(2)}`} icon={Award} color="green" />
+            <SummaryCard title="Pagos Registrados" value={String(totales.count)} icon={FileDown} color="blue" />
           </div>
 
           {isLoading ? (

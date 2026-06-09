@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
     X, Receipt, Trash2, Printer
 } from "lucide-react";
@@ -16,6 +16,7 @@ import DashboardView from "./views/DashboardView";
 import NominasView from "./views/PayrollView";
 import PaymentsView from "./views/PaymentsView";
 import BecasView from "./views/ScholarshipsView";
+import { useExchangeRate } from "@/hooks/usePayments";
 
 export default function Administracion() {
     const { activeTab, setActiveTab } = useAdministrationStore();
@@ -39,12 +40,32 @@ export default function Administracion() {
     const [becas] = useState<Beca[]>(becasData);
     const [estudiantes] = useState<Estudiante[]>(estudiantesData);
 
-    const [tasaDolar, setTasaDolar] = useState<TasaDolar>({
-        valor: 42.15,
-        fecha: new Date().toISOString().split('T')[0],
-        fuente: "BCV",
-        variacion: 2.3
-    });
+    const { data: latestExchange, refetch: refetchExchange } = useExchangeRate();
+    const prevValorRef = useRef(0);
+
+    const tasaDolar = useMemo((): TasaDolar => {
+        if (!latestExchange) {
+            return { valor: 0, fecha: "-", fuente: "-", variacion: 0 };
+        }
+        const currentValor = Number(latestExchange.rate);
+        const prevValor = prevValorRef.current;
+
+        return {
+            valor: currentValor,
+            fecha: new Date(latestExchange.date).toLocaleDateString("es-ES"),
+            fuente: "BCV",
+            variacion:
+                prevValor > 0
+                    ? parseFloat((((currentValor - prevValor) / prevValor) * 100).toFixed(1))
+                    : 0,
+        };
+    }, [latestExchange]);
+
+    useEffect(() => {
+        if (latestExchange) {
+            prevValorRef.current = Number(latestExchange.rate);
+        }
+    }, [latestExchange]);
 
     useEffect(() => {
         const generarNominas = () => {
@@ -148,16 +169,6 @@ export default function Administracion() {
         return { totalPendiente, totalPagado, totalVencido, totalConBecas };
     };
 
-    const actualizarTasaDolar = () => {
-        const nuevaTasa = 42.15 + (Math.random() * 2 - 1);
-        setTasaDolar({
-            valor: parseFloat(nuevaTasa.toFixed(2)),
-            fecha: new Date().toISOString().split('T')[0],
-            fuente: "BCV",
-            variacion: parseFloat((Math.random() * 5 - 2.5).toFixed(1))
-        });
-    };
-
     const handleVerDetalleHoras = (personalId: number, quincena: 1 | 2) => {
         const person = personal.find(p => p.id === personalId);
         const nomina = nominas.find(n => n.personalId === personalId && n.quincena === quincena);
@@ -189,7 +200,7 @@ export default function Administracion() {
                 activeTab={activeTab}
                 setActiveTab={setActiveTab}
                 tasaDolar={tasaDolar}
-                actualizarTasaDolar={actualizarTasaDolar}
+                actualizarTasaDolar={refetchExchange}
             />
 
             {activeTab === "dashboard" && (
