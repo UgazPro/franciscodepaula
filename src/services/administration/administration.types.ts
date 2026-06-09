@@ -100,4 +100,4 @@ export interface TasaDolar {
     variacion: number;
 }
 
-export type AdminTab = "dashboard" | "nominas" | "pagos" | "becas";
+export type AdminTab = "dashboard" | "nominas" | "pagos" | "becas" | "estudiantes";

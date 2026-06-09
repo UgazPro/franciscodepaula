@@ -14,6 +14,8 @@ export interface PaymentFilters {
   studentSearch: string;
   representativeSearch: string;
   morosos: boolean;
+  studentId?: number;
+  schoolYearId?: number;
 }
 
 interface PaymentsStore {

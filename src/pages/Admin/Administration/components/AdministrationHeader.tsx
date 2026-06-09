@@ -1,4 +1,4 @@
-import { DollarSign, TrendingUp, TrendingDown, Home, Briefcase, CreditCard, Award, RefreshCw } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Home, Briefcase, CreditCard, Award, Users, RefreshCw } from "lucide-react";
 import type { TasaDolar, AdminTab } from "@/services/administration/administration.types";
 import TabsComponent, { type TabItem } from "@/components/tabs/TabsComponent";
 
@@ -12,6 +12,7 @@ interface Props {
 export default function AdministrationHeader({ activeTab, setActiveTab, tasaDolar, actualizarTasaDolar }: Props) {
     const tabItems: TabItem<AdminTab>[] = [
         { value: "dashboard", label: "Dashboard", icon: <Home size={18} /> },
+        { value: "estudiantes", label: "Estudiantes", icon: <Users size={18} /> },
         { value: "nominas", label: "Nóminas", icon: <Briefcase size={18} /> },
         { value: "pagos", label: "Pagos", icon: <CreditCard size={18} /> },
         { value: "becas", label: "Becas", icon: <Award size={18} /> },

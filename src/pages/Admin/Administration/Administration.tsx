@@ -15,6 +15,7 @@ import AdministrationHeader from "./components/AdministrationHeader";
 import DashboardView from "./views/DashboardView";
 import NominasView from "./views/PayrollView";
 import PaymentsView from "./views/PaymentsView";
+import StudentsView from "./views/StudentsView";
 import BecasView from "./views/ScholarshipsView";
 import { useExchangeRate } from "@/hooks/usePayments";
 
@@ -238,6 +239,8 @@ export default function Administracion() {
             )}
 
             {activeTab === "pagos" && <PaymentsView />}
+
+            {activeTab === "estudiantes" && <StudentsView />}
 
             {activeTab === "becas" && (
                 <BecasView

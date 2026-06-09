@@ -17,6 +17,8 @@ export const usePayments = (filters?: PaymentFilters) => {
   if (filters?.studentSearch) params.set("studentSearch", filters.studentSearch);
   if (filters?.representativeSearch) params.set("representativeSearch", filters.representativeSearch);
   if (filters?.morosos) params.set("morosos", "true");
+  if (filters?.studentId) params.set("studentId", String(filters.studentId));
+  if (filters?.schoolYearId) params.set("schoolYearId", String(filters.schoolYearId));
 
   const qs = params.toString();
 
