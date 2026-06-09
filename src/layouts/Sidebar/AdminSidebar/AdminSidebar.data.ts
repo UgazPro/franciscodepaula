@@ -9,8 +9,7 @@ import {
   UserCircle,
   GraduationCap,
   School,
-  ClipboardList,
-  IdCardLanyard
+  ClipboardList
 } from "lucide-react";
 
 export interface SidebarContent {
@@ -25,6 +24,12 @@ export const sidebarData: SidebarContent[] = [
     name: "Dashboard",
     icon: LayoutDashboard,
     redirectTo: "/admin",
+    active: false,
+  },
+  {
+    name: "Gestión Escolar",
+    icon: School,
+    redirectTo: "/admin/gestion-escolar",
     active: false,
   },
   {
