@@ -275,76 +275,97 @@ export default function SchoolYearPanel() {
           ) : (
             <>
               <div className="flex flex-wrap gap-2">
-                {schoolYears.map((year: any) => {
-                  const isSelected = selectedYearId === year.id;
-                  const isActive = year.isActive;
+                  {schoolYears.map((year: any) => {
+                    const isSelected = selectedYearId === year.id;
+                    const isActive = year.isActive;
 
-                  return (
-                    <div key={year.id} className="flex items-stretch">
-                      <button
-                        type="button"
-                        onClick={() => setSelectedYearId(year.id)}
-                        className={`
-                          flex items-center gap-2 rounded-l-lg border border-r-0 px-4 py-2.5 text-sm font-medium
-                          transition-all duration-200 cursor-pointer
-                          ${
-                            isSelected
-                              ? "bg-white text-(--darkBlueColor) border-(--greenColor) shadow-sm"
-                              : "bg-transparent text-(--lightBlueColor) border-gray-200 hover:bg-white hover:text-(--blueColor) hover:border-(--blueColor)"
-                          }
-                        `}
-                      >
-                        {isActive && (
-                          <span className="size-2 rounded-full bg-(--greenColor)" />
-                        )}
-                        {year.name}
-                        <span className="ml-1 text-xs opacity-50">
-                          ({year._count?.sections ?? 0})
-                        </span>
-                      </button>
+                    if (isActive) {
+                      return (
+                        <div key={year.id} className="flex items-stretch">
+                          <span
+                            onClick={() => setSelectedYearId(year.id)}
+                            className={`
+                              flex items-center gap-2 rounded-lg border-2 px-4 py-2.5 text-sm font-medium
+                              transition-all duration-200 cursor-pointer select-none
+                              ${isSelected
+                                ? "bg-(--greenColor)/10 text-(--greenColor) border-(--greenColor) shadow-sm"
+                                : "bg-(--greenColor)/5 text-(--greenColor) border-(--greenColor)/40 hover:bg-(--greenColor)/10 hover:border-(--greenColor)"
+                              }
+                            `}
+                          >
+                            <span className="size-2 rounded-full bg-(--greenColor)" />
+                            {year.name}
+                            <span className="ml-1 text-xs opacity-50">
+                              ({year._count?.sections ?? 0})
+                            </span>
+                          </span>
+                        </div>
+                      );
+                    }
 
-                      <button
-                        type="button"
-                        title={isActive ? "Desactivar" : "Activar"}
-                        onClick={() => handleToggleActive(year.id)}
-                        disabled={toggleActive.isPending}
-                        className={`
-                          flex items-center justify-center border px-2.5 text-xs
-                          transition-all duration-200 cursor-pointer
-                          ${
-                            isSelected
-                              ? "bg-white text-(--greenColor) border-(--greenColor)"
-                              : "bg-transparent text-(--lightBlueColor) border-gray-200 hover:bg-white hover:text-(--greenColor)"
-                          }
-                          ${toggleActive.isPending ? "opacity-50 pointer-events-none" : ""}
-                        `}
-                      >
-                        {isActive ? (
-                          <Power className="size-3.5" />
-                        ) : (
-                          <PowerOff className="size-3.5" />
-                        )}
-                      </button>
+                    return (
+                      <div key={year.id} className="flex items-stretch">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedYearId(year.id)}
+                          className={`
+                            flex items-center gap-2 rounded-l-lg border border-r-0 px-4 py-2.5 text-sm font-medium
+                            transition-all duration-200 cursor-pointer
+                            ${
+                              isSelected
+                                ? "bg-white text-(--darkBlueColor) border-(--greenColor) shadow-sm"
+                                : "bg-transparent text-(--lightBlueColor) border-gray-200 hover:bg-white hover:text-(--blueColor) hover:border-(--blueColor)"
+                            }
+                          `}
+                        >
+                          {year.name}
+                          <span className="ml-1 text-xs opacity-50">
+                            ({year._count?.sections ?? 0})
+                          </span>
+                        </button>
 
-                      <button
-                        type="button"
-                        title="Editar"
-                        onClick={() => openEditYear(year)}
-                        className={`
-                          flex items-center justify-center rounded-r-lg border px-2.5 text-xs
-                          transition-all duration-200 cursor-pointer
-                          ${
-                            isSelected
-                              ? "bg-white text-(--blueColor) border-(--greenColor)"
-                              : "bg-transparent text-(--lightBlueColor) border-gray-200 hover:bg-white hover:text-(--blueColor)"
-                          }
-                        `}
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                    </div>
-                  );
-                })}
+                        <button
+                          type="button"
+                          title={isActive ? "Desactivar" : "Activar"}
+                          onClick={() => handleToggleActive(year.id)}
+                          disabled={toggleActive.isPending}
+                          className={`
+                            flex items-center justify-center border px-2.5 text-xs
+                            transition-all duration-200 cursor-pointer
+                            ${
+                              isSelected
+                                ? "bg-white text-(--greenColor) border-(--greenColor)"
+                                : "bg-transparent text-(--lightBlueColor) border-gray-200 hover:bg-white hover:text-(--greenColor)"
+                            }
+                            ${toggleActive.isPending ? "opacity-50 pointer-events-none" : ""}
+                          `}
+                        >
+                          {isActive ? (
+                            <Power className="size-3.5" />
+                          ) : (
+                            <PowerOff className="size-3.5" />
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          title="Editar"
+                          onClick={() => openEditYear(year)}
+                          className={`
+                            flex items-center justify-center rounded-r-lg border px-2.5 text-xs
+                            transition-all duration-200 cursor-pointer
+                            ${
+                              isSelected
+                                ? "bg-white text-(--blueColor) border-(--greenColor)"
+                                : "bg-transparent text-(--lightBlueColor) border-gray-200 hover:bg-white hover:text-(--blueColor)"
+                            }
+                          `}
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
 
               {levels.length > 0 && (

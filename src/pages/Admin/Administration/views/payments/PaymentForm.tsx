@@ -22,6 +22,7 @@ export default function PaymentForm() {
   const { mutateAsync: createExchange } = useCreateExchange();
   const { screen, step, setStep, setScreen } = usePaymentsStore();
   const [selectedStudent, setSelectedStudent] = useState<IStudent | null>(null);
+  const [resetKey, setResetKey] = useState(0);
 
   const form = useForm<PaymentFormValues>({
     resolver: zodResolver(paymentSchema),
@@ -54,6 +55,7 @@ export default function PaymentForm() {
   // Reset form when opening for a new payment
   useEffect(() => {
     if (screen === "form") {
+      setResetKey(prev => prev + 1);
       reset({
         studentId: undefined as any,
         feeId: undefined as any,
@@ -196,6 +198,9 @@ export default function PaymentForm() {
 
       const paymentRes = await createPayment({ data: payload });
       if (paymentRes?.success === false) return;
+      setResetKey(prev => prev + 1);
+      reset();
+      setSelectedStudent(null);
       setStep(1);
       setScreen("list");
     } catch (error) {
@@ -204,6 +209,9 @@ export default function PaymentForm() {
   };
 
   const handleBack = () => {
+    setResetKey(prev => prev + 1);
+    reset();
+    setSelectedStudent(null);
     setStep(1);
     setScreen("list");
   };
@@ -222,113 +230,113 @@ export default function PaymentForm() {
       </div>
 
       <Form {...form}>
-      <form>
-        <div className="space-y-6">
-          {/* ==================== PASO 1: DATOS DEL PAGO ==================== */}
-          {step === 1 && (
-            <>
-              <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
-                <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
-                  <CreditCard size={20} className="text-(--darkBlueColor)" />
-                </div>
-                <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos del Pago</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <div className="md:col-span-2">
-                  <FieldRenderer
-                    field={f1.studentSearch}
-                    customFieldRenderer={(f) =>
-                      f.name === "studentSearch" ? <StudentAutocomplete onSelect={setSelectedStudent} /> : null
-                    }
-                  />
-                </div>
-                <FieldRenderer field={f1.feeId} />
-                <FieldRenderer field={f1.totalAmount} disabled />
-                <FieldRenderer field={f1.currency} />
-                <FieldRenderer field={f1.paymentDate} />
-                {selectedCurrency === "VES" && (
-                  <div className="md:col-span-2">
-                    <div className="bg-(--lightBlueColor)/5 border border-(--lightBlueColor)/20 rounded-lg p-3 flex items-center gap-3">
-                      <span className="text-sm font-medium text-(--darkBlueColor)">Tasa del Día:</span>
-                      <span className="text-sm text-gray-500">1 USD =</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        {...form.register("exchangeRate", { valueAsNumber: true })}
-                        className="w-28 px-3 h-9 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) text-sm"
-                      />
-                      <span className="text-sm text-gray-500">Bs.</span>
-                    </div>
+        <form>
+          <div className="space-y-6">
+            {/* ==================== PASO 1: DATOS DEL PAGO ==================== */}
+            {step === 1 && (
+              <>
+                <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
+                  <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
+                    <CreditCard size={20} className="text-(--darkBlueColor)" />
                   </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:col-span-2">
-                  <FieldRenderer field={f1.paymentMethodId} />
-                  <FieldRenderer field={f1.description} />
+                  <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos del Pago</h3>
                 </div>
-              </div>
-            </>
-          )}
 
-          {/* ==================== PASO 2: DATOS DEL PAGADOR ==================== */}
-          {step === 2 && (
-            <>
-              <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
-                <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
-                  <User size={20} className="text-(--darkBlueColor)" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="md:col-span-2">
+                    <FieldRenderer
+                      field={f1.studentSearch}
+                      customFieldRenderer={(f) =>
+                        f.name === "studentSearch" ? <StudentAutocomplete key={resetKey} onSelect={setSelectedStudent} /> : null
+                      }
+                    />
+                  </div>
+                  <FieldRenderer field={f1.feeId} />
+                  <FieldRenderer field={f1.totalAmount} disabled />
+                  <FieldRenderer field={f1.currency} />
+                  <FieldRenderer field={f1.paymentDate} />
+                  {selectedCurrency === "VES" && (
+                    <div className="md:col-span-2">
+                      <div className="bg-(--lightBlueColor)/5 border border-(--lightBlueColor)/20 rounded-lg p-3 flex items-center gap-3">
+                        <span className="text-sm font-medium text-(--darkBlueColor)">Tasa del Día:</span>
+                        <span className="text-sm text-gray-500">1 USD =</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          {...form.register("exchangeRate", { valueAsNumber: true })}
+                          className="w-28 px-3 h-9 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) text-sm"
+                        />
+                        <span className="text-sm text-gray-500">Bs.</span>
+                      </div>
+                    </div>
+                  )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:col-span-2">
+                    <FieldRenderer field={f1.paymentMethodId} />
+                    <FieldRenderer field={f1.description} />
+                  </div>
                 </div>
-                <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos del Pagador</h3>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FieldRenderer field={f2.payerName} />
-                <FieldRenderer field={f2.payerIdentification} />
-                <FieldRenderer field={f2.payerPhone} />
-                <FieldRenderer field={f2.reference} />
-              </div>
-            </>
-          )}
-
-          {/* ==================== BOTONES DE NAVEGACIÓN ==================== */}
-          <div className="flex justify-between pt-6 border-t border-(--lightBlueColor)/20">
-            {step > 1 ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setStep(step - 1)}
-                className="cursor-pointer border-(--lightBlueColor)/50 text-(--darkBlueColor) hover:bg-(--grayColor)"
-              >
-                <ChevronLeft size={16} className="mr-2" />
-                Anterior
-              </Button>
-            ) : (
-              <div />
+              </>
             )}
 
-            {step < 2 ? (
-              <Button
-                type="button"
-                onClick={validateStep}
-                className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer"
-              >
-                Siguiente
-                <ChevronRight size={16} className="ml-2" />
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                onClick={() => form.handleSubmit(onSubmit)()}
-                disabled={isPending}
-                className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-60"
-              >
-                {isPending ? "Guardando..." : "Finalizar"}
-                {!isPending && <Check size={16} className="ml-2" />}
-              </Button>
+            {/* ==================== PASO 2: DATOS DEL PAGADOR ==================== */}
+            {step === 2 && (
+              <>
+                <div className="flex items-center gap-2 pb-3 border-b border-(--lightBlueColor)/20">
+                  <div className="p-2 bg-(--lightBlueColor)/15 rounded-lg">
+                    <User size={20} className="text-(--darkBlueColor)" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-(--darkBlueColor)">Datos del Pagador</h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <FieldRenderer field={f2.payerName} />
+                  <FieldRenderer field={f2.payerIdentification} />
+                  <FieldRenderer field={f2.payerPhone} />
+                  <FieldRenderer field={f2.reference} />
+                </div>
+              </>
             )}
+
+            {/* ==================== BOTONES DE NAVEGACIÓN ==================== */}
+            <div className="flex justify-between pt-6 border-t border-(--lightBlueColor)/20">
+              {step > 1 ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setStep(step - 1)}
+                  className="cursor-pointer border-(--lightBlueColor)/50 text-(--darkBlueColor) hover:bg-(--grayColor)"
+                >
+                  <ChevronLeft size={16} className="mr-2" />
+                  Anterior
+                </Button>
+              ) : (
+                <div />
+              )}
+
+              {step < 2 ? (
+                <Button
+                  type="button"
+                  onClick={validateStep}
+                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer"
+                >
+                  Siguiente
+                  <ChevronRight size={16} className="ml-2" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  onClick={() => form.handleSubmit(onSubmit)()}
+                  disabled={isPending}
+                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-60"
+                >
+                  {isPending ? "Guardando..." : "Finalizar"}
+                  {!isPending && <Check size={16} className="ml-2" />}
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
     </div>
   );
 }

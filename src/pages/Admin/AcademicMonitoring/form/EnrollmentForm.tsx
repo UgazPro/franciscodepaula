@@ -19,6 +19,8 @@ import { useCountries, useStates, useMunicipalities, useParishes } from "@/hooks
 import { checkIdentification, searchRepresentatives } from "@/services/users/user.service";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 import AutocompleteField from "@/components/locationAutocomplete/AutocompleteField";
+import toast from "react-hot-toast";
+import { ToastMessage } from "@/components/toast/ToastMessage";
 
 interface EnrollmentFormProps {
   open: boolean;
@@ -40,6 +42,7 @@ const STEPS = [
 
 export function EnrollmentForm({ open, onClose, initialData, mode = "create", selectedStudent, step, setStep, totalSteps }: EnrollmentFormProps) {
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
+  const [completedStep, setCompletedStep] = useState(mode === "edit" ? totalSteps : 0);
   const enrollmentMutation = useEnrollmentMutation();
   const { mutateAsync: updateStudent } = useUpdateStudent();
   const { mutateAsync: updateRepresentative } = useUpdateRepresentative();
@@ -288,10 +291,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           selectedStudent?.personId,
         );
         if (exists) {
-          form.setError("identificationNumber", {
-            type: "manual",
-            message: "Esta cédula ya está registrada por otro estudiante o usuario",
-          });
+          toast.custom((t) => (
+            <ToastMessage success={false} message="Esta cédula ya está registrada por otro estudiante o usuario" visible={t.visible} />
+          ), { duration: 5000 });
           return;
         }
       }
@@ -303,16 +305,16 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           repPersonId,
         );
         if (exists) {
-          form.setError("representativeIdentification", {
-            type: "manual",
-            message: "Esta cédula ya está registrada por otro estudiante o usuario",
-          });
+          toast.custom((t) => (
+            <ToastMessage success={false} message="Esta cédula ya está registrada por otro estudiante o usuario" visible={t.visible} />
+          ), { duration: 5000 });
           return;
         }
       }
     }
 
     if (step < totalSteps) {
+        setCompletedStep(prev => Math.max(prev, step));
         setStep(step + 1);
       } else {
         await submitEdit();
@@ -372,7 +374,8 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     };
 
     try {
-      await updateStudent({ id: selectedStudent.id, data: studentPayload });
+      const studentResult = await updateStudent({ id: selectedStudent.id, data: studentPayload });
+      if (studentResult?.success === false) return;
 
       const repRelationship = selectedStudent.representatives?.[0];
       if (repRelationship) {
@@ -389,7 +392,8 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           relationship: formData.representativeRelation,
           occupation: formData.representativeProfession,
         };
-        await updateRepresentative({ id: repId, data: representativePayload });
+        const repResult = await updateRepresentative({ id: repId, data: representativePayload });
+        if (repResult?.success === false) return;
       }
 
       const enrollment = selectedStudent.enrollments?.[0];
@@ -398,19 +402,16 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           schoolYearId: formData.schoolYearId,
           sectionId: formData.sectionId,
           enrollmentDate: formData.enrollmentDate,
-          status: true,
+          status: enrollment.status,
         };
-        await updateEnrollment({ id: enrollment.id, data: enrollmentPayload });
+        const enrollmentResult = await updateEnrollment({ id: enrollment.id, data: enrollmentPayload });
+        if (enrollmentResult?.success === false) return;
       }
 
       onClose();
       resetForm();
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error al actualizar";
-      alert(message);
+      console.log(error);
     }
   };
 
@@ -420,11 +421,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       onClose();
       resetForm();
     } catch (error: any) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Error al guardar";
-      alert(message);
+      console.log(error);
     }
   };
 
@@ -435,6 +432,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const resetForm = () => {
     form.reset();
     setStep(1);
+    setCompletedStep(mode === "edit" ? totalSteps : 0);
     setStudentPhotoPreview(null);
     setRepSearchQuery("");
     setRepSearchResults([]);
@@ -609,8 +607,31 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
   const isLastStep = isEditMode ? step === totalSteps : step === totalSteps;
 
-  const handleStepClick = (targetStep: number) => {
-    setStep(targetStep);
+  const getFieldsForStep = (stepNumber: number): (keyof EnrollmentFormValues)[] => {
+    if (stepNumber === 1) return ["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"];
+    if (stepNumber === 2) return ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
+    if (stepNumber === 3) {
+      if (representativeMode === "create") {
+        return [
+          "representativeMode", "representativeFirstNames", "representativeLastNames",
+          "representativeIdentification", "representativeBirthDate", "representativeGender",
+          "representativeEmail", "representativePhone", "representativeRelation",
+        ] as any;
+      }
+      return ["representativeMode", "existingRepresentative"] as any;
+    }
+    if (stepNumber === 4) return ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
+    return [];
+  };
+
+  const handleStepClick = async (targetStep: number) => {
+    if (mode === "edit") {
+      const isValid = await trigger(getFieldsForStep(targetStep));
+      if (!isValid) return;
+    }
+    if (mode === "edit" || targetStep <= completedStep) {
+      setStep(targetStep);
+    }
   };
 
   return (

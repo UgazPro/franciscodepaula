@@ -25,14 +25,22 @@ export const getImagesApi = async (url: string) => {
     }
 };
 
+function unwrapResponse(responseData: any) {
+    if (responseData && typeof responseData === 'object' && !Array.isArray(responseData) && 'success' in responseData && 'data' in responseData && responseData.data !== null) {
+        if (!responseData.success) return responseData;
+        return responseData.data;
+    }
+    return responseData;
+}
+
 export const postDataApi = async (url: string, data: any) => {
     const res = await api.post(url, data);
-    return res.data;
+    return unwrapResponse(res.data);
 };
 
 export const putDataApi = async (endpoint: string, data: any) => {
     return await api.put(endpoint, data).then((response) => {
-        return response.data;
+        return unwrapResponse(response.data);
     }).catch((err) => {
         return err.response.data;
     })
@@ -40,7 +48,7 @@ export const putDataApi = async (endpoint: string, data: any) => {
 
 export const deleteDataApi = async (endpoint: string, data: number) => {
     return await api.delete(`${endpoint}/${data}`).then((response) => {
-        return response.data;
+        return unwrapResponse(response.data);
     }).catch((err) => {
         return err.response.data;
     })
@@ -79,7 +87,7 @@ export const postDataImageApi = async (url: string, data: any, img?: File | null
             formData.append(key, value as string);
         });
 
-        return await api.post(url, formData).then((res) => res.data);
+        return await api.post(url, formData).then((res) => unwrapResponse(res.data));
     } catch (error) {
         console.error("postDataImageApi error:", error);
         throw error;
@@ -121,7 +129,7 @@ export const putDataImageApi = async (url: string, data: any, img?: File | null,
             formData.append(key, value as string);
         });
 
-        return await api.put(url, formData).then((res) => res.data);
+        return await api.put(url, formData).then((res) => unwrapResponse(res.data));
     } catch (error) {
         console.error("postDataImageApi error:", error);
         throw error;
