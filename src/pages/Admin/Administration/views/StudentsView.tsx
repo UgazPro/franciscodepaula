@@ -1,5 +1,5 @@
 import { Search, LayoutList, Grid3X3, Loader2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useStudents } from "@/hooks/useUsers";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { useStudentsStore } from "@/stores/students.store";
@@ -31,8 +31,13 @@ export default function StudentsView() {
   const { searchTerm, setSearchTerm } = useStudentsStore();
   const filteredStudents = useFilteredStudents(students as IStudent[]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [viewMode, setViewMode] = useState<"table" | "grid">("grid");
   const [selectedStudent, setSelectedStudent] = useState<IStudent | null>(null);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [itemsPerPage]);
 
   const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
   const paginatedData = filteredStudents.slice(
@@ -152,6 +157,7 @@ export default function StudentsView() {
             totalItems={filteredStudents.length}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
           />
         </>
       ) : (
@@ -192,6 +198,7 @@ export default function StudentsView() {
             totalItems={filteredStudents.length}
             itemsPerPage={itemsPerPage}
             onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
           />
         </>
       )}

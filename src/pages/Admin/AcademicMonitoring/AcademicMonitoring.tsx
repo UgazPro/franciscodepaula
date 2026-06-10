@@ -52,11 +52,11 @@ export default function AcademicMonitoring() {
     }, [students, searchTerm]);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 5;
+    const [itemsPerPage, setItemsPerPage] = useState(5);
 
     useEffect(() => {
         setCurrentPage(1);
-    }, [searchTerm, filterView, filterLevelId, filterSection, filterGender, filterAgeMin, filterAgeMax, filterAgeExact]);
+    }, [searchTerm, filterView, filterLevelId, filterSection, filterGender, filterAgeMin, filterAgeMax, filterAgeExact, itemsPerPage]);
 
     // Reset form/detail when navigating from sidebar (component re-mounts)
     useEffect(() => {
@@ -113,13 +113,13 @@ export default function AcademicMonitoring() {
 
     return (
         <div className="w-full h-full flex flex-col gap-4">
-            <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
 
             {activeTab === "estudiantes" ? (
                 <div className="flex-1 min-h-0">
                     <PageTransitionComponent
                         primaryChildren={
                             <>
+                                <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />
                                 <div className="flex items-start justify-between">
                                     <div className="flex-1">
                                         <AcademicMonitoringHeader />
@@ -149,6 +149,7 @@ export default function AcademicMonitoring() {
                                             totalItems={filteredStudents.length}
                                             itemsPerPage={itemsPerPage}
                                             onPageChange={setCurrentPage}
+                                            onItemsPerPageChange={setItemsPerPage}
                                         />
                                     </>
                                 )}
@@ -178,9 +179,12 @@ export default function AcademicMonitoring() {
                     />
                 </div>
             ) : (
-                <div className="flex-1 min-h-0">
-                    <SchoolYearPanel />
-                </div>
+                <>
+                    <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+                    <div className="flex-1 min-h-0">
+                        <SchoolYearPanel />
+                    </div>
+                </>
             )}
         </div>
     );
