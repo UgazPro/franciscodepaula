@@ -60,7 +60,7 @@ export default function NavBar() {
       <nav className="flex flex-col items-center w-full md:hidden">
         <Button
           variant="ghost"
-          size="icon-sm"
+          size="sm"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
           className="transition-all duration-300 z-50"

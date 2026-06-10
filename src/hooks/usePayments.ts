@@ -49,7 +49,10 @@ export const useExchangeRate = () => {
   return useQuery({
     queryKey: ["exchange-rate"],
     queryFn: () => getDataApi("/payments/exchange"),
-    staleTime: 1000 * 60 * 5,
+    staleTime: Infinity,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
     select: (data: any[]) => data?.[0] ?? null,
   });
 };
