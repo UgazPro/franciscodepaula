@@ -58,10 +58,19 @@ export default function AcademicMonitoring() {
         setCurrentPage(1);
     }, [searchTerm, filterView, filterLevelId, filterSection, filterGender, filterAgeMin, filterAgeMax, filterAgeExact, itemsPerPage]);
 
-    // Reset form/detail when navigating from sidebar (component re-mounts)
     useEffect(() => {
         useStudentsStore.getState().closeForm();
     }, []);
+
+    useEffect(() => {
+        useStudentsStore.getState().clearFilters();
+    }, []);
+
+    useEffect(() => {
+        if (activeTab === "estudiantes") {
+            useStudentsStore.getState().clearFilters();
+        }
+    }, [activeTab]);
 
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
     const paginatedStudents = filteredStudents.slice(
@@ -135,9 +144,7 @@ export default function AcademicMonitoring() {
                                         {filteredStudents.length === 0 && !searchTerm ? (
                                             <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
                                         ) : (
-                                            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-                                                No se encontraron estudiantes
-                                            </div>
+                                            <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
                                         )}
                                     </>
                                 ) : (

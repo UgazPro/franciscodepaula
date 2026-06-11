@@ -9,7 +9,7 @@ interface PaginationComponentProps {
     onItemsPerPageChange: (itemsPerPage: number) => void;
 }
 
-const ITEMS_PER_PAGE_OPTIONS = [6, 12, 24, 48];
+const ITEMS_PER_PAGE_OPTIONS = [5, 6, 12, 24, 48];
 
 function getPageNumbers(current: number, total: number): (number | string)[] {
     if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);

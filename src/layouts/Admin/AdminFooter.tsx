@@ -1,90 +1,46 @@
-import { Heart, Globe, Mail, Phone, MapPin, NotepadText } from "lucide-react";
+import { Mail, Phone, MapPin } from "lucide-react";
 
 export default function AdminFooter() {
     const currentYear = new Date().getFullYear();
 
     return (
-        <footer className="bg-white border-t border-gray-200 mt-8">
-            <div className="px-4 md:px-6 py-6">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-6">
+        <footer className="relative bg-linear-to-br from-blue-900 via-blue-950 to-blue-900 mt-8 overflow-hidden">
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-linear-to-r from-transparent via-green-400 to-transparent" />
 
-                        {/* Logo e institución */}
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 bg-linear-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center text-[10px] text-white font-bold shadow-md shrink-0">
+                            UEP
+                        </div>
                         <div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <div className="w-8 h-8 bg-linear-to-br from-blue-900 to-green-500 rounded-lg flex items-center justify-center">
-                                    <span className="text-white font-bold text-xs">UEP</span>
-                                </div>
-                                <span className="font-semibold text-gray-800 text-sm">
-                                    Francisco de Paula
-                                </span>
-                            </div>
-                            <p className="text-xs text-gray-500 leading-relaxed">
-                                Sistema de Gestión Administrativa del colegio UEP Francisco de Paula Salazar Acosta.
+                            <span className="text-sm font-semibold text-white">
+                                Francisco de Paula
+                            </span>
+                            <p className="text-[11px] text-gray-400 leading-tight">
+                                Sistema de Gestión Administrativa
                             </p>
                         </div>
-
-                        {/* Enlaces rápidos */}
-                        <div>
-                            <h4 className="text-sm font-semibold text-gray-800 mb-3">Enlaces Rápidos</h4>
-                            <ul className="space-y-2 text-xs">
-                                <li><a href="/admin" className="text-gray-500 hover:text-green-600 transition">Dashboard</a></li>
-                                <li><a href="/admin/control-estudio" className="text-gray-500 hover:text-green-600 transition">Control de Estudio</a></li>
-                                <li><a href="/admin/profesores" className="text-gray-500 hover:text-green-600 transition">Profesores</a></li>
-                                <li><a href="/admin/estudiantes" className="text-gray-500 hover:text-green-600 transition">Estudiantes</a></li>
-                            </ul>
-                        </div>
-
-                        {/* Contacto */}
-                        <div>
-                            <h4 className="text-sm font-semibold text-gray-800 mb-3">Contacto</h4>
-                            <ul className="space-y-2 text-xs text-gray-500">
-                                <li className="flex items-center gap-2">
-                                    <Phone size={14} className="text-green-500" />
-                                    +58 212 555 1234
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <Mail size={14} className="text-green-500" />
-                                    admin@colegio.edu.ve
-                                </li>
-                                <li className="flex items-center gap-2">
-                                    <MapPin size={14} className="text-green-500" />
-                                    Caracas, Venezuela
-                                </li>
-                            </ul>
-                        </div>
-
-                        {/* Soporte */}
-                        <div>
-                            <h4 className="text-sm font-semibold text-gray-800 mb-3">Soporte</h4>
-                            <ul className="space-y-2 text-xs">
-                                <li><a href="#" className="text-gray-500 hover:text-green-600 transition">Centro de Ayuda</a></li>
-                                <li><a href="#" className="text-gray-500 hover:text-green-600 transition">Documentación</a></li>
-                                <li><a href="#" className="text-gray-500 hover:text-green-600 transition">Reportar Problema</a></li>
-                                <li><a href="#" className="text-gray-500 hover:text-green-600 transition">Sugerencias</a></li>
-                            </ul>
-                        </div>
                     </div>
 
-                    {/* Barra inferior */}
-                    <div className="pt-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3 text-xs text-gray-400">
-                        <p>
-                            © {currentYear} UEP Francisco de Paula Salazar Acosta. Todos los derechos reservados.
-                        </p>
-                        <div className="flex items-center gap-4">
-                            <a href="#" className="hover:text-green-600 transition flex items-center gap-1">
-                                <Globe size={14} />
-                                Sitio Web
-                            </a>
-                            <a href="#" className="hover:text-green-600 transition flex items-center gap-1">
-                                <NotepadText size={14} />
-                                GitHub
-                            </a>
-                            <span className="flex items-center gap-1">
-                                Hecho con <Heart size={12} className="text-red-500" /> para la educación
-                            </span>
-                        </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-gray-400 text-[11px]">
+                        <span className="flex items-center gap-1.5">
+                            <Phone size={11} className="text-green-400 shrink-0" />
+                            +58 212 555 1234
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <Mail size={11} className="text-green-400 shrink-0" />
+                            admin@colegio.edu.ve
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                            <MapPin size={11} className="text-green-400 shrink-0" />
+                            Caracas, Venezuela
+                        </span>
                     </div>
+                </div>
+
+                <div className="border-t border-white/10 pt-3 text-center text-[11px] text-gray-500">
+                    &copy; {currentYear} UEP Francisco de Paula Salazar Acosta. Todos los derechos reservados.
                 </div>
             </div>
         </footer>

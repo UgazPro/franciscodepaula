@@ -9,7 +9,7 @@ export default function StudentsNoResults({ openCreateStudent } : StudentsNoResu
 
     return (
 
-        <div className="text-center py-16 border-2 border-dashed border-gray-300 rounded-2xl bg-linear-to-b from-white to-gray-50">
+        <div className="text-center py-18 border-2 border-dashed border-gray-300 rounded-2xl bg-linear-to-b from-white to-gray-50">
             <Users className="h-16 w-16 mx-auto text-gray-400 mb-4" />
             <h3 className="text-xl font-semibold mb-2">
                 No se encontraron estudiantes

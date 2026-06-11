@@ -182,13 +182,13 @@ export default function StudentsView() {
                   <p><span className="font-medium text-gray-500">Grado:</span> {getGradeAndSection(student)}</p>
                   <p><span className="font-medium text-gray-500">Representante:</span> {getRepresentativeName(student)}</p>
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-100">
+                {/* <div className="mt-3 pt-3 border-t border-gray-100">
                   <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
                     student.status ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
                   }`}>
                     {student.status ? "Activo" : "Inactivo"}
                   </span>
-                </div>
+                </div> */}
               </div>
             ))}
           </div>

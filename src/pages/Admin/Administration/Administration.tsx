@@ -15,9 +15,11 @@ import AdministrationHeader from "./components/AdministrationHeader";
 import DashboardView from "./views/DashboardView";
 import NominasView from "./views/PayrollView";
 import PaymentsView from "./views/PaymentsView";
+import PaymentForm from "./views/payments/PaymentForm";
 import StudentsView from "./views/StudentsView";
 import BecasView from "./views/ScholarshipsView";
 import { useExchangeRate } from "@/hooks/usePayments";
+import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 
 export default function Administracion() {
     const { activeTab, setActiveTab } = useAdministrationStore();
@@ -41,7 +43,9 @@ export default function Administracion() {
     const [becas] = useState<Beca[]>(becasData);
     const [estudiantes] = useState<Estudiante[]>(estudiantesData);
 
-    const { data: latestExchange, refetch: refetchExchange } = useExchangeRate();
+    const { data: latestExchange } = useExchangeRate();
+    const { screen: paymentsScreen } = usePaymentsStore();
+    const isPaymentsFormOpen = paymentsScreen === "form";
     const prevValorRef = useRef(0);
 
     const tasaDolar = useMemo((): TasaDolar => {
@@ -53,7 +57,7 @@ export default function Administracion() {
 
         return {
             valor: currentValor,
-            fecha: new Date(latestExchange.date).toLocaleDateString("es-ES"),
+            fecha: new Date(latestExchange.date).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }),
             fuente: "BCV",
             variacion:
                 prevValor > 0
@@ -197,67 +201,83 @@ export default function Administracion() {
 
     return (
         <div className="space-y-6">
-            <AdministrationHeader
-                activeTab={activeTab}
-                setActiveTab={setActiveTab}
-                tasaDolar={tasaDolar}
-                actualizarTasaDolar={refetchExchange}
-            />
-
-            {activeTab === "dashboard" && (
-                <DashboardView
-                    estudiantesActivos={estudiantesActivos}
-                    personalActivo={personalActivo}
-                    ingresosMes={ingresosMes}
-                    egresosMes={egresosMes}
-                    balanceMes={balanceMes}
-                    morosidad={morosidad}
-                    personal={personal}
-                    pagos={pagos}
-                    estudiantes={estudiantes}
-                    becas={becas}
-                    calcularTotalesPagos={calcularTotalesPagos}
+            {activeTab === "pagos" ? (
+                <PageTransitionComponent
+                    primaryChildren={
+                        <>
+                            <AdministrationHeader
+                                activeTab={activeTab}
+                                setActiveTab={setActiveTab}
+                                tasaDolar={tasaDolar}
+                            />
+                            <PaymentsView />
+                        </>
+                    }
+                    secondaryChildren={<PaymentForm />}
+                    toggle={isPaymentsFormOpen}
                 />
-            )}
+            ) : (
+                <>
+                    <AdministrationHeader
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                        tasaDolar={tasaDolar}
+                    />
 
-            {activeTab === "nominas" && (
-                <NominasView
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    selectedPeriodo={selectedPeriodo}
-                    setSelectedPeriodo={setSelectedPeriodo}
-                    calcularTotalesNominas={calcularTotalesNominas}
-                    paginatedData={paginatedData}
-                    totalPages={totalPages}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                    filteredData={filteredData}
-                    itemsPerPage={itemsPerPage}
-                    personal={personal}
-                    handleVerDetalleHoras={handleVerDetalleHoras}
-                />
-            )}
+                    {activeTab === "dashboard" && (
+                        <DashboardView
+                            estudiantesActivos={estudiantesActivos}
+                            personalActivo={personalActivo}
+                            ingresosMes={ingresosMes}
+                            egresosMes={egresosMes}
+                            balanceMes={balanceMes}
+                            morosidad={morosidad}
+                            personal={personal}
+                            pagos={pagos}
+                            estudiantes={estudiantes}
+                            becas={becas}
+                            calcularTotalesPagos={calcularTotalesPagos}
+                        />
+                    )}
 
-            {activeTab === "pagos" && <PaymentsView />}
+                    {activeTab === "nominas" && (
+                        <NominasView
+                            searchTerm={searchTerm}
+                            setSearchTerm={setSearchTerm}
+                            selectedPeriodo={selectedPeriodo}
+                            setSelectedPeriodo={setSelectedPeriodo}
+                            calcularTotalesNominas={calcularTotalesNominas}
+                            paginatedData={paginatedData}
+                            totalPages={totalPages}
+                            currentPage={currentPage}
+                            setCurrentPage={setCurrentPage}
+                            filteredData={filteredData}
+                            itemsPerPage={itemsPerPage}
+                            personal={personal}
+                            handleVerDetalleHoras={handleVerDetalleHoras}
+                        />
+                    )}
 
-            {activeTab === "estudiantes" && <StudentsView />}
+                    {activeTab === "estudiantes" && <StudentsView />}
 
-            {activeTab === "becas" && (
-                <BecasView
-                    searchTerm={searchTerm}
-                    setSearchTerm={setSearchTerm}
-                    paginatedData={paginatedData}
-                    totalPages={totalPages}
-                    currentPage={currentPage}
-                    setCurrentPage={setCurrentPage}
-                    filteredData={filteredData}
-                    itemsPerPage={itemsPerPage}
-                    estudiantes={estudiantes}
-                    setEditingItem={setEditingItem}
-                    setShowModal={setShowModal}
-                    setSelectedItem={setSelectedItem}
-                    setShowDeleteModal={setShowDeleteModal}
-                />
+                    {activeTab === "becas" && (
+                        <BecasView
+                            searchTerm={searchTerm}
+                            setSearchTerm={setSearchTerm}
+                            paginatedData={paginatedData}
+                            totalPages={totalPages}
+                            currentPage={currentPage}
+                            setCurrentPage={setCurrentPage}
+                            filteredData={filteredData}
+                            itemsPerPage={itemsPerPage}
+                            estudiantes={estudiantes}
+                            setEditingItem={setEditingItem}
+                            setShowModal={setShowModal}
+                            setSelectedItem={setSelectedItem}
+                            setShowDeleteModal={setShowDeleteModal}
+                        />
+                    )}
+                </>
             )}
 
             {/* ==================== MODALES ==================== */}

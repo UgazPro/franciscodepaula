@@ -1,57 +1,83 @@
 import { ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
-import type { FeeResponse } from "@/services/administration/payments.types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Button } from "@/components/ui/button";
+import { Form } from "@/components/ui/form";
+import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { useExchangeRate } from "@/hooks/usePayments";
+import type { FeeResponse } from "@/services/administration/payments.types";
+import { feeFormByName } from "./feeForm.data";
 
-interface Props {
+const feeFormSchema = z.object({
+  name: z.string().min(1, "Seleccione un tipo de pago"),
+  valueUSD: z
+    .number({ error: "Ingrese el monto en USD" })
+    .positive("El monto debe ser mayor a 0"),
+  valueVES: z.number().optional(),
+  startAt: z.date({ error: "Seleccione una fecha de inicio" }),
+  endAt: z.date({ error: "Seleccione una fecha de fin" }),
+});
+
+type FeeFormValues = z.infer<typeof feeFormSchema>;
+
+interface FeeFormProps {
   fee: FeeResponse | null;
   schoolYear: { id: number; name: string } | null;
   onSave: (data: { name: string; value: number; startAt: Date; endAt: Date }) => Promise<void>;
   onBack: () => void;
 }
 
-const FEE_TYPES = ["Inscripción", "Mensualidad"];
-
-export default function FeeForm({ fee, schoolYear, onSave, onBack }: Props) {
+export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProps) {
   const isEditing = !!fee;
   const { data: latestExchange } = useExchangeRate();
   const exchangeRate = latestExchange?.rate ? Number(latestExchange.rate) : null;
+  const [isPending, setIsPending] = useState(false);
 
-  const [name, setName] = useState("");
-  const [value, setValue] = useState("");
-  const [startAt, setStartAt] = useState("");
-  const [endAt, setEndAt] = useState("");
-  const [saving, setSaving] = useState(false);
+  const form = useForm<FeeFormValues>({
+    resolver: zodResolver(feeFormSchema),
+    defaultValues: {
+      name: "",
+      valueUSD: undefined as any,
+      valueVES: undefined as any,
+      startAt: undefined as any,
+      endAt: undefined as any,
+    },
+  });
+
+  const { watch, setValue } = form;
+  const valueUSD = watch("valueUSD");
 
   useEffect(() => {
     if (fee) {
-      setName(fee.name);
-      setValue(String(fee.value));
-      setStartAt(new Date(fee.startAt).toISOString().split("T")[0]);
-      setEndAt(new Date(fee.endAt).toISOString().split("T")[0]);
-    } else {
-      setName(FEE_TYPES[0]);
-      setValue("");
-      setStartAt("");
-      setEndAt("");
+      setValue("name", fee.name);
+      setValue("valueUSD", Number(fee.value));
+      setValue("startAt", new Date(fee.startAt));
+      setValue("endAt", new Date(fee.endAt));
     }
-  }, [fee]);
+  }, [fee, setValue]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) return;
-    if (!value || Number(value) <= 0) return;
-    if (!startAt) return;
-    if (!endAt) return;
+  useEffect(() => {
+    if (exchangeRate && valueUSD && !isNaN(Number(valueUSD)) && Number(valueUSD) > 0) {
+      setValue("valueVES", Number(valueUSD) * exchangeRate);
+    } else {
+      setValue("valueVES", undefined as any);
+    }
+  }, [valueUSD, exchangeRate, setValue]);
 
-    setSaving(true);
-    await onSave({
-      name: name.trim(),
-      value: Number(value),
-      startAt: new Date(startAt),
-      endAt: new Date(endAt),
-    });
-    setSaving(false);
+  const onSubmit = async (data: FeeFormValues) => {
+    setIsPending(true);
+    try {
+      await onSave({
+        name: data.name,
+        value: data.valueUSD,
+        startAt: data.startAt,
+        endAt: data.endAt,
+      });
+    } finally {
+      setIsPending(false);
+    }
   };
 
   return (
@@ -75,102 +101,45 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: Props) {
         )}
       </div>
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Tipo de Pago</label>
-          {isEditing ? (
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
-              required
-            />
-          ) : (
-            <select
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 bg-white"
-              required
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FieldRenderer field={feeFormByName.name} />
+            <FieldRenderer field={feeFormByName.valueUSD} />
+            <div>
+              <FieldRenderer field={feeFormByName.valueVES} disabled />
+              {exchangeRate ? (
+                <p className="text-[11px] text-gray-400 mt-1">Tasa: 1 USD = Bs. {exchangeRate.toFixed(2)}</p>
+              ) : (
+                <p className="text-[11px] text-gray-400 mt-1">Sin tasa disponible</p>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <FieldRenderer field={feeFormByName.startAt} />
+            <FieldRenderer field={feeFormByName.endAt} />
+          </div>
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onBack}
+              className="cursor-pointer"
             >
-              <option value="" disabled>Seleccionar tipo de pago</option>
-              {FEE_TYPES.map((t) => (
-                <option key={t} value={t}>{t}</option>
-              ))}
-            </select>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">Monto (USD $)</label>
-          <input
-            type="number"
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder="0.00"
-            min="0"
-            step="0.01"
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
-            required
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1.5">
-            Monto en VES (Bs.)
-            {!exchangeRate && <span className="text-xs text-gray-400 ml-2">(sin tasa disponible)</span>}
-          </label>
-          <input
-            type="text"
-            value={exchangeRate && value ? `Bs. ${(Number(value) * exchangeRate).toFixed(2)}` : "Bs. 0.00"}
-            readOnly
-            className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-50 text-gray-500 cursor-not-allowed"
-          />
-          {exchangeRate && (
-            <p className="text-xs text-gray-400 mt-1">Tasa: 1 USD = Bs. {exchangeRate.toFixed(2)}</p>
-          )}
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha de Inicio</label>
-            <input
-              type="date"
-              value={startAt}
-              onChange={(e) => setStartAt(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
-              required
-            />
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isPending}
+              className="bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-md cursor-pointer disabled:opacity-50"
+            >
+              {isPending ? "Guardando..." : isEditing ? "Actualizar" : "Crear"}
+            </Button>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1.5">Fecha de Fin</label>
-            <input
-              type="date"
-              value={endAt}
-              onChange={(e) => setEndAt(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500"
-              required
-            />
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={onBack}
-            className="px-6 py-2.5 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 transition cursor-pointer"
-          >
-            Cancelar
-          </button>
-          <button
-            type="submit"
-            disabled={saving}
-            className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer disabled:opacity-50"
-          >
-            {saving ? "Guardando..." : isEditing ? "Actualizar" : "Crear"}
-          </button>
-        </div>
-      </form>
+        </form>
+      </Form>
     </div>
   );
 }
