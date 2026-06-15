@@ -23,7 +23,7 @@ export default function AdminSidebar() {
 
       {/* Desktop Sidebar - Colapsable */}
       <div
-        className="hidden group md:flex w-16 hover:w-64 transition-all duration-300 ease-in-out bg-gradient-to-b from-blue-900 to-blue-800 text-white flex-col justify-between fixed top-0 left-0 h-full z-50 shadow-2xl"
+        className="hidden group md:flex w-16 hover:w-64 transition-all duration-300 ease-in-out bg-linear-to-b from-blue-900 via-blue-950 to-blue-900 text-white flex-col justify-between fixed top-0 left-0 h-full z-50 shadow-2xl"
       >
         <div className="w-full px-3 pt-4">
           {/* Logo/Header */}

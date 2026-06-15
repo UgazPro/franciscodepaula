@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -22,6 +22,7 @@ export default function PaymentForm() {
   const { mutateAsync: createExchange } = useCreateExchange();
   const { screen, step, setStep, setScreen } = usePaymentsStore();
   const [selectedStudent, setSelectedStudent] = useState<IStudent | null>(null);
+  const [selectedPaidFeeIds, setSelectedPaidFeeIds] = useState<number[]>([]);
   const [resetKey, setResetKey] = useState(0);
 
   const form = useForm<PaymentFormValues>({
@@ -70,6 +71,7 @@ export default function PaymentForm() {
         reference: "",
       });
       setSelectedStudent(null);
+      setSelectedPaidFeeIds([]);
       setStep(1);
     }
   }, [screen, reset, setStep]);
@@ -108,15 +110,26 @@ export default function PaymentForm() {
     [selectedStudent],
   );
 
+  const handleStudentSelect = useCallback(
+    (student: IStudent, paidFeeIds: number[]) => {
+      setSelectedStudent(student);
+      setSelectedPaidFeeIds(paidFeeIds);
+    },
+    [],
+  );
+
   const filteredFees = useMemo(
     () =>
       (fees ?? []).filter((f: any) => {
         if (f.name === "Inscripción") {
           return !hasActiveEnrollment && f.schoolYear?.isActive;
         }
+        if (selectedPaidFeeIds.includes(f.id)) {
+          return false;
+        }
         return true;
       }),
-    [fees, hasActiveEnrollment],
+    [fees, hasActiveEnrollment, selectedPaidFeeIds],
   );
 
   const f1 = useMemo(() => {
@@ -201,6 +214,7 @@ export default function PaymentForm() {
       setResetKey(prev => prev + 1);
       reset();
       setSelectedStudent(null);
+      setSelectedPaidFeeIds([]);
       setStep(1);
       setScreen("list");
     } catch (error) {
@@ -212,6 +226,7 @@ export default function PaymentForm() {
     setResetKey(prev => prev + 1);
     reset();
     setSelectedStudent(null);
+    setSelectedPaidFeeIds([]);
     setStep(1);
     setScreen("list");
   };
@@ -243,33 +258,33 @@ export default function PaymentForm() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div className="md:col-span-2">
+                  <div>
                     <FieldRenderer
                       field={f1.studentSearch}
                       customFieldRenderer={(f) =>
-                        f.name === "studentSearch" ? <StudentAutocomplete key={resetKey} onSelect={setSelectedStudent} /> : null
+                        f.name === "studentSearch" ? <StudentAutocomplete key={resetKey} onSelect={handleStudentSelect} /> : null
                       }
                     />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-(--darkBlueColor) mb-1">
+                      Tasa del Día (Bs./USD)
+                    </label>
+                    <div className="bg-(--lightBlueColor)/5 border border-(--lightBlueColor)/20 rounded-lg p-2.5 flex items-center gap-2 h-10">
+                      <span className="text-sm font-medium text-(--darkBlueColor) whitespace-nowrap">1 USD =</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        {...form.register("exchangeRate", { valueAsNumber: true })}
+                        className="w-full px-2 h-7 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) text-sm"
+                      />
+                      <span className="text-sm text-gray-500 whitespace-nowrap">Bs.</span>
+                    </div>
                   </div>
                   <FieldRenderer field={f1.feeId} />
                   <FieldRenderer field={f1.totalAmount} disabled />
                   <FieldRenderer field={f1.currency} />
                   <FieldRenderer field={f1.paymentDate} />
-                  {selectedCurrency === "VES" && (
-                    <div className="md:col-span-2">
-                      <div className="bg-(--lightBlueColor)/5 border border-(--lightBlueColor)/20 rounded-lg p-3 flex items-center gap-3">
-                        <span className="text-sm font-medium text-(--darkBlueColor)">Tasa del Día:</span>
-                        <span className="text-sm text-gray-500">1 USD =</span>
-                        <input
-                          type="number"
-                          step="0.01"
-                          {...form.register("exchangeRate", { valueAsNumber: true })}
-                          className="w-28 px-3 h-9 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) text-sm"
-                        />
-                        <span className="text-sm text-gray-500">Bs.</span>
-                      </div>
-                    </div>
-                  )}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:col-span-2">
                     <FieldRenderer field={f1.paymentMethodId} />
                     <FieldRenderer field={f1.description} />

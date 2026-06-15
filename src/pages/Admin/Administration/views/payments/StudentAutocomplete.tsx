@@ -1,16 +1,20 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useFormContext } from "react-hook-form";
-import { useStudents } from "@/hooks/useUsers";
+import { useStudentsWithDebts } from "@/hooks/useStudentsWithDebts";
 import { Search } from "lucide-react";
 import type { PaymentFormValues } from "./payments.schema";
 import type { IStudent } from "@/services/users/user.interface";
 
+interface StudentWithDebts extends IStudent {
+  paidFeeIds: number[];
+}
+
 interface StudentAutocompleteProps {
-  onSelect?: (student: IStudent) => void;
+  onSelect?: (student: IStudent, paidFeeIds: number[]) => void;
 }
 
 export default function StudentAutocomplete({ onSelect }: StudentAutocompleteProps) {
-  const { data: students = [] } = useStudents({ view: "all" });
+  const { data: rawData = [] } = useStudentsWithDebts();
   const { setValue, formState, watch } = useFormContext<PaymentFormValues>();
   const studentId = watch("studentId");
 
@@ -28,8 +32,8 @@ export default function StudentAutocomplete({ onSelect }: StudentAutocompletePro
     }
   }, [studentId]);
 
-  const filtered = students
-    .filter((s: any) => {
+  const filtered = (rawData as StudentWithDebts[])
+    .filter((s) => {
       const name = `${s.person.firstNames} ${s.person.lastNames}`.toLowerCase();
       const id = (s.person.identificationNumber ?? "").toLowerCase();
       const term = query.toLowerCase();
@@ -38,12 +42,12 @@ export default function StudentAutocomplete({ onSelect }: StudentAutocompletePro
     .slice(0, 10);
 
   const handleSelect = useCallback(
-    (student: any) => {
+    (student: StudentWithDebts) => {
       const label = `${student.person.firstNames} ${student.person.lastNames} - ${student.person.identificationNumber}`;
       setSelectedLabel(label);
       setQuery(label);
       setValue("studentId", student.id, { shouldValidate: true });
-      onSelect?.(student);
+      onSelect?.(student, student.paidFeeIds);
       setIsOpen(false);
     },
     [setValue, onSelect],
@@ -103,7 +107,7 @@ export default function StudentAutocomplete({ onSelect }: StudentAutocompletePro
 
       {isOpen && filtered.length > 0 && (
         <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-          {filtered.map((s: any) => (
+          {filtered.map((s: StudentWithDebts) => (
             <button
               key={s.id}
               type="button"
