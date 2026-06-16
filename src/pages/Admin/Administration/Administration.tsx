@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
-    X, Receipt, Trash2, Printer
+    X, Receipt, Trash2, Printer, Home, Briefcase, CreditCard, Award, Users
 } from "lucide-react";
 import { useAdministrationStore } from "@/stores/administration.store";
 import { usePaymentsStore } from "@/stores/payments.store";
@@ -9,16 +9,17 @@ import {
     getDiasHabiles, generarRegistrosHoras, getCurrentPeriod, getQuincenaDates
 } from "@/services/administration/administration.data";
 import type {
-    Personal, Nomina, RegistroHoras, PagoRepresentante, Beca, Estudiante, TasaDolar
+    Personal, Nomina, RegistroHoras, PagoRepresentante, Beca, Estudiante
 } from "@/services/administration/administration.types";
-import AdministrationHeader from "./components/AdministrationHeader";
+import TabsComponent, { type TabItem } from "@/components/tabs/TabsComponent";
+import type { AdminTab } from "@/services/administration/administration.types";
+
 import DashboardView from "./views/DashboardView";
 import NominasView from "./views/PayrollView";
 import PaymentsView from "./views/PaymentsView";
 import PaymentForm from "./views/payments/PaymentForm";
 import StudentsView from "./views/StudentsView";
 import BecasView from "./views/ScholarshipsView";
-import { useExchangeRate } from "@/hooks/usePayments";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 
 export default function Administracion() {
@@ -43,34 +44,8 @@ export default function Administracion() {
     const [becas] = useState<Beca[]>(becasData);
     const [estudiantes] = useState<Estudiante[]>(estudiantesData);
 
-    const { data: latestExchange } = useExchangeRate();
     const { screen: paymentsScreen } = usePaymentsStore();
     const isPaymentsFormOpen = paymentsScreen === "form";
-    const prevValorRef = useRef(0);
-
-    const tasaDolar = useMemo((): TasaDolar => {
-        if (!latestExchange) {
-            return { valor: 0, fecha: "-", fuente: "-", variacion: 0 };
-        }
-        const currentValor = Number(latestExchange.rate);
-        const prevValor = prevValorRef.current;
-
-        return {
-            valor: currentValor,
-            fecha: new Date(latestExchange.date).toLocaleDateString("es-VE", { day: "2-digit", month: "short", year: "numeric" }),
-            fuente: "BCV",
-            variacion:
-                prevValor > 0
-                    ? parseFloat((((currentValor - prevValor) / prevValor) * 100).toFixed(1))
-                    : 0,
-        };
-    }, [latestExchange]);
-
-    useEffect(() => {
-        if (latestExchange) {
-            prevValorRef.current = Number(latestExchange.rate);
-        }
-    }, [latestExchange]);
 
     useEffect(() => {
         const generarNominas = () => {
@@ -192,6 +167,14 @@ export default function Administracion() {
         );
     };
 
+    const tabItems: TabItem<AdminTab>[] = [
+        { value: "dashboard", label: "Dashboard", icon: <Home size={18} /> },
+        { value: "nominas", label: "Nóminas", icon: <Briefcase size={18} /> },
+        { value: "pagos", label: "Pagos", icon: <CreditCard size={18} /> },
+        { value: "becas", label: "Becas", icon: <Award size={18} /> },
+        { value: "estudiantes", label: "Estudiantes", icon: <Users size={18} /> },
+    ];
+
     const estudiantesActivos = estudiantes.length;
     const personalActivo = personal.filter(p => p.estatus === "activo").length;
     const ingresosMes = pagos.filter(p => p.estado === "pagado").reduce((sum, p) => sum + p.montoConBeca, 0);
@@ -205,11 +188,13 @@ export default function Administracion() {
                 <PageTransitionComponent
                     primaryChildren={
                         <>
-                            <AdministrationHeader
-                                activeTab={activeTab}
-                                setActiveTab={setActiveTab}
-                                tasaDolar={tasaDolar}
-                            />
+                            <div className="mb-5">
+                                <TabsComponent<AdminTab>
+                                    tabs={tabItems}
+                                    activeTab={activeTab}
+                                    onChange={setActiveTab}
+                                />
+                            </div>
                             <PaymentsView />
                         </>
                     }
@@ -218,11 +203,13 @@ export default function Administracion() {
                 />
             ) : (
                 <>
-                    <AdministrationHeader
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                        tasaDolar={tasaDolar}
-                    />
+                    <div className="mb-5">
+                        <TabsComponent<AdminTab>
+                            tabs={tabItems}
+                            activeTab={activeTab}
+                            onChange={setActiveTab}
+                        />
+                    </div>
 
                     {activeTab === "dashboard" && (
                         <DashboardView

@@ -1,7 +1,11 @@
+import { useState } from "react";
+import { MoreVertical, Trash2 } from "lucide-react";
 import type { Column } from "@/components/table/TableComponent";
 import type { PaymentResponse } from "./payments.types";
 import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
 import { dateFormatter } from "@/helpers/formatter";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 interface Actions {
   onDelete: (id: number) => void;
@@ -41,20 +45,54 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     header: "Tipo de Pago",
     render: (payment) => {
       const studentFee = payment.studentFees?.[0];
-      return (
-        <span className="text-gray-800">
-          {studentFee?.fee?.name ?? "—"}
-        </span>
-      );
+      const feeName = studentFee?.fee?.name ?? "—";
+      const displayName =
+        feeName === "Inscripción" || feeName === "—"
+          ? feeName
+          : `Mensualidad ${feeName}`;
+      return <span className="text-gray-800">{displayName}</span>;
     },
   },
   {
-    header: "Monto",
-    render: (payment) => (
-      <span className="font-bold text-blue-900">
-        {payment.currency === "USD" ? "$" : "Bs."} {Number(payment.totalAmount).toFixed(2)}
-      </span>
-    ),
+    header: "Monto (Bs)",
+    render: (payment) => {
+      const amount = Number(payment.totalAmount);
+      if (payment.currency === "VES") {
+        return <span className="font-bold text-blue-900">Bs. {amount.toFixed(2)}</span>;
+      }
+      if (payment.exchange?.rate) {
+        const converted = amount * Number(payment.exchange.rate);
+        return <span className="font-bold text-blue-900">Bs. {converted.toFixed(2)}</span>;
+      }
+      return <span className="text-gray-400">—</span>;
+    },
+  },
+  {
+    header: "Monto ($)",
+    render: (payment) => {
+      const amount = Number(payment.totalAmount);
+      if (payment.currency === "USD") {
+        return <span className="font-bold text-green-700">$ {amount.toFixed(2)}</span>;
+      }
+      if (payment.exchange?.rate) {
+        const converted = amount / Number(payment.exchange.rate);
+        return <span className="font-bold text-green-700">$ {converted.toFixed(2)}</span>;
+      }
+      return <span className="text-gray-400">—</span>;
+    },
+  },
+  {
+    header: "Tasa de Cambio",
+    render: (payment) => {
+      if (!payment.exchange?.rate) {
+        return <span className="text-gray-400">—</span>;
+      }
+      return (
+        <span className="text-gray-600">
+          Bs. {Number(payment.exchange.rate).toFixed(2)}
+        </span>
+      );
+    },
   },
   {
     header: "Método de Pago",
@@ -65,7 +103,7 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
   {
     header: "Fecha",
     render: (payment) => (
-                    <span className="text-gray-600">{dateFormatter(new Date(payment.paymentDate))}</span>
+      <span className="text-gray-600">{dateFormatter(new Date(payment.paymentDate))}</span>
     ),
   },
   {
@@ -75,31 +113,43 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     ),
   },
   {
-    header: "Estado",
-    render: (payment) => (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-          payment.status
-            ? "bg-green-100 text-green-700"
-            : "bg-gray-100 text-gray-700"
-        }`}
-      >
-        {payment.status ? "Pagado" : "Anulado"}
-      </span>
-    ),
-  },
-  {
     header: "Acciones",
     headerClassName: "text-right",
     className: "text-right",
     render: (payment) => (
-      <div className="flex items-center justify-end gap-2">
-        <DeleteDialog
-          preposition="el"
-          whatsDeleting={`pago #${payment.id}`}
-          onConfirm={() => onDelete(payment.id)}
-        />
-      </div>
+      <ActionsDropdown paymentId={payment.id} onDelete={() => onDelete(payment.id)} />
     ),
   },
 ];
+
+function ActionsDropdown({ paymentId, onDelete }: { paymentId: number; onDelete: () => void }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 p-0"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <MoreVertical size={16} />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" sideOffset={4} className="w-44 p-1">
+        <DeleteDialog
+          preposition="el"
+          whatsDeleting={`pago #${paymentId}`}
+          onConfirm={() => {
+            setOpen(false);
+            onDelete();
+          }}
+          buttonType="ghost"
+          buttonStyles="w-full justify-start gap-2 px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md cursor-pointer"
+          buttonText="Eliminar pago"
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router";
-import { Bell, Search, User, ChevronDown, Moon, Sun, Settings, LogOut, HelpCircle, Menu } from "lucide-react";
+import { Bell, Search, User, ChevronDown, Moon, Sun, Settings, LogOut, HelpCircle, Menu, DollarSign } from "lucide-react";
 import { useUserData } from "@/helpers/token";
+import { useExchangeRate } from "@/hooks/usePayments";
 
 export default function AdminHeader() {
     const [showNotifications, setShowNotifications] = useState(false);
@@ -13,10 +14,9 @@ export default function AdminHeader() {
     const location = useLocation();
 
     const userDB = useUserData();
+    const { data: latestExchange } = useExchangeRate();
 
-    useEffect(() => {
-        console.log(userDB);
-    }, []);
+    const exchangeRate = latestExchange ? Number(latestExchange.rate) : 0;
 
     const user = {
         name: userDB?.person.firstNames + " " + userDB?.person.lastNames || "Ana Gómez",
@@ -45,10 +45,6 @@ export default function AdminHeader() {
             month: 'long',
             day: 'numeric'
         });
-    };
-
-    const formatTime = (date: Date) => {
-        return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
     };
 
     const getPageTitle = () => {
@@ -91,6 +87,14 @@ export default function AdminHeader() {
                         </div>
 
                     </div>
+
+                    {location.pathname === "/admin/administracion" && exchangeRate > 0 && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg shrink-0">
+                            <DollarSign size={16} className="text-green-600" />
+                            <span className="text-sm text-gray-500">1 USD =</span>
+                            <span className="text-sm font-semibold text-green-700">Bs. {exchangeRate.toFixed(2)}</span>
+                        </div>
+                    )}
 
                     <div className="hidden md:flex items-center flex-1 max-w-md">
                         <div className="relative w-full">
@@ -162,7 +166,7 @@ export default function AdminHeader() {
                                 onClick={() => setShowUserMenu(!showUserMenu)}
                                 className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-100 transition"
                             >
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-semibold">
+                                <div className="w-8 h-8 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-semibold">
                                     {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
                                 </div>
                                 <div className="hidden lg:block text-left">

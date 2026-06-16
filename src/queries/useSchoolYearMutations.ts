@@ -1,42 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postDataApi, putDataApi, deleteDataApi } from "@/services/api";
 
-export const useCreateSchoolYear = () => {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: (data: { name: string; startDate: Date; endDate: Date }) =>
-      postDataApi("/school-year", data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["school-years"] });
-    },
-  });
-};
-
-export const useUpdateSchoolYear = () => {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
-      putDataApi(`/school-year/${id}`, data),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["school-years"] });
-    },
-  });
-};
-
-export const useToggleSchoolYearActive = () => {
-  const qc = useQueryClient();
-
-  return useMutation({
-    mutationFn: (id: number) =>
-      putDataApi(`/school-year/${id}/toggle-active`, {}),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["school-years"] });
-    },
-  });
-};
-
 export const useCreateSection = () => {
   const qc = useQueryClient();
 

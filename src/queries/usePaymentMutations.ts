@@ -10,6 +10,7 @@ export const useCreatePayment = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["payments"] });
       qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["students-with-debts"] });
     },
   });
 };

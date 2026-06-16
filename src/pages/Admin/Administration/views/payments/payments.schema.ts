@@ -20,7 +20,7 @@ export const step2Schema = z.object({
 });
 
 export const extendedSchema = z.object({
-  exchangeRate: z.number().optional(),
+  exchangeRate: z.number({ message: "Ingresa la tasa de cambio" }).positive("La tasa debe ser mayor a 0"),
 });
 
 export const paymentSchema = step1Schema.merge(step2Schema).merge(extendedSchema);

@@ -81,12 +81,12 @@ export default function PaymentForm() {
     [fees, selectedFeeId],
   );
 
-  // Pre-fill default exchange rate when switching to VES
+  // Pre-fill default exchange rate
   useEffect(() => {
-    if (selectedCurrency === "VES" && !watchedExchangeRate && latestExchange?.rate) {
+    if (!watchedExchangeRate && latestExchange?.rate) {
       setValue("exchangeRate", Number(latestExchange.rate));
     }
-  }, [selectedCurrency, selectedFeeId, latestExchange]);
+  }, [selectedFeeId, latestExchange, setValue]);
 
   // Reset fee when student changes
   useEffect(() => {
@@ -156,10 +156,7 @@ export default function PaymentForm() {
     let fieldsToValidate: (keyof PaymentFormValues)[] = [];
 
     if (step === 1) {
-      fieldsToValidate = ["studentId", "feeId", "totalAmount", "currency", "paymentMethodId", "paymentDate"];
-      if (selectedCurrency === "VES") {
-        fieldsToValidate.push("exchangeRate");
-      }
+      fieldsToValidate = ["studentId", "feeId", "totalAmount", "currency", "paymentMethodId", "paymentDate", "exchangeRate"];
     } else if (step === 2) {
       fieldsToValidate = [];
     }
@@ -201,12 +198,19 @@ export default function PaymentForm() {
         ...(data.payerPhone ? { payerPhone: data.payerPhone } : {}),
       };
 
-      if (data.currency === "VES" && data.exchangeRate) {
-        const exchange = await createExchange({
-          rate: data.exchangeRate,
-          date: new Date(),
-        });
-        payload.exchangeId = exchange.id;
+      if (data.exchangeRate) {
+        if (
+          latestExchange &&
+          Number(data.exchangeRate) === Number(latestExchange.rate)
+        ) {
+          payload.exchangeId = latestExchange.id;
+        } else {
+          const exchange = await createExchange({
+            rate: data.exchangeRate,
+            date: new Date(),
+          });
+          payload.exchangeId = exchange.id;
+        }
       }
 
       const paymentRes = await createPayment({ data: payload });
