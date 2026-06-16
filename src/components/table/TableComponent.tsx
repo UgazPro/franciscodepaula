@@ -75,7 +75,7 @@ export function TableComponent<T>({
                                             if (renderExpanded) toggleRow(rowId);
                                             onRowClick?.(row);
                                         }}
-                                        className={`hover:bg-gray-50 transition ${renderExpanded || onRowClick ? "cursor-pointer" : ""} ${rowClassName ? rowClassName(row) : ""}`}
+                                        className={`hover:bg-gray-100 transition ${renderExpanded || onRowClick ? "cursor-pointer" : ""} ${rowClassName ? rowClassName(row) : ""}`}
                                     >
                                         {columns.map((col, colIndex) => (
                                             <TableCell
@@ -107,20 +107,22 @@ export function TableComponent<T>({
                                             </TableCell>
                                         )}
                                     </TableRow>
-                                    <TableRow>
-                                        <TableCell colSpan={fullColCount} className="p-0 border-0">
-                                            <div
-                                                className="grid transition-[grid-template-rows] duration-300 ease-in-out"
-                                                style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
-                                            >
-                                                <div className="overflow-hidden min-h-0">
-                                                    <div className="border-t border-gray-100">
-                                                        {renderExpanded!(row)}
+                                    {renderExpanded && (
+                                        <TableRow>
+                                            <TableCell colSpan={fullColCount} className="p-0 border-0">
+                                                <div
+                                                    className="grid transition-[grid-template-rows] duration-300 ease-in-out"
+                                                    style={{ gridTemplateRows: isExpanded ? '1fr' : '0fr' }}
+                                                >
+                                                    <div className="overflow-hidden min-h-0">
+                                                        <div className="border-t border-gray-100">
+                                                            {renderExpanded(row)}
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
                                 </Fragment>
                             );
                         })}

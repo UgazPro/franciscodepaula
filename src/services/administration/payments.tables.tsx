@@ -102,46 +102,58 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
 ];
 
 export const paymentExpandedRender = (payment: PaymentResponse) => (
-  <div className="bg-gray-50/60">
-    {/* Header verde unificado tipo tabla PDF */}
-    <div className="bg-(--blueColor) text-white grid grid-cols-4 gap-4 px-6 py-2 text-xs font-semibold uppercase tracking-wider">
-      <span>Pagado por</span>
-      <span>Método de Pago</span>
-      <span>Referencia</span>
-      <span>Estado</span>
-    </div>
-    {/* Datos ligeramente más pequeños */}
-    <div className="grid grid-cols-4 gap-4 px-6 py-3">
-      <div>
-        <p className="text-[13px] font-medium text-gray-700">
-          {payment.payerName ?? "—"}
-        </p>
-        <p className="text-xs text-gray-400">
-          {payment.payerIdentification ?? ""}
-        </p>
-      </div>
-      <div>
-        <p className="text-[13px] text-gray-600">
-          {payment.paymentMethod?.type ?? "—"}
-        </p>
-      </div>
-      <div>
-        <p className="text-[13px] font-mono text-gray-600">
-          {payment.reference ?? "—"}
-        </p>
-      </div>
-      <div>
-        <span
-          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-            payment.status
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}
-        >
-          {payment.status ? "Pagado" : "Anulado"}
-        </span>
-      </div>
-    </div>
+  <div className="bg-gray-50/60 mx-2 mb-2 py-4 px-7">
+    <table className="w-full text-sm border-separate border-spacing-0 rounded-lg overflow-hidden">
+      <thead>
+        <tr className="bg-(--blueColor) text-white">
+          <th className="px-6 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider w-1/4">
+            Pagado por
+          </th>
+          <th className="px-6 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider w-1/4">
+            Método de Pago
+          </th>
+          <th className="px-6 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider w-1/4">
+            Referencia
+          </th>
+          <th className="px-6 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider w-1/4">
+            Estado
+          </th>
+        </tr>
+      </thead>
+      <tbody className="bg-gray-100">
+        <tr>
+          <td className="px-6 py-2 align-top">
+            <p className="font-medium text-gray-600">
+              {payment.payerName ?? "—"}
+            </p>
+            <p className="text-[11px] text-gray-400">
+              {payment.payerIdentification ?? ""}
+            </p>
+          </td>
+          <td className="px-6 py-2 align-top">
+            <p className="text-gray-500">
+              {payment.paymentMethod?.type ?? "—"}
+            </p>
+          </td>
+          <td className="px-6 py-2 align-top">
+            <p className="font-mono text-gray-500">
+              {payment.reference ?? "—"}
+            </p>
+          </td>
+          <td className="px-6 py-2 align-top">
+            <span
+              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium ${
+                payment.status
+                  ? "bg-green-100 text-green-700"
+                  : "bg-red-100 text-red-700"
+              }`}
+            >
+              {payment.status ? "Pagado" : "Anulado"}
+            </span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
   </div>
 );
 
