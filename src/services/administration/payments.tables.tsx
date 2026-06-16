@@ -33,15 +33,6 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     },
   },
   {
-    header: "Pagado por",
-    render: (payment) => (
-      <div>
-        <p className="font-medium text-gray-800">{payment.payerName ?? "—"}</p>
-        <p className="text-xs text-gray-400">{payment.payerIdentification ?? ""}</p>
-      </div>
-    ),
-  },
-  {
     header: "Tipo de Pago",
     render: (payment) => {
       const studentFee = payment.studentFees?.[0];
@@ -95,21 +86,9 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     },
   },
   {
-    header: "Método de Pago",
-    render: (payment) => (
-      <span className="text-gray-600">{payment.paymentMethod?.type ?? "—"}</span>
-    ),
-  },
-  {
     header: "Fecha",
     render: (payment) => (
       <span className="text-gray-600">{dateFormatter(new Date(payment.paymentDate))}</span>
-    ),
-  },
-  {
-    header: "Referencia",
-    render: (payment) => (
-      <span className="text-gray-600 font-mono text-sm">{payment.reference ?? "—"}</span>
     ),
   },
   {
@@ -121,6 +100,50 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     ),
   },
 ];
+
+export const paymentExpandedRender = (payment: PaymentResponse) => (
+  <div className="bg-gray-50/60">
+    {/* Header verde unificado tipo tabla PDF */}
+    <div className="bg-(--blueColor) text-white grid grid-cols-4 gap-4 px-6 py-2 text-xs font-semibold uppercase tracking-wider">
+      <span>Pagado por</span>
+      <span>Método de Pago</span>
+      <span>Referencia</span>
+      <span>Estado</span>
+    </div>
+    {/* Datos ligeramente más pequeños */}
+    <div className="grid grid-cols-4 gap-4 px-6 py-3">
+      <div>
+        <p className="text-[13px] font-medium text-gray-700">
+          {payment.payerName ?? "—"}
+        </p>
+        <p className="text-xs text-gray-400">
+          {payment.payerIdentification ?? ""}
+        </p>
+      </div>
+      <div>
+        <p className="text-[13px] text-gray-600">
+          {payment.paymentMethod?.type ?? "—"}
+        </p>
+      </div>
+      <div>
+        <p className="text-[13px] font-mono text-gray-600">
+          {payment.reference ?? "—"}
+        </p>
+      </div>
+      <div>
+        <span
+          className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+            payment.status
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {payment.status ? "Pagado" : "Anulado"}
+        </span>
+      </div>
+    </div>
+  </div>
+);
 
 function ActionsDropdown({ paymentId, onDelete }: { paymentId: number; onDelete: () => void }) {
   const [open, setOpen] = useState(false);

@@ -6,7 +6,7 @@ import { PaginationComponent } from "@/components/table/PaginationComponent";
 import { usePayments, useExchangeRate } from "@/hooks/usePayments";
 import { useDeletePayment } from "@/queries/usePaymentMutations";
 import { usePaymentsStore } from "@/stores/payments.store";
-import { paymentColumns } from "@/services/administration/payments.tables";
+import { paymentColumns, paymentExpandedRender } from "@/services/administration/payments.tables";
 import type { PaymentResponse } from "@/services/administration/payments.types";
 import PaymentsFilter from "./PaymentsFilter";
 import { generatePaymentsPdf } from "@/utils/pdfGenerator";
@@ -15,7 +15,7 @@ export default function PaymentsView() {
   const { filters } = usePaymentsStore();
   const { data: payments = [], isLoading } = usePayments(filters);
   const { mutateAsync: deletePayment } = useDeletePayment();
-  const { screen, searchTerm, setSearchTerm, setScreen } = usePaymentsStore();
+  const { searchTerm, setSearchTerm, setScreen } = usePaymentsStore();
 
   const { data: latestExchange } = useExchangeRate();
   const exchangeRate = latestExchange?.rate ? Number(latestExchange.rate) : 0;
@@ -144,7 +144,7 @@ export default function PaymentsView() {
         </div>
       ) : (
         <>
-          <TableComponent data={paginatedData} columns={columns} />
+          <TableComponent data={paginatedData} columns={columns} renderExpanded={paymentExpandedRender} getRowId={(p) => p.id} />
           <PaginationComponent
             currentPage={currentPage}
             totalPages={totalPages}
