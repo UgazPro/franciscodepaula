@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { normalizeSearch } from "@/helpers/search";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import TabsComponent from "@/components/tabs/TabsComponent";
 import { useStudentsStore } from "@/stores/students.store";
@@ -10,14 +11,17 @@ import { EnrollmentForm } from "./form/EnrollmentForm";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import StudentsNoResults from "../Students/views/StudentNoResultsView";
 import SchoolYearPanel from "./views/SchoolYearPanel";
+import RepresentativesView from "./views/RepresentativesView";
+import RepresentativeForm from "./views/RepresentativeForm";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
-import type { IStudent } from "@/services/users/user.interface";
+import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "school-year";
+type ActiveTab = "estudiantes" | "representantes" | "school-year";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
+    { value: "representantes" as const, label: "Representantes" },
     { value: "school-year" as const, label: "Año Escolar" },
 ];
 
@@ -30,6 +34,9 @@ export default function AcademicMonitoring() {
         filterAgeMode, filterAgeMin, filterAgeMax, filterAgeExact,
     } = useStudentsStore();
 
+    const [repFormMode, setRepFormMode] = useState<"create" | "edit" | null>(null);
+    const [selectedRepresentative, setSelectedRepresentative] = useState<IRepresentative | null>(null);
+
     const { data: students = [], isLoading } = useStudents({
         view: filterView,
         levelId: filterLevelId ?? undefined,
@@ -41,12 +48,12 @@ export default function AcademicMonitoring() {
     });
 
     const filteredStudents = useMemo(() => {
-        if (!searchTerm.trim()) return students;
-        const term = searchTerm.toLowerCase();
+        const term = normalizeSearch(searchTerm);
+        if (!term) return students;
         return (students as IStudent[]).filter((s) => {
-            const fn = s.person?.firstNames?.toLowerCase() ?? "";
-            const ln = s.person?.lastNames?.toLowerCase() ?? "";
-            const id = s.person?.identificationNumber?.toLowerCase() ?? "";
+            const fn = normalizeSearch(s.person?.firstNames ?? "");
+            const ln = normalizeSearch(s.person?.lastNames ?? "");
+            const id = normalizeSearch(s.person?.identificationNumber ?? "");
             return fn.includes(term) || ln.includes(term) || id.includes(term);
         });
     }, [students, searchTerm]);
@@ -83,7 +90,8 @@ export default function AcademicMonitoring() {
     const initialData = useMemo((): Partial<EnrollmentFormValues> | undefined => {
         if (mode !== "edit" || !selectedStudent) return undefined;
 
-        const rep = selectedStudent.representatives?.[0]?.representative;
+        const studentRep = selectedStudent.representatives?.[0];
+        const rep = studentRep?.representative;
         const enrollment = selectedStudent.enrollments?.[0];
 
         return {
@@ -108,7 +116,7 @@ export default function AcademicMonitoring() {
             representativeGender: rep?.user?.person?.gender ?? "",
             representativeEmail: rep?.user?.email ?? "",
             representativePhone: rep?.user?.phone ?? "",
-            representativeRelation: rep?.relationship ?? "",
+            representativeRelation: studentRep?.relationship ?? "",
             representativeProfession: rep?.occupation ?? "",
             schoolYearId: enrollment?.schoolYearId ?? undefined as any,
             levelId: enrollment?.section?.highSchoolLevel?.id ?? undefined as any,
@@ -183,6 +191,32 @@ export default function AcademicMonitoring() {
                         }
 
                         toggle={isDetailOpen || isFormOpen}
+                    />
+                </div>
+            ) : activeTab === "representantes" ? (
+                <div className="flex-1 min-h-0">
+                    {!repFormMode && <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />}
+                    <PageTransitionComponent
+                        primaryChildren={
+                            <div className="pr-4">
+                                <RepresentativesView
+                                    onCreate={() => { setRepFormMode("create"); setSelectedRepresentative(null); }}
+                                    onEdit={(rep) => { setSelectedRepresentative(rep); setRepFormMode("edit"); }}
+                                />
+                            </div>
+                        }
+                        secondaryChildren={
+                            repFormMode ? (
+                                <div className="pl-4">
+                                    <RepresentativeForm
+                                        mode={repFormMode}
+                                        selectedRepresentative={selectedRepresentative}
+                                        onClose={() => { setRepFormMode(null); setSelectedRepresentative(null); }}
+                                    />
+                                </div>
+                            ) : null
+                        }
+                        toggle={!!repFormMode}
                     />
                 </div>
             ) : (

@@ -381,7 +381,8 @@ export default function StudentDetailView() {
                             </div>
 
                             {(() => {
-                                const rep = selectedStudent.representatives?.[0]?.representative;
+                                const studentRep = selectedStudent.representatives?.[0];
+                                const rep = studentRep?.representative;
                                 if (!rep) {
                                     return (
                                         <div className="text-center py-8">
@@ -401,7 +402,7 @@ export default function StudentDetailView() {
                                                     {repPerson.firstNames} {repPerson.lastNames}
                                                 </p>
                                                 <p className="text-sm text-gray-400">
-                                                    {rep.relationship || "Sin relación registrada"}
+                                                    {studentRep?.relationship || "Sin relación registrada"}
                                                 </p>
                                             </div>
                                         </div>

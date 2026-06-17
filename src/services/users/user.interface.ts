@@ -34,7 +34,6 @@ export interface StudentEnrollment {
 
 export interface IRepresentative {
     id: number;
-    relationship: string | null;
     occupation: string | null;
     email: string;
     phone: string | null;
@@ -45,13 +44,15 @@ export interface IRepresentative {
         identificationNumber: string;
     };
     studentCount: number;
+    status: boolean;
 }
 
 export interface StudentRepresentative {
     id: number;
+    relationship: string | null;
+    isPrimary: boolean | null;
     representative: {
         id: number;
-        relationship: string | null;
         occupation: string | null;
         user: {
             email: string;

@@ -1,8 +1,8 @@
 import type { FormField } from "@/components/form/formComponent.interface";
 
 export const relations = [
-  "Padre", "Madre", "Representante Legal",
-  "Tío(a)", "Abuelo(a)", "Hermano(a) Mayor", "Otro",
+  "madre", "padre", "tio(a)", "abuelo(a)",
+  "hermano mayor", "primo(a)", "otro",
 ];
 
 export const step3Fields: FormField[] = [

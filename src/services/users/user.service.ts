@@ -4,6 +4,20 @@ import type { IStudent, IStaff, IRepresentative } from "./user.interface";
 const usersUrl = '/users';
 const studentsUrl = '/users/students';
 
+interface SearchPersonResult {
+  id: number;
+  type: 'student' | 'employee' | 'representative';
+  studentStatus?: boolean | null;
+  person: {
+    id: number;
+    firstNames: string;
+    lastNames: string;
+    identificationNumber: string;
+    profilePhoto?: string;
+  };
+  role?: string;
+}
+
 export const getStudents = async (params?: {
   view?: string;
   levelId?: number;
@@ -25,6 +39,28 @@ export const getStudents = async (params?: {
     return await getDataApi(`${studentsUrl}${query ? `?${query}` : ''}`);
 };
 
+export const searchStudents = async (search?: string): Promise<IStudent[]> => {
+  const results = await getDataApi(`${usersUrl}/search?q=${encodeURIComponent(search || '')}`);
+  if (!Array.isArray(results)) return [];
+  return (results as SearchPersonResult[])
+    .filter((r) => r.type === 'student' && r.studentStatus !== false)
+    .map((r) => ({
+      id: r.id,
+      personId: r.person.id,
+      person: r.person,
+      birthCountry: '',
+      state: '',
+      municipality: '',
+      parish: '',
+      currentParish: '',
+      previousSchool: '',
+      address: '',
+      status: true,
+      admissionDate: new Date(),
+      sectionId: null,
+    })) as IStudent[];
+};
+
 export const getStaff = async () : Promise<IStaff[]> => {
     return await getDataApi(`${usersUrl}/staff`);
 };
@@ -43,6 +79,17 @@ export const checkIdentification = async (
 export const searchRepresentatives = async (search?: string): Promise<IRepresentative[]> => {
   const qs = search ? `?search=${encodeURIComponent(search)}` : '';
   return await getDataApi(`${usersUrl}/representatives${qs}`);
+};
+
+export const getRepresentatives = async (params?: {
+  view?: string;
+  minStudents?: number;
+}): Promise<IRepresentative[]> => {
+  const qs = new URLSearchParams();
+  if (params?.view) qs.set('view', params.view);
+  if (params?.minStudents !== undefined) qs.set('minStudents', String(params.minStudents));
+  const query = qs.toString();
+  return await getDataApi(`${usersUrl}/representatives${query ? `?${query}` : ''}`);
 };
 
 

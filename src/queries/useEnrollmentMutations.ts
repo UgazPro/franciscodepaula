@@ -1,13 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postDataApi, putDataApi } from "@/services/api";
 
-export const useCreateRepresentative = () => {
-  return useMutation({
-    mutationFn: ({ data }: { data: any }) =>
-      postDataApi("/users/representatives", data),
-  });
-};
-
 export const useLinkStudentRepresentative = () => {
   return useMutation({
     mutationFn: ({ studentId, representativeId }: { studentId: number; representativeId: number }) =>
@@ -83,6 +76,7 @@ export const useEnrollmentMutation = () => {
         payload.representativeProfession = formData.representativeProfession || "";
       } else {
         payload.existingRepresentativeId = formData.existingRepresentative?.id;
+        payload.representativeRelation = formData.representativeRelation;
       }
 
       return await postDataApi("/enrollment/full", payload);
@@ -90,6 +84,7 @@ export const useEnrollmentMutation = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["pending-enrollments"] });
+      qc.invalidateQueries({ queryKey: ["representatives"] });
     },
   });
 };

@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { getStudents, getStaff } from "@/services/users/user.service";
+import { getStudents, getStaff, getRepresentatives } from "@/services/users/user.service";
 
 export const useStudents = (params?: {
   view?: string;
@@ -21,6 +21,17 @@ export const useStaff = () => {
   return useQuery({
     queryKey: ["staff"],
     queryFn: getStaff,
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
+export const useRepresentatives = (params?: {
+  view?: string;
+  minStudents?: number;
+}) => {
+  return useQuery({
+    queryKey: ["representatives", params],
+    queryFn: () => getRepresentatives(params),
     staleTime: 1000 * 60 * 5,
   });
 };

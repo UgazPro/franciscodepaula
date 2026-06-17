@@ -44,6 +44,7 @@ export const useUpdateRepresentative = () => {
       putDataApi(`/users/representatives/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["representatives"] });
     },
   });
 };

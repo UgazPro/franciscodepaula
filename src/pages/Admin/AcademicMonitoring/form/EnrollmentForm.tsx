@@ -265,43 +265,67 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     } else if (step === 2) {
       fieldsToValidate = ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
     } else if (step === 3) {
-      fieldsToValidate = ["representativeMode"] as any;
-      if (representativeMode === "create") {
-        fieldsToValidate = [
-          "representativeMode",
-          "representativeFirstNames", "representativeLastNames", "representativeIdentification",
-          "representativeBirthDate", "representativeGender", "representativeEmail",
-          "representativePhone", "representativeRelation",
-        ] as any;
+      const vals = form.getValues();
+      let hasError = false;
+
+      form.clearErrors([
+        "representativeFirstNames", "representativeLastNames", "representativeIdentification",
+        "representativeBirthDate", "representativeGender", "representativeEmail",
+        "representativePhone", "representativeRelation", "existingRepresentative",
+      ]);
+
+      if (vals.representativeMode === "create") {
+        if (!vals.representativeFirstNames || vals.representativeFirstNames.trim().length < 2) {
+          form.setError("representativeFirstNames", { message: "Los nombres del representante son requeridos" });
+          hasError = true;
+        }
+        if (!vals.representativeLastNames || vals.representativeLastNames.trim().length < 2) {
+          form.setError("representativeLastNames", { message: "Los apellidos del representante son requeridos" });
+          hasError = true;
+        }
+        if (!vals.representativeIdentification || vals.representativeIdentification.trim().length < 6) {
+          form.setError("representativeIdentification", { message: "La cédula del representante es requerida" });
+          hasError = true;
+        }
+        if (!vals.representativeBirthDate || isNaN(new Date(vals.representativeBirthDate as any).getTime())) {
+          form.setError("representativeBirthDate", { message: "La fecha de nacimiento del representante es requerida" });
+          hasError = true;
+        }
+        if (!vals.representativeGender) {
+          form.setError("representativeGender", { message: "Seleccione el género del representante" });
+          hasError = true;
+        }
+        if (!vals.representativeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.representativeEmail)) {
+          form.setError("representativeEmail", { message: "Email inválido" });
+          hasError = true;
+        }
+        if (!vals.representativePhone || vals.representativePhone.length < 10) {
+          form.setError("representativePhone", { message: "El teléfono del representante es requerido" });
+          hasError = true;
+        }
+        if (!vals.representativeRelation) {
+          form.setError("representativeRelation", { message: "Indique la relación con el estudiante" });
+          hasError = true;
+        }
       } else {
-        fieldsToValidate = ["representativeMode", "existingRepresentative"] as any;
-      }
-    } else if (step === 4) {
-      fieldsToValidate = ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
-    }
-
-    const isValid = await trigger(fieldsToValidate);
-    if (!isValid) return;
-
-    // Duplicate identification checks (edit mode only)
-    if (isEditMode) {
-      if (step === 1) {
-        const { exists } = await checkIdentification(
-          form.getValues("identificationNumber"),
-          selectedStudent?.personId,
-        );
-        if (exists) {
-          toast.custom((t) => (
-            <ToastMessage success={false} message="Esta cédula ya está registrada por otro estudiante o usuario" visible={t.visible} />
-          ), { duration: 5000 });
-          return;
+        if (!vals.existingRepresentative) {
+          form.setError("existingRepresentative", { message: "Seleccione un representante existente" });
+          hasError = true;
+        }
+        if (!vals.representativeRelation) {
+          form.setError("representativeRelation", { message: "Indique la relación con el estudiante" });
+          hasError = true;
         }
       }
-      if (step === 3 && representativeMode === "create") {
+
+      if (hasError) return;
+
+      // Duplicate identification checks (edit mode only)
+      if (isEditMode && vals.representativeMode === "create") {
         const repPersonId =
           selectedStudent?.representatives?.[0]?.representative?.user?.person?.id;
         const { exists } = await checkIdentification(
-          form.getValues("representativeIdentification"),
+          vals.representativeIdentification || "",
           repPersonId,
         );
         if (exists) {
@@ -310,6 +334,27 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           ), { duration: 5000 });
           return;
         }
+      }
+    } else if (step === 4) {
+      fieldsToValidate = ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
+    }
+
+    if (fieldsToValidate.length > 0) {
+      const isValid = await trigger(fieldsToValidate);
+      if (!isValid) return;
+    }
+
+    // Duplicate identification checks for steps 1 (edit mode only)
+    if (isEditMode && step === 1) {
+      const { exists } = await checkIdentification(
+        form.getValues("identificationNumber"),
+        selectedStudent?.personId,
+      );
+      if (exists) {
+        toast.custom((t) => (
+          <ToastMessage success={false} message="Esta cédula ya está registrada por otro estudiante o usuario" visible={t.visible} />
+        ), { duration: 5000 });
+        return;
       }
     }
 
@@ -343,7 +388,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       selectedStudent.representatives?.[0]?.representative?.user?.person?.id;
     if (repPersonId) {
       const { exists: repIdExists } = await checkIdentification(
-        formData.representativeIdentification,
+        formData.representativeIdentification || "",
         repPersonId,
       );
       if (repIdExists) {
@@ -389,7 +434,6 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           gender: formData.representativeGender,
           email: formData.representativeEmail,
           phone: formData.representativePhone,
-          relationship: formData.representativeRelation,
           occupation: formData.representativeProfession,
         };
         const repResult = await updateRepresentative({ id: repId, data: representativePayload });
@@ -585,7 +629,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                     <div className="font-medium">{rep.person.firstNames} {rep.person.lastNames}</div>
                     <div className="text-xs text-(--lightBlueColor) flex gap-3 mt-0.5">
                       <span>{rep.person.identificationNumber}</span>
-                      <span>{rep.relationship}</span>
+                      <span>{rep.occupation}</span>
                       <span>{rep.studentCount} estudiante(s)</span>
                     </div>
                   </button>
@@ -618,7 +662,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           "representativeEmail", "representativePhone", "representativeRelation",
         ] as any;
       }
-      return ["representativeMode", "existingRepresentative"] as any;
+      return ["representativeMode", "existingRepresentative", "representativeRelation"] as any;
     }
     if (stepNumber === 4) return ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
     return [];
@@ -724,7 +768,10 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                 <FieldRenderer field={f3.representativeMode} customFieldRenderer={step3FieldRenderer} />
 
                 {representativeMode === "existing" && (
-                  <FieldRenderer field={f3.existingRepresentative} customFieldRenderer={step3FieldRenderer} />
+                  <>
+                    <FieldRenderer field={f3.existingRepresentative} customFieldRenderer={step3FieldRenderer} />
+                    <FieldRenderer field={f3.representativeRelation} />
+                  </>
                 )}
 
                 {representativeMode !== "existing" && (
