@@ -150,7 +150,7 @@ export default function AdminHeader() {
 
   const handleInputChange = (value: string) => {
     setQuery(value);
-    setDropdownOpen(value.length >= 2);
+    setDropdownOpen(value.trim().length >= 2);
   };
 
   const showDropdown = dropdownOpen && query.length >= 2;

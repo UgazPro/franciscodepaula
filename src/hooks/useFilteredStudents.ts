@@ -1,28 +1,22 @@
 import { useMemo } from "react";
 import { useStudentsStore } from "@/stores/students.store";
+import { normalizeSearch } from "@/helpers/search";
 import type { IStudent } from "@/services/users/user.interface";
 
 export const useFilteredStudents = (students: IStudent[] = []) => {
   const { searchTerm } = useStudentsStore();
 
   return useMemo(() => {
-    const search = searchTerm.trim().toLowerCase();
+    const term = normalizeSearch(searchTerm);
 
-    if (!search) return students;
+    if (!term) return students;
 
     return students.filter((student) => {
-      const firstNames = student.person.firstNames?.toLowerCase() ?? "";
-      const lastNames = student.person.lastNames?.toLowerCase() ?? "";
-      const identification = student.person.identificationNumber?.toLowerCase() ?? "";
-
-      const fullName = `${firstNames} ${lastNames}`;
-
-      return (
-        firstNames.includes(search) ||
-        lastNames.includes(search) ||
-        identification.includes(search) ||
-        fullName.includes(search)
-      );
+      const fn = normalizeSearch(student.person.firstNames ?? "");
+      const ln = normalizeSearch(student.person.lastNames ?? "");
+      const id = normalizeSearch(student.person.identificationNumber ?? "");
+      const fullName = `${fn} ${ln}`;
+      return fn.includes(term) || ln.includes(term) || id.includes(term) || fullName.includes(term);
     });
   }, [students, searchTerm]);
 };

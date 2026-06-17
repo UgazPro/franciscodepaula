@@ -10,6 +10,7 @@ import { paymentColumns, paymentExpandedRender } from "@/services/administration
 import type { PaymentResponse } from "@/services/administration/payments.types";
 import PaymentsFilter from "./PaymentsFilter";
 import { generatePaymentsPdf } from "@/utils/pdfGenerator";
+import { normalizeSearch } from "@/helpers/search";
 
 export default function PaymentsView() {
   const { filters } = usePaymentsStore();
@@ -29,18 +30,17 @@ export default function PaymentsView() {
   }, [itemsPerPage]);
 
   const filteredData = useMemo(() => {
-    if (!searchTerm.trim()) return payments as PaymentResponse[];
-    const term = searchTerm.toLowerCase();
+    const term = normalizeSearch(searchTerm);
+    if (!term) return payments as PaymentResponse[];
     return (payments as PaymentResponse[]).filter((p) => {
       const studentFee = p.studentFees?.[0];
       const person = studentFee?.student?.person;
-      const name =
-        `${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`.toLowerCase();
-      const ci = (person?.identificationNumber ?? "").toLowerCase();
-      const concept = studentFee?.fee?.name?.toLowerCase() ?? "";
-      const payerName = (p.payerName ?? "").toLowerCase();
-      const payerCi = (p.payerIdentification ?? "").toLowerCase();
-      const ref = (p.reference ?? "").toLowerCase();
+      const name = normalizeSearch(`${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`);
+      const ci = normalizeSearch(person?.identificationNumber ?? "");
+      const concept = normalizeSearch(studentFee?.fee?.name ?? "");
+      const payerName = normalizeSearch(p.payerName ?? "");
+      const payerCi = normalizeSearch(p.payerIdentification ?? "");
+      const ref = normalizeSearch(p.reference ?? "");
       return name.includes(term) || ci.includes(term) || concept.includes(term) || ref.includes(term) || payerName.includes(term) || payerCi.includes(term);
     });
   }, [payments, searchTerm]);
