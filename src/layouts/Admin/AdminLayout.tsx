@@ -1,9 +1,20 @@
-import { Outlet } from "react-router";
+import { useEffect } from "react";
+import { Outlet, useLocation } from "react-router";
 import AdminSidebar from "../Sidebar/AdminSidebar/AdminSidebar";
 import AdminHeader from "./AdminHeader";
 import AdminFooter from "./AdminFooter";
+import DialogComponent from "@/components/dialog/DialogComponent";
+import PersonDetailView from "./PersonDetailView";
+import { useSearchStore } from "@/stores/search.store";
 
 export default function AdminLayout() {
+    const { isDetailOpen, closeDetail } = useSearchStore();
+    const location = useLocation();
+
+    useEffect(() => {
+        closeDetail();
+    }, [location.pathname, closeDetail]);
+
     return (
         <div className="flex relative h-full min-h-screen w-full bg-gray-200 justify-end">
             {/* Sidebar Desktop */}
@@ -25,6 +36,16 @@ export default function AdminLayout() {
                 {/* Footer */}
                 <AdminFooter />
             </div>
+
+            {/* Global search result detail modal */}
+            <DialogComponent
+                openDialog={isDetailOpen}
+                onClose={() => closeDetail()}
+                dialogTitle=""
+                className="max-w-2xl max-h-[90vh] overflow-y-auto"
+            >
+                <PersonDetailView />
+            </DialogComponent>
         </div>
     );
 }

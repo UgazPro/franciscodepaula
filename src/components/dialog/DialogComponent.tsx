@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface DialogComponentProps {
     openDialog: boolean;
@@ -17,7 +18,7 @@ export default function DialogComponent({openDialog, onClose, children, dialogTi
         <div>
 
             <Dialog open={openDialog} onOpenChange={onClose}>
-                <DialogContent className={className}>
+                <DialogContent className={cn(className, "[overflow-anchor:auto]")} onOpenAutoFocus={(e) => e.preventDefault()}>
                     <DialogHeader>
                         <DialogTitle className={dialogTitleStyle}>{dialogTitle}</DialogTitle>
                         <DialogDescription>
