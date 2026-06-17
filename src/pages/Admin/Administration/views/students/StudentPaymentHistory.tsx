@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { usePayments } from "@/hooks/usePayments";
 import { useSchoolYears, useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import type { IStudent, StudentEnrollment } from "@/services/users/user.interface";
@@ -8,6 +8,8 @@ import { paymentColumns } from "@/services/administration/payments.tables";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import { useDeletePayment } from "@/queries/usePaymentMutations";
+import { usePaymentsStore } from "@/stores/payments.store";
+import { useAdministrationStore } from "@/stores/administration.store";
 
 interface Props {
   student: IStudent;
@@ -39,7 +41,7 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
 
   const [selectedSchoolYearId, setSelectedSchoolYearId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(4);
 
   useEffect(() => {
     if (activeSchoolYear && selectedSchoolYearId === null) {
@@ -67,7 +69,23 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
     [paymentList, currentPage, itemsPerPage],
   );
 
-  const columns = useMemo(() => paymentColumns({ onDelete: (id) => deletePayment(id) }), [deletePayment]);
+  const { selectPayment, setMode, setScreen } = usePaymentsStore();
+  const { setActiveTab } = useAdministrationStore();
+
+  const handleEdit = useCallback((payment: PaymentResponse) => {
+    selectPayment(payment);
+    setMode("edit");
+    setActiveTab("pagos");
+    setScreen("form");
+  }, [selectPayment, setMode, setActiveTab, setScreen]);
+
+  const columns = useMemo(
+    () => paymentColumns({
+      onDelete: (id) => deletePayment(id),
+      onEdit: handleEdit,
+    }),
+    [deletePayment, handleEdit],
+  );
 
   const representative = getRepresentativeInfo(student);
 

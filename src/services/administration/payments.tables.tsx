@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MoreVertical, Trash2 } from "lucide-react";
+import { MoreVertical, Trash2, Pencil } from "lucide-react";
 import type { Column } from "@/components/table/TableComponent";
 import type { PaymentResponse } from "./payments.types";
 import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
@@ -9,9 +9,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 interface Actions {
   onDelete: (id: number) => void;
+  onEdit: (payment: PaymentResponse) => void;
 }
 
-export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[] => [
+export const paymentColumns = ({ onDelete, onEdit }: Actions): Column<PaymentResponse>[] => [
   {
     header: "Estudiante",
     render: (payment) => {
@@ -96,7 +97,7 @@ export const paymentColumns = ({ onDelete }: Actions): Column<PaymentResponse>[]
     headerClassName: "text-right",
     className: "text-right",
     render: (payment) => (
-      <ActionsDropdown paymentId={payment.id} onDelete={() => onDelete(payment.id)} />
+      <ActionsDropdown payment={payment} onEdit={() => onEdit(payment)} onDelete={() => onDelete(payment.id)} />
     ),
   },
 ];
@@ -157,7 +158,7 @@ export const paymentExpandedRender = (payment: PaymentResponse) => (
   </div>
 );
 
-function ActionsDropdown({ paymentId, onDelete }: { paymentId: number; onDelete: () => void }) {
+function ActionsDropdown({ payment, onEdit, onDelete }: { payment: PaymentResponse; onEdit: () => void; onDelete: () => void }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -173,9 +174,21 @@ function ActionsDropdown({ paymentId, onDelete }: { paymentId: number; onDelete:
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={4} className="w-44 p-1">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setOpen(false);
+            onEdit();
+          }}
+          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm text-gray-700 hover:bg-blue-50 rounded-md cursor-pointer"
+        >
+          <Pencil size={14} />
+          Editar pago
+        </button>
         <DeleteDialog
           preposition="el"
-          whatsDeleting={`pago #${paymentId}`}
+          whatsDeleting={`pago #${payment.id}`}
           onConfirm={() => {
             setOpen(false);
             onDelete();

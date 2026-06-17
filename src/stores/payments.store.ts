@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { PaymentResponse } from "@/services/administration/payments.types";
 
 type PaymentScreen = "list" | "form";
+type PaymentMode = "create" | "edit";
 type DateFilterMode = "range" | "exact";
 
 export interface PaymentFilters {
@@ -21,6 +22,8 @@ export interface PaymentFilters {
 interface PaymentsStore {
   screen: PaymentScreen;
   setScreen: (screen: PaymentScreen) => void;
+  mode: PaymentMode;
+  setMode: (mode: PaymentMode) => void;
   selectedPayment: PaymentResponse | null;
   selectPayment: (payment: PaymentResponse) => void;
   clearSelected: () => void;
@@ -59,9 +62,11 @@ const defaultFilters: PaymentFilters = {
 export const usePaymentsStore = create<PaymentsStore>((set) => ({
   screen: "list",
   setScreen: (screen) => set({ screen }),
+  mode: "create",
+  setMode: (mode) => set({ mode }),
   selectedPayment: null,
   selectPayment: (payment) => set({ selectedPayment: payment }),
-  clearSelected: () => set({ selectedPayment: null }),
+  clearSelected: () => set({ selectedPayment: null, mode: "create" }),
   searchTerm: "",
   setSearchTerm: (v) => set({ searchTerm: v }),
   step: 1,

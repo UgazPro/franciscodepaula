@@ -15,7 +15,7 @@ export default function PaymentsView() {
   const { filters } = usePaymentsStore();
   const { data: payments = [], isLoading } = usePayments(filters);
   const { mutateAsync: deletePayment } = useDeletePayment();
-  const { searchTerm, setSearchTerm, setScreen } = usePaymentsStore();
+  const { searchTerm, setSearchTerm, setScreen, selectPayment, setMode } = usePaymentsStore();
 
   const { data: latestExchange } = useExchangeRate();
   const exchangeRate = latestExchange?.rate ? Number(latestExchange.rate) : 0;
@@ -73,7 +73,16 @@ export default function PaymentsView() {
     return { totalUSD, totalVES, totalCombinedUSD, count: data.length };
   }, [filteredData, exchangeRate]);
 
-  const columns = paymentColumns({ onDelete: (id) => deletePayment(id) });
+  const handleEdit = (payment: PaymentResponse) => {
+    selectPayment(payment);
+    setMode("edit");
+    setScreen("form");
+  };
+
+  const columns = paymentColumns({
+    onDelete: (id) => deletePayment(id),
+    onEdit: handleEdit,
+  });
 
   return (
     <div className="space-y-4">

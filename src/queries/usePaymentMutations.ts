@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postDataApi, deleteDataApi } from "@/services/api";
+import { postDataApi, putDataApi, deleteDataApi } from "@/services/api";
 
 export const useCreatePayment = () => {
   const qc = useQueryClient();
@@ -23,6 +23,20 @@ export const useCreateExchange = () => {
       postDataApi("/payments/exchange", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["exchange-rate"] });
+    },
+  });
+};
+
+export const useUpdatePayment = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      putDataApi(`/payments/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payments"] });
+      qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["students-with-debts"] });
     },
   });
 };

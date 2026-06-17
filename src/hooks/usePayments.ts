@@ -54,6 +54,5 @@ export const useExchangeRate = () => {
     refetchOnMount: false,
     refetchOnReconnect: false,
     refetchInterval: 1000 * 60 * 60,
-    select: (data: any[]) => data?.[0] ?? null,
   });
 };

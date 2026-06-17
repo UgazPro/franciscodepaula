@@ -4,10 +4,8 @@ import { useStudents } from "@/hooks/useUsers";
 import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { useStudentsStore } from "@/stores/students.store";
 import type { IStudent, StudentRepresentative, StudentEnrollment } from "@/services/users/user.interface";
-import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
-import StudentPaymentHistory from "./students/StudentPaymentHistory";
 
 const itemsPerPage = 12;
 
@@ -33,7 +31,7 @@ export default function StudentsView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [viewMode, setViewMode] = useState<"table" | "grid">("grid");
-  const [selectedStudent, setSelectedStudent] = useState<IStudent | null>(null);
+  const selectStudent = useStudentsStore((s) => s.selectStudent);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -85,12 +83,8 @@ export default function StudentsView() {
   ], []);
 
   const handleRowClick = (student: IStudent) => {
-    setSelectedStudent(student);
+    selectStudent(student);
     setCurrentPage(1);
-  };
-
-  const handleBack = () => {
-    setSelectedStudent(null);
   };
 
   const studentListView = (
@@ -205,22 +199,5 @@ export default function StudentsView() {
     </div>
   );
 
-  return (
-    <PageTransitionComponent
-      primaryChildren={studentListView}
-      secondaryChildren={
-        selectedStudent ? (
-          <StudentPaymentHistory
-            student={selectedStudent}
-            onBack={handleBack}
-          />
-        ) : (
-          <div className="flex items-center justify-center h-64 text-gray-400">
-            Selecciona un estudiante para ver su historial de pagos
-          </div>
-        )
-      }
-      toggle={selectedStudent !== null}
-    />
-  );
+  return studentListView;
 }

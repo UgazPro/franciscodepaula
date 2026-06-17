@@ -4,6 +4,7 @@ import {
 } from "lucide-react";
 import { useAdministrationStore } from "@/stores/administration.store";
 import { usePaymentsStore } from "@/stores/payments.store";
+import { useStudentsStore } from "@/stores/students.store";
 import {
     personalData, estudiantesData, pagosData, becasData,
     getDiasHabiles, generarRegistrosHoras, getCurrentPeriod, getQuincenaDates
@@ -19,6 +20,7 @@ import NominasView from "./views/PayrollView";
 import PaymentsView from "./views/PaymentsView";
 import PaymentForm from "./views/payments/PaymentForm";
 import StudentsView from "./views/StudentsView";
+import StudentPaymentHistory from "./views/students/StudentPaymentHistory";
 import BecasView from "./views/ScholarshipsView";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 
@@ -46,6 +48,9 @@ export default function Administracion() {
 
     const { screen: paymentsScreen } = usePaymentsStore();
     const isPaymentsFormOpen = paymentsScreen === "form";
+    const studentDetailOpen = useStudentsStore((s) => s.screen === "detail");
+    const selectedStudent = useStudentsStore((s) => s.selectedStudent);
+    const clearSelectedStudent = useStudentsStore((s) => s.clearSelectedStudent);
 
     useEffect(() => {
         const generarNominas = () => {
@@ -201,6 +206,30 @@ export default function Administracion() {
                     secondaryChildren={<PaymentForm />}
                     toggle={isPaymentsFormOpen}
                 />
+            ) : activeTab === "estudiantes" ? (
+                <PageTransitionComponent
+                    primaryChildren={
+                        <>
+                            <div className="mb-5">
+                                <TabsComponent<AdminTab>
+                                    tabs={tabItems}
+                                    activeTab={activeTab}
+                                    onChange={setActiveTab}
+                                />
+                            </div>
+                            <StudentsView />
+                        </>
+                    }
+                    secondaryChildren={
+                        selectedStudent ? (
+                            <StudentPaymentHistory
+                                student={selectedStudent}
+                                onBack={clearSelectedStudent}
+                            />
+                        ) : null
+                    }
+                    toggle={studentDetailOpen}
+                />
             ) : (
                 <>
                     <div className="mb-5">
@@ -244,8 +273,6 @@ export default function Administracion() {
                             handleVerDetalleHoras={handleVerDetalleHoras}
                         />
                     )}
-
-                    {activeTab === "estudiantes" && <StudentsView />}
 
                     {activeTab === "becas" && (
                         <BecasView

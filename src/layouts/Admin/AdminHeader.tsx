@@ -17,6 +17,7 @@ export default function AdminHeader() {
     const { data: latestExchange } = useExchangeRate();
 
     const exchangeRate = latestExchange ? Number(latestExchange.rate) : 0;
+    const exchangeRateDate = latestExchange ? new Date(latestExchange.date) : new Date();
 
     const user = {
         name: userDB?.person.firstNames + " " + userDB?.person.lastNames || "Ana Gómez",
@@ -89,10 +90,10 @@ export default function AdminHeader() {
                     </div>
 
                     {location.pathname === "/admin/administracion" && exchangeRate > 0 && (
-                        <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 border border-green-200 rounded-lg shrink-0">
-                            <DollarSign size={16} className="text-green-600" />
-                            <span className="text-sm text-gray-500">1 USD =</span>
-                            <span className="text-sm font-semibold text-green-700">Bs. {exchangeRate.toFixed(2)}</span>
+                        <div className="flex items-start gap-2 px-3 py-1.5 bg-green-50 border relative border-green-200 rounded-lg shrink-0">
+                            <span className="text-sm text-green-700">BCV</span>
+                            <span className="text-sm font-semibold text-green-700">{exchangeRate.toFixed(2)} Bs.</span>
+                            <span className="text-xs absolute -bottom-4.5 -left-26 text-green-700 whitespace-nowrap">Actualizado el {formatDate(exchangeRateDate)}</span>
                         </div>
                     )}
 
@@ -112,7 +113,7 @@ export default function AdminHeader() {
 
                     <div className="flex items-center gap-2 md:gap-3">
 
-                        <button
+                        {/* <button
                             onClick={() => setIsDarkMode(!isDarkMode)}
                             className="p-2 rounded-lg hover:bg-gray-100 transition text-gray-600"
                         >
@@ -159,7 +160,7 @@ export default function AdminHeader() {
                                     </div>
                                 </>
                             )}
-                        </div>
+                        </div> */}
 
                         <div className="relative">
                             <button
