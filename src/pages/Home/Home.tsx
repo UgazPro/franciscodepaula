@@ -19,9 +19,9 @@ export default function Home() {
 
                 <StaffSection />
 
-                <CalendarSection />
+                {/* <CalendarSection /> */}
 
-                <HonorRollSection />
+                {/* <HonorRollSection /> */}
 
                 <ActivitiesSection />
             </main>

@@ -71,7 +71,7 @@ export default function Header() {
                         {/* Login Button */}
                         <Link
                             to="/login"
-                            className="flex items-center gap-3 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg text-xs md:text-sm font-semibold"
+                            className="flex items-center gap-3 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 py-2 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg text-xs md:text-sm font-semibold md:w-38"
                         >
                             <LogIn size={18} />
                             Iniciar Sesión

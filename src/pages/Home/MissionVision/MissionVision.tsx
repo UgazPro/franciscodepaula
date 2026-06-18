@@ -24,7 +24,7 @@ export function MissionVision() {
               <h3 className="text-2xl font-bold text-(--darkBlueColor)">Visión</h3>
             </div>
             <p className="text-gray-700 leading-relaxed">
-              Ser una institución educativa líder y referente en la región, reconocida por su excelencia académica, innovación pedagógica y formación en valores, preparando a nuestros estudiantes para los desafíos del siglo XXI.
+              “Queremos ser la primera elección de las familias que confíen en que nuestra Comunidad Educativa, puede garantizar la formación académica, la madurez emocional y la educación en valores necesarios para el futuro de sus hijos en un mundo de conocimiento, tecnológico y global”
             </p>
           </div>
         </div>

@@ -33,8 +33,8 @@ export default function NavBar() {
     { id: "mision-vision", label: "Misión y Visión" },
     { id: "valores", label: "Valores" },
     { id: "personal", label: "Personal" },
-    { id: "calendario", label: "Calendario" },
-    { id: "honor", label: "Cuadro de Honor" },
+    // { id: "calendario", label: "Calendario" },
+    // { id: "honor", label: "Cuadro de Honor" },
     { id: "actividades", label: "Actividades" },
   ];
 

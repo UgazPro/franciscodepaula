@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 const images = [
-  "colegio.jpeg"
+  "colegio.jpeg",
 ];
 
 const INTERVAL = 3000;

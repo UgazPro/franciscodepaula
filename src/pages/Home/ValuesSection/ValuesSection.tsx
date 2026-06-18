@@ -1,13 +1,19 @@
-import { Heart, Users, BookOpen, Shield, Lightbulb, Handshake } from 'lucide-react';
+import { Star, Users, Heart, HandHeart, Handshake, Smile, Shield, GitMerge, Crown, Lightbulb, Scale, CheckCircle } from 'lucide-react';
 
 export function ValuesSection() {
   const values = [
+    { icon: Star, title: 'Fe', description: 'Confiamos en un propósito superior que guía nuestra labor' },
+    { icon: Users, title: 'Pertenencia', description: 'Fomentamos el sentido de comunidad y orgullo institucional' },
     { icon: Heart, title: 'Respeto', description: 'Valoramos la dignidad de cada persona' },
-    { icon: Users, title: 'Solidaridad', description: 'Trabajamos juntos por el bien común' },
-    { icon: BookOpen, title: 'Excelencia', description: 'Buscamos la mejora continua' },
-    { icon: Shield, title: 'Honestidad', description: 'Actuamos con transparencia' },
-    { icon: Lightbulb, title: 'Innovación', description: 'Fomentamos la creatividad' },
-    { icon: Handshake, title: 'Compromiso', description: 'Dedicación a nuestra comunidad' },
+    { icon: HandHeart, title: 'Amor', description: 'Actuamos con cariño y dedicación hacia los demás' },
+    { icon: Handshake, title: 'Solidaridad', description: 'Trabajamos juntos por el bien común' },
+    { icon: Smile, title: 'Alegría', description: 'Cultivamos un ambiente positivo y entusiasta' },
+    { icon: Shield, title: 'Honestidad', description: 'Actuamos con transparencia y rectitud' },
+    { icon: GitMerge, title: 'Integración', description: 'Promovemos la inclusión y el trabajo en equipo' },
+    { icon: Crown, title: 'Liderazgo', description: 'Inspiramos con el ejemplo y la visión' },
+    { icon: Lightbulb, title: 'Creatividad', description: 'Fomentamos la innovación y el pensamiento original' },
+    { icon: Scale, title: 'Equidad', description: 'Garantizamos igualdad de oportunidades para todos' },
+    { icon: CheckCircle, title: 'Responsabilidad', description: 'Cumplimos nuestros deberes con compromiso' },
   ];
 
   return (
@@ -19,7 +25,7 @@ export function ValuesSection() {
         <p className="text-center text-gray-600 mb-12 max-w-2xl mx-auto">
           Principios que guían nuestra labor educativa y convivencia diaria
         </p>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
           {values.map((value, index) => (
             <div
               key={index}
