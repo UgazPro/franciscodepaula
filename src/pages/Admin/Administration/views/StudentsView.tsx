@@ -1,13 +1,11 @@
 import { Search, LayoutList, Grid3X3, Loader2 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { useStudents } from "@/hooks/useUsers";
-import { useFilteredStudents } from "@/hooks/useFilteredStudents";
 import { useStudentsStore } from "@/stores/students.store";
 import type { IStudent, StudentRepresentative, StudentEnrollment } from "@/services/users/user.interface";
+import { type PaginatedResponse } from "@/services/users/user.service";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
-
-const itemsPerPage = 12;
 
 function getGradeAndSection(student: IStudent): string {
   const enrollment = (student.enrollments ?? [])
@@ -25,23 +23,26 @@ function getRepresentativeName(student: IStudent): string {
 }
 
 export default function StudentsView() {
-  const { data: students = [], isLoading } = useStudents({ view: "all" });
   const { searchTerm, setSearchTerm } = useStudentsStore();
-  const filteredStudents = useFilteredStudents(students as IStudent[]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
   const [viewMode, setViewMode] = useState<"table" | "grid">("grid");
   const selectStudent = useStudentsStore((s) => s.selectStudent);
 
+  const { data: result, isLoading } = useStudents({
+    view: "all",
+    search: searchTerm || undefined,
+    page: currentPage,
+    take: itemsPerPage,
+  });
+
+  const paginatedResult = result as PaginatedResponse<IStudent> | undefined;
+  const students = paginatedResult?.data ?? [];
+  const meta = paginatedResult?.meta;
+
   useEffect(() => {
     setCurrentPage(1);
   }, [itemsPerPage]);
-
-  const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-  const paginatedData = filteredStudents.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
 
   const columns = useMemo(() => [
     {
@@ -134,30 +135,32 @@ export default function StudentsView() {
           <Loader2 size={20} className="animate-spin" />
           Cargando estudiantes...
         </div>
-      ) : filteredStudents.length === 0 ? (
+      ) : students.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
           {searchTerm ? "No se encontraron estudiantes" : "No hay estudiantes registrados"}
         </div>
       ) : viewMode === "table" ? (
         <>
           <TableComponent
-            data={paginatedData as IStudent[]}
+            data={students as IStudent[]}
             columns={columns}
             onRowClick={handleRowClick}
           />
-          <PaginationComponent
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredStudents.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
+          {meta && (
+            <PaginationComponent
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              totalItems={meta.totalCount}
+              itemsPerPage={meta.take}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
         </>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {(paginatedData as IStudent[]).map((student) => (
+            {(students as IStudent[]).map((student) => (
               <div
                 key={student.id}
                 onClick={() => handleRowClick(student)}
@@ -176,24 +179,19 @@ export default function StudentsView() {
                   <p><span className="font-medium text-gray-500">Grado:</span> {getGradeAndSection(student)}</p>
                   <p><span className="font-medium text-gray-500">Representante:</span> {getRepresentativeName(student)}</p>
                 </div>
-                {/* <div className="mt-3 pt-3 border-t border-gray-100">
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                    student.status ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-                  }`}>
-                    {student.status ? "Activo" : "Inactivo"}
-                  </span>
-                </div> */}
               </div>
             ))}
           </div>
-          <PaginationComponent
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredStudents.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
+          {meta && (
+            <PaginationComponent
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              totalItems={meta.totalCount}
+              itemsPerPage={meta.take}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
         </>
       )}
     </div>

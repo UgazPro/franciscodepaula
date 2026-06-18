@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
-import { getStudents, getStaff, getRepresentatives } from "@/services/users/user.service";
+import { getStudents, getStaff, getRepresentatives, type PaginatedResponse } from "@/services/users/user.service";
 
 export const useStudents = (params?: {
+  page?: number;
+  take?: number;
+  search?: string;
   view?: string;
   levelId?: number;
   section?: string;
@@ -12,7 +15,7 @@ export const useStudents = (params?: {
 }) => {
   return useQuery({
     queryKey: ["students", params],
-    queryFn: () => getStudents(params),
+    queryFn: () => getStudents(params) as Promise<PaginatedResponse<any>>,
     staleTime: 1000 * 60 * 5,
   });
 };
@@ -26,12 +29,15 @@ export const useStaff = () => {
 };
 
 export const useRepresentatives = (params?: {
+  page?: number;
+  take?: number;
+  search?: string;
   view?: string;
   minStudents?: number;
 }) => {
   return useQuery({
     queryKey: ["representatives", params],
-    queryFn: () => getRepresentatives(params),
+    queryFn: () => getRepresentatives(params) as Promise<PaginatedResponse<any>>,
     staleTime: 1000 * 60 * 5,
   });
 };

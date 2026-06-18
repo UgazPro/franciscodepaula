@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 
 export interface Column<T> {
     header: string;
@@ -42,10 +42,10 @@ export function TableComponent<T>({
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight }}>
-                <Table className="w-full">
+                <table className="w-full">
 
                     {/* HEADER */}
-                    <TableHeader className="bg-gray-50 border-b border-gray-200">
+                    <TableHeader className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
                         <TableRow>
                             {columns.map((col, index) => (
                                 <TableHead
@@ -129,7 +129,7 @@ export function TableComponent<T>({
                         })}
                     </TableBody>
 
-                </Table>
+                </table>
             </div>
         </div>
     );

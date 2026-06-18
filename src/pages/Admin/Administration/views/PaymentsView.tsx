@@ -10,11 +10,9 @@ import { paymentColumns, paymentExpandedRender } from "@/services/administration
 import type { PaymentResponse } from "@/services/administration/payments.types";
 import PaymentsFilter from "./PaymentsFilter";
 import { generatePaymentsPdf } from "@/utils/pdfGenerator";
-import { normalizeSearch } from "@/helpers/search";
 
 export default function PaymentsView() {
   const { filters } = usePaymentsStore();
-  const { data: payments = [], isLoading } = usePayments(filters);
   const { mutateAsync: deletePayment } = useDeletePayment();
   const { searchTerm, setSearchTerm, setScreen, selectPayment, setMode } = usePaymentsStore();
 
@@ -29,30 +27,26 @@ export default function PaymentsView() {
     setCurrentPage(1);
   }, [itemsPerPage]);
 
-  const filteredData = useMemo(() => {
-    const term = normalizeSearch(searchTerm);
-    if (!term) return payments as PaymentResponse[];
-    return (payments as PaymentResponse[]).filter((p) => {
-      const studentFee = p.studentFees?.[0];
-      const person = studentFee?.student?.person;
-      const name = normalizeSearch(`${person?.firstNames ?? ""} ${person?.lastNames ?? ""}`);
-      const ci = normalizeSearch(person?.identificationNumber ?? "");
-      const concept = normalizeSearch(studentFee?.fee?.name ?? "");
-      const payerName = normalizeSearch(p.payerName ?? "");
-      const payerCi = normalizeSearch(p.payerIdentification ?? "");
-      const ref = normalizeSearch(p.reference ?? "");
-      return name.includes(term) || ci.includes(term) || concept.includes(term) || ref.includes(term) || payerName.includes(term) || payerCi.includes(term);
-    });
-  }, [payments, searchTerm]);
+  // Paginated query for the table
+  const { data: paginatedResult, isLoading } = usePayments({
+    ...filters,
+    search: searchTerm || undefined,
+    page: currentPage,
+    take: itemsPerPage,
+  });
 
-  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-  const paginatedData = filteredData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  // Non-paginated query for totals and PDF export
+  const { data: allPaymentsResult } = usePayments({
+    ...filters,
+    search: searchTerm || undefined,
+  });
+
+  const paginatedData = (paginatedResult as any)?.data ?? [];
+  const paginationMeta = (paginatedResult as any)?.meta;
+  const allPayments = Array.isArray(allPaymentsResult) ? allPaymentsResult : (allPaymentsResult as any)?.data ?? [];
 
   const totales = useMemo(() => {
-    const data = filteredData as PaymentResponse[];
+    const data = allPayments as PaymentResponse[];
 
     let totalUSD = 0;
     let totalVES = 0;
@@ -71,7 +65,7 @@ export default function PaymentsView() {
       : totalUSD;
 
     return { totalUSD, totalVES, totalCombinedUSD, count: data.length };
-  }, [filteredData, exchangeRate]);
+  }, [allPayments, exchangeRate]);
 
   const handleEdit = (payment: PaymentResponse) => {
     selectPayment(payment);
@@ -108,14 +102,14 @@ export default function PaymentsView() {
               onClick={async () => {
                 setPdfLoading(true);
                 try {
-                  await generatePaymentsPdf(filteredData as any);
+                  await generatePaymentsPdf(allPayments as any);
                 } catch (error) {
                   console.error("Error generating PDF:", error);
                 } finally {
                   setPdfLoading(false);
                 }
               }}
-              disabled={pdfLoading || filteredData.length === 0}
+              disabled={pdfLoading || allPayments.length === 0}
               className="flex items-center gap-2 px-4 py-2.5 border border-(--blueColor)/30 text-(--blueColor) rounded-xl hover:bg-(--blueColor)/5 hover:border-(--blueColor)/50 transition shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {pdfLoading ? (
@@ -153,15 +147,17 @@ export default function PaymentsView() {
         </div>
       ) : (
         <>
-          <TableComponent data={paginatedData} columns={columns} renderExpanded={paymentExpandedRender} getRowId={(p) => p.id} maxHeight={328} />
-          <PaginationComponent
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredData.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
+          <TableComponent data={paginatedData} columns={columns} renderExpanded={paymentExpandedRender} getRowId={(p) => p.id} maxHeight={310} />
+          {paginationMeta && (
+            <PaginationComponent
+              currentPage={paginationMeta.page}
+              totalPages={paginationMeta.totalPages}
+              totalItems={paginationMeta.totalCount}
+              itemsPerPage={paginationMeta.take}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
         </>
       )}
     </div>

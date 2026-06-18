@@ -1,12 +1,12 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Plus, SlidersHorizontal, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { normalizeSearch } from "@/helpers/search";
 import { useRepresentatives } from "@/hooks/useUsers";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import { representativeColumns } from "@/services/users/representative.tables";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
+import { type PaginatedResponse } from "@/services/users/user.service";
 import type { IRepresentative } from "@/services/users/user.interface";
 
 type FilterView = "active" | "all" | "multiple";
@@ -32,27 +32,17 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
   const viewParam = filterView === "active" ? "active" : undefined;
   const minStudents = filterView === "multiple" ? 2 : undefined;
 
-  const { data: representatives = [], isLoading } = useRepresentatives({
+  const { data: result, isLoading } = useRepresentatives({
+    page: currentPage,
+    take: itemsPerPage,
+    search: searchTerm || undefined,
     view: viewParam,
     minStudents,
   });
 
-  const filteredRepresentatives = useMemo(() => {
-    const term = normalizeSearch(searchTerm);
-    if (!term) return representatives as IRepresentative[];
-    return (representatives as IRepresentative[]).filter((rep) => {
-      const fn = normalizeSearch(rep.person.firstNames ?? "");
-      const ln = normalizeSearch(rep.person.lastNames ?? "");
-      const id = normalizeSearch(rep.person.identificationNumber ?? "");
-      return fn.includes(term) || ln.includes(term) || id.includes(term);
-    });
-  }, [representatives, searchTerm]);
-
-  const totalPages = Math.ceil(filteredRepresentatives.length / itemsPerPage);
-  const paginatedData = filteredRepresentatives.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
-  );
+  const paginatedResult = result as PaginatedResponse<IRepresentative> | undefined;
+  const representatives = paginatedResult?.data ?? [];
+  const meta = paginatedResult?.meta;
 
   const pillClass = (active: boolean) =>
     `px-3 py-1.5 rounded-lg text-sm font-medium transition cursor-pointer select-none ${active
@@ -62,7 +52,6 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
 
   return (
     <div className="">
-
       <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-4">
         <SearchFilterComponent
           searchTerm={searchTerm}
@@ -121,25 +110,27 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
           Cargando representantes...
         </div>
-      ) : filteredRepresentatives.length === 0 ? (
+      ) : representatives.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
           {searchTerm ? "No se encontraron representantes" : "No hay representantes registrados"}
         </div>
       ) : (
         <>
           <TableComponent
-            data={paginatedData as IRepresentative[]}
+            data={representatives as IRepresentative[]}
             columns={representativeColumns(onEdit)}
             maxHeight={438}
           />
-          <PaginationComponent
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={filteredRepresentatives.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={setItemsPerPage}
-          />
+          {meta && (
+            <PaginationComponent
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              totalItems={meta.totalCount}
+              itemsPerPage={meta.take}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          )}
         </>
       )}
     </div>

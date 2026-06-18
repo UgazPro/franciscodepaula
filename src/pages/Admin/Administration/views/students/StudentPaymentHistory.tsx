@@ -1,5 +1,5 @@
 import { ArrowLeft, Loader2 } from "lucide-react";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { usePayments } from "@/hooks/usePayments";
 import { useSchoolYears, useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import type { IStudent, StudentEnrollment } from "@/services/users/user.interface";
@@ -53,21 +53,16 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
     setCurrentPage(1);
   }, [itemsPerPage]);
 
-  const { data: payments = [], isLoading: paymentsLoading } = usePayments({
+  const { data: result, isLoading: paymentsLoading } = usePayments({
     studentId: student.id,
     schoolYearId: selectedSchoolYearId ?? undefined,
+    page: currentPage,
+    take: itemsPerPage,
   } as any);
 
-  const paymentList = payments as PaymentResponse[];
-
-  const totalPages = Math.ceil(paymentList.length / itemsPerPage);
-  const paginatedPayments = useMemo(
-    () => paymentList.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage,
-    ),
-    [paymentList, currentPage, itemsPerPage],
-  );
+  const paginatedResult = result as any;
+  const paymentList = (paginatedResult?.data ?? []) as PaymentResponse[];
+  const meta = paginatedResult?.meta;
 
   const { selectPayment, setMode, setScreen } = usePaymentsStore();
   const { setActiveTab } = useAdministrationStore();
@@ -157,17 +152,19 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
       ) : (
         <>
           <TableComponent
-            data={paginatedPayments}
+            data={paymentList}
             columns={columns}
           />
-          <PaginationComponent
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={paymentList.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
-          />
+          {meta && (
+            <PaginationComponent
+              currentPage={meta.page}
+              totalPages={meta.totalPages}
+              totalItems={meta.totalCount}
+              itemsPerPage={meta.take}
+              onPageChange={setCurrentPage}
+              onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
+            />
+          )}
         </>
       )}
     </div>

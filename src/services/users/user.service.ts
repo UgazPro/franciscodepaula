@@ -18,7 +18,22 @@ interface SearchPersonResult {
   role?: string;
 }
 
+export interface PaginatedResponse<T> {
+  data: T[];
+  meta: {
+    page: number;
+    take: number;
+    totalCount: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+}
+
 export const getStudents = async (params?: {
+  page?: number;
+  take?: number;
+  search?: string;
   view?: string;
   levelId?: number;
   section?: string;
@@ -26,8 +41,11 @@ export const getStudents = async (params?: {
   ageMin?: number;
   ageMax?: number;
   ageExact?: number;
-}): Promise<IStudent[]> => {
+}): Promise<IStudent[] | PaginatedResponse<IStudent>> => {
     const qs = new URLSearchParams();
+    if (params?.page !== undefined) qs.set('page', String(params.page));
+    if (params?.take !== undefined) qs.set('take', String(params.take));
+    if (params?.search) qs.set('search', params.search);
     if (params?.view) qs.set('view', params.view);
     if (params?.levelId !== undefined) qs.set('levelId', String(params.levelId));
     if (params?.section !== undefined) qs.set('section', params.section);
@@ -82,10 +100,16 @@ export const searchRepresentatives = async (search?: string): Promise<IRepresent
 };
 
 export const getRepresentatives = async (params?: {
+  page?: number;
+  take?: number;
+  search?: string;
   view?: string;
   minStudents?: number;
-}): Promise<IRepresentative[]> => {
+}): Promise<IRepresentative[] | PaginatedResponse<IRepresentative>> => {
   const qs = new URLSearchParams();
+  if (params?.page !== undefined) qs.set('page', String(params.page));
+  if (params?.take !== undefined) qs.set('take', String(params.take));
+  if (params?.search) qs.set('search', params.search);
   if (params?.view) qs.set('view', params.view);
   if (params?.minStudents !== undefined) qs.set('minStudents', String(params.minStudents));
   const query = qs.toString();

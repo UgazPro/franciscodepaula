@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from "react";
-import { normalizeSearch } from "@/helpers/search";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import TabsComponent from "@/components/tabs/TabsComponent";
 import { useStudentsStore } from "@/stores/students.store";
@@ -37,7 +36,10 @@ export default function AcademicMonitoring() {
     const [repFormMode, setRepFormMode] = useState<"create" | "edit" | null>(null);
     const [selectedRepresentative, setSelectedRepresentative] = useState<IRepresentative | null>(null);
 
-    const { data: students = [], isLoading } = useStudents({
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
+
+    const commonFilters = {
         view: filterView,
         levelId: filterLevelId ?? undefined,
         section: filterSection ?? undefined,
@@ -45,21 +47,25 @@ export default function AcademicMonitoring() {
         ageMin: filterAgeMode === "range" ? (filterAgeMin ?? undefined) : undefined,
         ageMax: filterAgeMode === "range" ? (filterAgeMax ?? undefined) : undefined,
         ageExact: filterAgeMode === "exact" ? (filterAgeExact ?? undefined) : undefined,
+    };
+
+    // Paginated query for the table
+    const { data: paginatedResult, isLoading } = useStudents({
+        ...commonFilters,
+        search: searchTerm,
+        page: currentPage,
+        take: itemsPerPage,
     });
 
-    const filteredStudents = useMemo(() => {
-        const term = normalizeSearch(searchTerm);
-        if (!term) return students;
-        return (students as IStudent[]).filter((s) => {
-            const fn = normalizeSearch(s.person?.firstNames ?? "");
-            const ln = normalizeSearch(s.person?.lastNames ?? "");
-            const id = normalizeSearch(s.person?.identificationNumber ?? "");
-            return fn.includes(term) || ln.includes(term) || id.includes(term);
-        });
-    }, [students, searchTerm]);
+    // Non-paginated query for PDF export
+    const { data: allStudentsResult } = useStudents({
+        ...commonFilters,
+        search: searchTerm,
+    });
 
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(5);
+    const students = (paginatedResult as any)?.data ?? [];
+    const paginationMeta = (paginatedResult as any)?.meta;
+    const filteredStudents = Array.isArray(allStudentsResult) ? allStudentsResult : (allStudentsResult as any)?.data ?? [];
 
     useEffect(() => {
         setCurrentPage(1);
@@ -73,12 +79,6 @@ export default function AcademicMonitoring() {
     useEffect(() => {
         useStudentsStore.getState().clearFilters();
     }, [activeTab]);
-
-    const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);
-    const paginatedStudents = filteredStudents.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage,
-    );
 
     const formSteps = 4;
 
@@ -136,31 +136,27 @@ export default function AcademicMonitoring() {
                                     <div className="flex-1">
                                         <AcademicMonitoringHeader />
                                     </div>
-                                    <PdfExportButton students={filteredStudents} />
+                                    <PdfExportButton students={filteredStudents as IStudent[]} />
                                 </div>
                                 {isLoading ? (
                                     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
                                         Cargando estudiantes...
                                     </div>
-                                ) : paginatedStudents.length === 0 ? (
-                                    <>
-                                        {filteredStudents.length === 0 && !searchTerm ? (
-                                            <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
-                                        ) : (
-                                            <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
-                                        )}
-                                    </>
+                                ) : students.length === 0 ? (
+                                    <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
                                 ) : (
                                     <>
-                                        <StudentListView filteredStudents={paginatedStudents} />
-                                        <PaginationComponent
-                                            currentPage={currentPage}
-                                            totalPages={totalPages}
-                                            totalItems={filteredStudents.length}
-                                            itemsPerPage={itemsPerPage}
-                                            onPageChange={setCurrentPage}
-                                            onItemsPerPageChange={setItemsPerPage}
-                                        />
+                                        <StudentListView filteredStudents={students as IStudent[]} />
+                                        {paginationMeta && (
+                                            <PaginationComponent
+                                                currentPage={paginationMeta.page}
+                                                totalPages={paginationMeta.totalPages}
+                                                totalItems={paginationMeta.totalCount}
+                                                itemsPerPage={paginationMeta.take}
+                                                onPageChange={setCurrentPage}
+                                                onItemsPerPageChange={setItemsPerPage}
+                                            />
+                                        )}
                                     </>
                                 )}
                             </>

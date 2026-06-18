@@ -2,8 +2,18 @@ import { useQuery } from "@tanstack/react-query";
 import { getDataApi } from "@/services/api";
 import type { PaymentFilters } from "@/stores/payments.store";
 
-export const usePayments = (filters?: PaymentFilters) => {
+export interface PaymentsQueryParams extends PaymentFilters {
+  page?: number;
+  take?: number;
+  search?: string;
+}
+
+export const usePayments = (filters?: PaymentsQueryParams) => {
   const params = new URLSearchParams();
+
+  if (filters?.page !== undefined) params.set("page", String(filters.page));
+  if (filters?.take !== undefined) params.set("take", String(filters.take));
+  if (filters?.search) params.set("search", filters.search);
 
   if (filters?.dateMode === "exact" && filters?.exactDate) {
     params.set("exactDate", filters.exactDate);
