@@ -1,12 +1,7 @@
 import { useState, useEffect } from "react";
 
 const images = [
-  "/1.jpeg",
-  "/2.jpeg",
-  "/3.jpeg",
-  "/4.jpeg",
-  "/5.jpeg",
-  "/6.jpeg",
+  "colegio.jpeg"
 ];
 
 const INTERVAL = 3000;
@@ -24,7 +19,7 @@ export function HeroSection() {
   return (
     <section
       id="inicio"
-      className="relative h-[80vh] min-h-[500px] overflow-hidden"
+      className="relative h-[80vh] min-h-125 overflow-hidden"
     >
       {images.map((src, i) => (
         <div

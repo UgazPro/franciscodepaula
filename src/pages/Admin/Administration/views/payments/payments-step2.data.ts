@@ -2,6 +2,11 @@ import type { FormField } from "@/components/form/formComponent.interface";
 
 export const step2Fields: FormField[] = [
   {
+    name: "representativeSearch",
+    label: "Buscar Representante",
+    type: "other",
+  },
+  {
     name: "payerName",
     label: "Nombre del Pagador",
     type: "text",
@@ -24,6 +29,24 @@ export const step2Fields: FormField[] = [
     label: "Referencia",
     type: "text",
     placeholder: "Número de referencia",
+  },
+  {
+    name: "paymentMethodId",
+    label: "Método de Pago",
+    type: "select",
+    placeholder: "Seleccione método de pago",
+    options: [],
+  },
+  {
+    name: "description",
+    label: "Descripción",
+    type: "text",
+    placeholder: "Ej: Pago múltiple",
+  },
+  {
+    name: "paymentDate",
+    label: "Fecha de Pago",
+    type: "date",
   },
 ];
 

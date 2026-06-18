@@ -1,8 +1,9 @@
-import type { FormField, OtherField } from "@/components/form/formComponent.interface";
+import type { FormField, OtherField, MultiSelectField as MultiSelectFieldType } from "@/components/form/formComponent.interface";
 import { useFormContext, Controller } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
 import { SelectComponentForm } from "@/components/form/renderFormComponents/SelectComponent";
+import { MultiSelectField } from "@/components/fieldRenderer/MultiSelectField";
 import type { FieldValues, UseFormReturn } from "react-hook-form";
 
 interface FieldRendererProps<T extends FieldValues = FieldValues> {
@@ -95,6 +96,24 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
             hasError ? "border-red-500" : "border-(--lightBlueColor)/30",
           )}
           placeholder="Ej: Av. Principal, Casa #123, Urbanización Las Mercedes"
+        />
+        {hasError && (
+          <p className="text-red-500 text-xs mt-1">{errorMessage}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (field.type === "multiselect") {
+    const msField = field as MultiSelectFieldType;
+    return (
+      <div>
+        <MultiSelectField
+          name={field.name}
+          label={field.label}
+          options={msField.options}
+          disabled={disabled}
+          placeholder={msField.placeholder || "Seleccione..."}
         />
         {hasError && (
           <p className="text-red-500 text-xs mt-1">{errorMessage}</p>

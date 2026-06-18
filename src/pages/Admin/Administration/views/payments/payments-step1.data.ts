@@ -2,26 +2,6 @@ import type { FormField } from "@/components/form/formComponent.interface";
 
 export const step1Fields: FormField[] = [
   {
-    name: "studentSearch",
-    label: "Buscar Estudiante",
-    type: "other",
-  },
-  {
-    name: "feeId",
-    label: "Tipo de Pago",
-    type: "select",
-    placeholder: "Seleccione tipo de deuda",
-    options: [],
-  },
-  {
-    name: "totalAmount",
-    label: "Monto",
-    type: "text",
-    inputType: "number",
-    placeholder: "0.00",
-    disabled: true,
-  },
-  {
     name: "exchangeRate",
     label: "Tasa del Día (Bs./USD)",
     type: "text",
@@ -39,22 +19,32 @@ export const step1Fields: FormField[] = [
     ],
   },
   {
-    name: "paymentMethodId",
-    label: "Método de Pago",
-    type: "select",
-    placeholder: "Seleccione método de pago",
-    options: [],
-  },
-  {
-    name: "description",
-    label: "Descripción",
+    name: "expectedUsd",
+    label: "Total Esperado en USD",
     type: "text",
-    placeholder: "Ej: Mensualidad Abril 2026",
+    inputType: "number",
+    placeholder: "0.00",
+    disabled: true,
   },
   {
-    name: "paymentDate",
-    label: "Fecha de Pago",
-    type: "date",
+    name: "expectedVes",
+    label: "Total Esperado en Bs.",
+    type: "text",
+    inputType: "number",
+    placeholder: "0.00",
+    disabled: true,
+  },
+  {
+    name: "totalAmount",
+    label: "Monto a Pagar",
+    type: "text",
+    inputType: "number",
+    placeholder: "0.00",
+  },
+  {
+    name: "studentsSection",
+    label: "Estudiantes",
+    type: "other",
   },
 ];
 

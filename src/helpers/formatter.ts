@@ -81,6 +81,13 @@ function formatMartialTime(y: number, m: number, d: number) {
   return parts.length ? parts.join(", ") : "Recién inscrito";
 }
 
+export function formatCurrency(amount: number): string {
+  return amount.toLocaleString("es-VE", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+}
+
 export const formatPhoneNumber = (phone: string): string => {
     const cleaned = ('' + (phone ?? '')).replace(/\D/g, '');
     const match = cleaned.match(/^(\d{4})(\d{3})(\d{4})$/);
