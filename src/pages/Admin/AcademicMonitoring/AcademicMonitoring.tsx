@@ -67,16 +67,11 @@ export default function AcademicMonitoring() {
 
     useEffect(() => {
         useStudentsStore.getState().closeForm();
-    }, []);
-
-    useEffect(() => {
         useStudentsStore.getState().clearFilters();
     }, []);
 
     useEffect(() => {
-        if (activeTab === "estudiantes") {
-            useStudentsStore.getState().clearFilters();
-        }
+        useStudentsStore.getState().clearFilters();
     }, [activeTab]);
 
     const totalPages = Math.ceil(filteredStudents.length / itemsPerPage);

@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import AdminSidebar from "../Sidebar/AdminSidebar/AdminSidebar";
 import AdminHeader from "./AdminHeader";
-import AdminFooter from "./AdminFooter";
 import DialogComponent from "@/components/dialog/DialogComponent";
 import PersonDetailView from "./PersonDetailView";
 import { useSearchStore } from "@/stores/search.store";
@@ -27,14 +26,12 @@ export default function AdminLayout() {
                 <AdminHeader />
 
                 {/* Main Content */}
-                <main className="flex-1 px-4 md:px-6 pt-4 md:pt-6 overflow-x-hidden">
-                    <div className="max-w-7xl mx-auto">
+                <main className="flex-1 px-4 md:px-6 pt-4 md:pt-6 overflow-x-hidden md:mb-5">
+                    <div className="px-6">
                         <Outlet />
                     </div>
                 </main>
 
-                {/* Footer */}
-                <AdminFooter />
             </div>
 
             {/* Global search result detail modal */}

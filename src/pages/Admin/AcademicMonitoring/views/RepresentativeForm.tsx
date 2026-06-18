@@ -66,11 +66,12 @@ export default function RepresentativeForm({ mode, selectedRepresentative, onClo
       firstNames: selectedRepresentative.person.firstNames,
       lastNames: selectedRepresentative.person.lastNames,
       identificationNumber: selectedRepresentative.person.identificationNumber,
-      birthDate: new Date(),
-      gender: "",
+      birthDate: selectedRepresentative.person.birthDate ? new Date(selectedRepresentative.person.birthDate) : new Date(),
+      gender: selectedRepresentative.person.gender ?? "",
       email: selectedRepresentative.email,
       phone: selectedRepresentative.phone ?? "",
       occupation: selectedRepresentative.occupation ?? "",
+      relationship: (selectedRepresentative as any).relationship ?? "",
     });
   }, [mode, selectedRepresentative]);
 
@@ -176,6 +177,7 @@ export default function RepresentativeForm({ mode, selectedRepresentative, onClo
         payload.relationship = data.relationship;
         await createRepresentative({ data: payload });
       } else {
+        payload.relationship = data.relationship;
         await updateRepresentative({
           id: selectedRepresentative!.id,
           data: payload,
@@ -244,6 +246,14 @@ export default function RepresentativeForm({ mode, selectedRepresentative, onClo
                       <p className="text-sm text-red-500">{form.formState.errors.studentId.message as string}</p>
                     )}
                   </div>
+                  <FieldRenderer field={f.relationship} />
+                </div>
+              </div>
+            )}
+
+            {mode === "edit" && (
+              <div className="mt-6 pt-6 border-t border-(--lightBlueColor)/20">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                   <FieldRenderer field={f.relationship} />
                 </div>
               </div>

@@ -1,11 +1,11 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef, useLayoutEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { ChevronLeft, ChevronRight, Check, Camera, X, ArrowLeft, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { enrollmentSchema, type EnrollmentFormValues } from "./enrollment/enrollment.schema";
+import { enrollmentSchema, type EnrollmentFormValues, step1Schema, step2Schema } from "./enrollment/enrollment.schema";
 import { step1ByName } from "./enrollment/steps/step1Fields.data";
 import { step2ByName } from "./enrollment/steps/step2Fields.data";
 import { step3ByName } from "./enrollment/steps/step3Fields.data";
@@ -40,7 +40,15 @@ const STEPS = [
   { title: "Asignación", description: "Año escolar, nivel y sección" },
 ];
 
+const EDIT_STEPS = STEPS.filter((_, i) => i !== 2);
+
 export function EnrollmentForm({ open, onClose, initialData, mode = "create", selectedStudent, step, setStep, totalSteps }: EnrollmentFormProps) {
+  const isEditMode = mode === "edit";
+
+  const displaySteps = useMemo(() => (isEditMode ? EDIT_STEPS : STEPS), [isEditMode]);
+  const toDisplayStep = useCallback((actual: number) => (isEditMode && actual > 2 ? actual - 1 : actual), [isEditMode]);
+  const toActualStep = useCallback((display: number) => (isEditMode && display >= 3 ? display + 1 : display), [isEditMode]);
+
   const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
   const [completedStep, setCompletedStep] = useState(mode === "edit" ? totalSteps : 0);
   const enrollmentMutation = useEnrollmentMutation();
@@ -89,8 +97,6 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   });
 
   const { trigger, setValue, watch } = form;
-
-  const isEditMode = mode === "edit";
 
   const schoolYearId = watch("schoolYearId");
   const levelId = watch("levelId");
@@ -216,7 +222,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     form.clearErrors();
   }, [step]);
 
@@ -261,9 +267,25 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     let fieldsToValidate: (keyof EnrollmentFormValues)[] = [];
 
     if (step === 1) {
-      fieldsToValidate = ["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"];
+      form.clearErrors(["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"]);
+      const result = step1Schema.safeParse(form.getValues());
+      if (!result.success) {
+        result.error.errors.forEach((err) => {
+          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message });
+        });
+        return;
+      }
+      // fall through to duplicate check + navigation
     } else if (step === 2) {
-      fieldsToValidate = ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
+      form.clearErrors(["birthCountry", "state", "municipality", "parish", "currentParish", "address"]);
+      const result = step2Schema.safeParse(form.getValues());
+      if (!result.success) {
+        result.error.errors.forEach((err) => {
+          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message });
+        });
+        return;
+      }
+      // fall through to duplicate check + navigation
     } else if (step === 3) {
       const vals = form.getValues();
       let hasError = false;
@@ -358,7 +380,10 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       }
     }
 
-    if (step < totalSteps) {
+    if (isEditMode && step === 2) {
+        setCompletedStep(prev => Math.max(prev, step));
+        setStep(4);
+      } else if (step < totalSteps) {
         setCompletedStep(prev => Math.max(prev, step));
         setStep(step + 1);
       } else {
@@ -470,7 +495,11 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   };
 
   const goBack = () => {
-    if (step > 1) setStep(step - 1);
+    if (isEditMode && step === 4) {
+      setStep(2);
+    } else if (step > 1) {
+      setStep(step - 1);
+    }
   };
 
   const resetForm = () => {
@@ -695,9 +724,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
         </div>
 
         <StepperComponent
-          steps={STEPS}
-          currentStep={step}
-          onStepClick={handleStepClick}
+          steps={displaySteps}
+          currentStep={toDisplayStep(step)}
+          onStepClick={(n) => handleStepClick(toActualStep(n))}
         />
 
         <Form {...form}>
@@ -763,7 +792,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
             )}
 
             {/* ==================== PASO 3: DATOS DEL REPRESENTANTE ==================== */}
-            {step === 3 && (
+            {!isEditMode && step === 3 && (
               <div className="space-y-5">
                 <FieldRenderer field={f3.representativeMode} customFieldRenderer={step3FieldRenderer} />
 

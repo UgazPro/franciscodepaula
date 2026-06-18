@@ -17,10 +17,11 @@ interface TableComponentProps<T> {
     rowClassName?: (row: T) => string;
     renderExpanded?: (row: T) => React.ReactNode;
     getRowId?: (row: T) => string | number;
+    maxHeight?: number;
 }
 
 export function TableComponent<T>({
-    data, columns, onRowClick, rowClassName, renderExpanded, getRowId,
+    data, columns, onRowClick, rowClassName, renderExpanded, getRowId, maxHeight = 400,
 }: TableComponentProps<T>) {
     const [expandedRows, setExpandedRows] = useState<Set<string | number>>(new Set());
 
@@ -40,7 +41,7 @@ export function TableComponent<T>({
 
     return (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight }}>
                 <Table className="w-full">
 
                     {/* HEADER */}
@@ -80,7 +81,7 @@ export function TableComponent<T>({
                                         {columns.map((col, colIndex) => (
                                             <TableCell
                                                 key={colIndex}
-                                                className={`px-6 py-4 ${col.className ?? ""}`}
+                                                className={`px-6 py-2 ${col.className ?? ""}`}
                                             >
                                                 {col.render
                                                     ? col.render(row)

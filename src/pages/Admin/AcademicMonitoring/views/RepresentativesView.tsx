@@ -61,60 +61,59 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
     }`;
 
   return (
-    <div className="space-y-4">
-      <div className="">
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-          <SearchFilterComponent
-            searchTerm={searchTerm}
-            setSearchTerm={(term) => { setSearchTerm(term); setCurrentPage(1); }}
-            placeHolder="Buscar por nombre, apellido o cédula..."
-            width="w-92"
-          />
-          <div className="flex gap-2 items-center">
-            <Popover open={filterOpen} onOpenChange={setFilterOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor) transition-all shadow-sm cursor-pointer"
-                >
-                  <SlidersHorizontal size={17} />
-                  <span className="text-sm font-medium">Filtros</span>
-                </button>
-              </PopoverTrigger>
-              <PopoverContent align="start" sideOffset={8} className="w-56 p-3 space-y-2">
-                <p className="text-xs font-semibold text-(--darkBlueColor)/60 uppercase tracking-wider">Vista</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {VIEW_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => { setFilterView(opt.value); setCurrentPage(1); setFilterOpen(false); }}
-                      className={pillClass(filterView === opt.value)}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-                <div className="border-t border-(--lightBlueColor)/20 pt-2">
-                  <button
-                    onClick={() => { setFilterView("active"); setCurrentPage(1); setFilterOpen(false); }}
-                    className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 font-medium transition cursor-pointer"
-                  >
-                    <X size="16" />
-                    Limpiar filtros
-                  </button>
-                </div>
-              </PopoverContent>
-            </Popover>
-            {onCreate && (
+    <div className="">
+
+      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center mb-4">
+        <SearchFilterComponent
+          searchTerm={searchTerm}
+          setSearchTerm={(term) => { setSearchTerm(term); setCurrentPage(1); }}
+          placeHolder="Buscar por nombre, apellido o cédula..."
+          width="w-92"
+        />
+        <div className="flex gap-2 items-center">
+          <Popover open={filterOpen} onOpenChange={setFilterOpen}>
+            <PopoverTrigger asChild>
               <button
-                type="button"
-                onClick={onCreate}
-                className="flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium cursor-pointer"
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor) transition-all shadow-sm cursor-pointer"
               >
-                <Plus size={18} />
-                Crear representante
+                <SlidersHorizontal size={17} />
+                <span className="text-sm font-medium">Filtros</span>
               </button>
-            )}
-          </div>
+            </PopoverTrigger>
+            <PopoverContent align="start" sideOffset={8} className="w-56 p-3 space-y-2">
+              <p className="text-xs font-semibold text-(--darkBlueColor)/60 uppercase tracking-wider">Vista</p>
+              <div className="flex flex-wrap gap-1.5">
+                {VIEW_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => { setFilterView(opt.value); setCurrentPage(1); setFilterOpen(false); }}
+                    className={pillClass(filterView === opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div className="border-t border-(--lightBlueColor)/20 pt-2">
+                <button
+                  onClick={() => { setFilterView("active"); setCurrentPage(1); setFilterOpen(false); }}
+                  className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 font-medium transition cursor-pointer"
+                >
+                  <X size="16" />
+                  Limpiar filtros
+                </button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          {onCreate && (
+            <button
+              type="button"
+              onClick={onCreate}
+              className="flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium cursor-pointer"
+            >
+              <Plus size={18} />
+              Crear representante
+            </button>
+          )}
         </div>
       </div>
 
@@ -131,6 +130,7 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
           <TableComponent
             data={paginatedData as IRepresentative[]}
             columns={representativeColumns(onEdit)}
+            maxHeight={438}
           />
           <PaginationComponent
             currentPage={currentPage}

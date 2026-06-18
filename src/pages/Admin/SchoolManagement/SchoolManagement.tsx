@@ -130,8 +130,8 @@ export default function SchoolManagement() {
   };
 
   const summaryList = (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div className="">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-linear-to-br from-blue-900 to-blue-800 rounded-xl">
@@ -172,7 +172,7 @@ export default function SchoolManagement() {
           </div>
         ) : (
           <>
-            <TableComponent data={paginatedFees as FeeResponse[]} columns={columns} />
+            <TableComponent data={paginatedFees as FeeResponse[]} columns={columns} maxHeight={480} />
             <PaginationComponent
               currentPage={currentPage}
               totalPages={totalPages}

@@ -44,7 +44,7 @@ export function HeroSection() {
       <div className="absolute inset-0 bg-black/40" />
 
       <div className="relative z-10 h-full flex items-center justify-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white">
+        <div className="px-4 sm:px-6 lg:px-8 text-center text-white">
           <h1 className="text-4xl md:text-6xl font-bold mb-4">
             UEP Francisco de Paula Salazar Acosta
           </h1>

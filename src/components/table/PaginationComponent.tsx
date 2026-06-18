@@ -30,7 +30,7 @@ export function PaginationComponent({
     const pages = getPageNumbers(currentPage, totalPages);
 
     return (
-        <div className="px-6 pt-4 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="px-6 pt-4 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
                 <p className="text-sm text-gray-500">
                     Mostrando {start} - {end} de {totalItems}

@@ -85,8 +85,8 @@ export default function PaymentsView() {
   });
 
   return (
-    <div className="space-y-4">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+    <div className="">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -136,7 +136,7 @@ export default function PaymentsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
         <SummaryCard title="Total en USD" value={`$ ${totales.totalUSD.toFixed(2)}`} icon={DollarSign} color="blue" />
         <SummaryCard title="Total en VES" value={`Bs. ${totales.totalVES.toFixed(2)}`} icon={TrendingUp} color="green" />
         <SummaryCard title="Total Combinado" value={`$ ${totales.totalCombinedUSD.toFixed(2)}`} icon={Award} color="green" />
@@ -153,7 +153,7 @@ export default function PaymentsView() {
         </div>
       ) : (
         <>
-          <TableComponent data={paginatedData} columns={columns} renderExpanded={paymentExpandedRender} getRowId={(p) => p.id} />
+          <TableComponent data={paginatedData} columns={columns} renderExpanded={paymentExpandedRender} getRowId={(p) => p.id} maxHeight={328} />
           <PaginationComponent
             currentPage={currentPage}
             totalPages={totalPages}

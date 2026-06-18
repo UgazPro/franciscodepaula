@@ -193,7 +193,7 @@ export default function Administracion() {
                 <PageTransitionComponent
                     primaryChildren={
                         <>
-                            <div className="mb-5">
+                            <div className="mb-4">
                                 <TabsComponent<AdminTab>
                                     tabs={tabItems}
                                     activeTab={activeTab}
@@ -210,7 +210,7 @@ export default function Administracion() {
                 <PageTransitionComponent
                     primaryChildren={
                         <>
-                            <div className="mb-5">
+                            <div className="mb-4">
                                 <TabsComponent<AdminTab>
                                     tabs={tabItems}
                                     activeTab={activeTab}

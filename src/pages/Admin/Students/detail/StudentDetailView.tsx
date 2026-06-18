@@ -1,4 +1,4 @@
-import { X, User, UserCheck, MapPin, Cake, Calendar, Clock, CheckCircle, XCircle, School, History, ChevronRight, Edit, GraduationCap, Globe, Map, Landmark, ShieldCheck, BookOpen, Activity } from "lucide-react";
+import { X, User, UserCheck, MapPin, Cake, Calendar, Clock, CheckCircle, XCircle, School, ChevronRight, Edit, GraduationCap, Globe, Map, Landmark, ShieldCheck, Star } from "lucide-react";
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -6,7 +6,6 @@ import { es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 
 import { useStudentsStore } from "@/stores/students.store";
 
@@ -31,7 +30,7 @@ export default function StudentDetailView() {
 
     return (
 
-        <div className="min-h-full p-6 relative w-full max-w-6xl mx-auto my-6 bg-white shadow-xl border order-(--lightBlueColor) rounded-2xl">
+        <div className="min-h-full p-6 relative w-full bg-white shadow-xl border order-(--lightBlueColor) rounded-2xl">
 
             {/* HEADER */}
             <div className="bg-linear-to-r from-(--grayColor) to-(--lightBlueColor)/20 border order-(--lightBlueColor) rounded-2xl">
@@ -114,15 +113,15 @@ export default function StudentDetailView() {
             </div>
 
             {/* CONTENT */}
-            <div className="p-6 space-y-6">
+            <div className="p-6 space-y-4">
 
-                {/* GRID 1 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* GRID 3 COLUMNAS: PERSONAL | UBICACIÓN | ACADÉMICO */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                     {/* PERSONAL */}
                     <Card className="border order-(--lightBlueColor) shadow-sm">
 
-                        <CardContent className="p-6">
+                        <CardContent className="px-6 py-1">
 
                             <div className="flex items-center gap-2 mb-5">
 
@@ -209,7 +208,7 @@ export default function StudentDetailView() {
                     {/* UBICACION */}
                     <Card className="border order-(--lightBlueColor) shadow-sm">
 
-                        <CardContent className="p-6">
+                        <CardContent className="px-6 py-1">
 
                             <div className="flex items-center gap-2 mb-5">
 
@@ -290,15 +289,10 @@ export default function StudentDetailView() {
 
                     </Card>
 
-                </div>
-
-                {/* GRID 2 */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
                     {/* ACADEMICO */}
                     <Card className="border order-(--lightBlueColor) shadow-sm">
 
-                        <CardContent className="p-6">
+                        <CardContent className="px-6 py-1">
 
                             <div className="flex items-center gap-2 mb-5">
 
@@ -365,68 +359,90 @@ export default function StudentDetailView() {
 
                     </Card>
 
-                    {/* REPRESENTANTE */}
-                    <Card className="border order-(--lightBlueColor) shadow-sm">
+                </div>
 
-                        <CardContent className="p-6">
+                {/* REPRESENTANTES */}
+                <Card className="border order-(--lightBlueColor) shadow-sm">
 
-                            <div className="flex items-center gap-2 mb-5">
+                    <CardContent className="px-6 py-1">
 
-                                <UserCheck className="h-5 w-5 text-(--blueColor)" />
+                        <div className="flex items-center gap-2 mb-5">
 
-                                <h3 className="text-lg font-semibold text-(--blueColor)">
-                                    Representante
-                                </h3>
+                            <UserCheck className="h-5 w-5 text-(--blueColor)" />
 
+                            <h3 className="text-lg font-semibold text-(--blueColor)">
+                                Representantes
+                            </h3>
+
+                        </div>
+
+                        {!selectedStudent.representatives || selectedStudent.representatives.length === 0 ? (
+                            <div className="text-center py-8">
+                                <p className="text-gray-400">Sin representantes asignados</p>
                             </div>
-
-                            {(() => {
-                                const studentRep = selectedStudent.representatives?.[0];
-                                const rep = studentRep?.representative;
-                                if (!rep) {
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {selectedStudent.representatives.map((studentRep) => {
+                                    const rep = studentRep.representative;
+                                    if (!rep) return null;
+                                    const repPerson = rep.user.person;
+                                    const isPrimary = studentRep.isPrimary === true;
                                     return (
-                                        <div className="text-center py-8">
-                                            <p className="text-gray-400">Sin representante asignado</p>
-                                        </div>
+                                        <Card key={studentRep.id} className={`border shadow-sm ${isPrimary ? "border-(--blueColor)/40 bg-(--blueColor)/5" : "order-(--lightBlueColor)"}`}>
+                                            <CardContent className="p-5 space-y-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-12 w-12 rounded-full bg-linear-to-br from-(--blueColor) to-(--darkBlueColor) flex items-center justify-center text-white font-bold shrink-0">
+                                                        {repPerson.firstNames.charAt(0)}{repPerson.lastNames.charAt(0)}
+                                                    </div>
+                                                    <div className="min-w-0 flex-1">
+                                                        <p className="font-semibold text-gray-800 truncate">
+                                                            {repPerson.firstNames} {repPerson.lastNames}
+                                                        </p>
+                                                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                                            <span className="text-sm font-medium text-gray-700">
+                                                                {studentRep.relationship || "Sin parentesco"}
+                                                            </span>
+                                                            {isPrimary ? (
+                                                                <Badge className="bg-(--blueColor)/10 text-(--blueColor) border-(--blueColor)/30 text-[11px] px-2 py-0.5">
+                                                                    <Star className="h-3 w-3 mr-0.5 inline" />
+                                                                    Representante Legal
+                                                                </Badge>
+                                                            ) : (
+                                                                <Badge variant="outline" className="text-gray-500 border-gray-300 text-[11px] px-2 py-0.5">
+                                                                    Representante
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                    <div>
+                                                        <p className="text-gray-500">Cédula</p>
+                                                        <p className="font-medium text-gray-800">{repPerson.identificationNumber}</p>
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-gray-500">Teléfono</p>
+                                                        <p className="font-medium text-gray-800">{rep.user.phone || "—"}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="text-sm">
+                                                    <p className="text-gray-500">Correo Electrónico</p>
+                                                    <p className="font-medium text-gray-800 truncate">{rep.user.email || "—"}</p>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
                                     );
-                                }
-                                const repPerson = rep.user.person;
-                                return (
-                                    <div className="space-y-5">
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-12 w-12 rounded-full bg-linear-to-br from-(--blueColor) to-(--darkBlueColor) flex items-center justify-center text-white font-bold shrink-0">
-                                                {repPerson.firstNames.charAt(0)}{repPerson.lastNames.charAt(0)}
-                                            </div>
-                                            <div>
-                                                <p className="font-semibold text-gray-800">
-                                                    {repPerson.firstNames} {repPerson.lastNames}
-                                                </p>
-                                                <p className="text-sm text-gray-400">
-                                                    {studentRep?.relationship || "Sin relación registrada"}
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-500 mb-1">Cédula</p>
-                                            <p className="font-medium text-gray-800">{repPerson.identificationNumber}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-500 mb-1">Teléfono</p>
-                                            <p className="font-medium text-gray-800">{rep.user.phone || "No registrado"}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-sm text-gray-500 mb-1">Correo Electrónico</p>
-                                            <p className="font-medium text-gray-800">{rep.user.email || "No registrado"}</p>
-                                        </div>
-                                    </div>
-                                );
-                            })()}
+                                })}
+                            </div>
+                        )}
 
-                        </CardContent>
+                    </CardContent>
 
-                    </Card>
+                </Card>
 
-                    {/* ESTADO */}
+                {/* ESTADO */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
                     <Card className="border order-(--lightBlueColor) shadow-sm">
 
                         <CardContent className="p-6">
@@ -468,71 +484,6 @@ export default function StudentDetailView() {
                     </Card>
 
                 </div>
-
-                {/* HISTORIAL */}
-                <Card className="border order-(--lightBlueColor) shadow-sm">
-
-                    <CardContent className="p-6">
-
-                        <div className="flex items-center justify-between mb-6">
-
-                            <div className="flex items-center gap-2">
-
-                                <History className="h-5 w-5 text-(--blueColor)" />
-
-                                <h3 className="text-lg font-semibold text-(--blueColor)">
-                                    Historial Académico
-                                </h3>
-
-                            </div>
-
-                            <Badge
-                                variant="outline"
-                                className="order-(--lightBlueColor) text-(--blueColor)"
-                            >
-                                Próximamente dinámico
-                            </Badge>
-
-                        </div>
-
-                        <div className="space-y-3">
-
-                            {[
-                                "Inscripción completada",
-                                "Asignación de sección",
-                                "Entrega de documentos",
-                            ].map((item, index) => (
-
-                                <div
-                                    key={index}
-                                    className="flex items-center gap-3 p-4 rounded-xl border order-(--lightBlueColor) bg-(--grayColor) hover:bg-(--lightBlueColor)/10 transition"
-                                >
-
-                                    <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center">
-
-                                        <BookOpen className="h-5 w-5 text-(--blueColor)" />
-
-                                    </div>
-
-                                    <div className="flex-1">
-
-                                        <p className="font-medium text-(--blueColor)">
-                                            {item}
-                                        </p>
-
-                                    </div>
-
-                                    <ChevronRight className="h-4 w-4 text-gray-400" />
-
-                                </div>
-
-                            ))}
-
-                        </div>
-
-                    </CardContent>
-
-                </Card>
 
             </div>
 

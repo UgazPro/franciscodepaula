@@ -10,7 +10,7 @@ export function CalendarSection() {
 
   return (
     <section id="calendario" className="py-16 bg-white">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <Calendar className="inline-block text-(--greenColor) mb-2" size={40} />
           <h2 className="text-3xl md:text-4xl font-bold text-(--darkBlueColor)">Calendario Escolar</h2>
