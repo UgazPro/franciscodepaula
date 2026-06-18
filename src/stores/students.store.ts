@@ -114,6 +114,7 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
   setFilterAgeMax: (age) => set({ filterAgeMax: age }),
   setFilterAgeExact: (age) => set({ filterAgeExact: age }),
   clearFilters: () => set({
+    searchTerm: "",
     filterView: "active",
     filterLevelId: null,
   filterSection: null,

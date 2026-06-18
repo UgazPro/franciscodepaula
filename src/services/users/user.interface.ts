@@ -42,6 +42,9 @@ export interface IRepresentative {
         firstNames: string;
         lastNames: string;
         identificationNumber: string;
+        gender: string;
+        birthDate: Date;
+        profilePhoto: string;
     };
     studentCount: number;
     status: boolean;
