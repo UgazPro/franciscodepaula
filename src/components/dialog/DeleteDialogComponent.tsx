@@ -19,6 +19,7 @@ interface DeleteDialogProps {
     buttonText?: string;
     buttonType?: "link" | "default" | "destructive" | "outline" | "secondary" | "ghost" | "clickRed" | null;
     preposition?: string;
+    bigMessage?: string;
 }
 
 export function DeleteDialog({
@@ -28,6 +29,7 @@ export function DeleteDialog({
     buttonText,
     buttonType,
     preposition,
+    bigMessage
 }: DeleteDialogProps) {
     return (
         <AlertDialog>
@@ -56,7 +58,7 @@ export function DeleteDialog({
                     {/* TITULO */}
                     <AlertDialogHeader className="items-center text-center">
                         <AlertDialogTitle className="w-full text-center text-xl font-bold text-gray-800 mb-2">
-                            ¿Eliminar estudiante?
+                            ¿Eliminar {bigMessage}?
                         </AlertDialogTitle>
 
                         <AlertDialogDescription className="text-gray-500 text-center">

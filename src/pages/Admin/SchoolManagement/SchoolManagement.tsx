@@ -1,4 +1,4 @@
-import { Plus, Edit3, Trash2, Loader2, School as SchoolIcon } from "lucide-react";
+import { Plus, Edit3, Loader2, School as SchoolIcon } from "lucide-react";
 import { useState, useMemo, useEffect } from "react";
 import { useFees, useExchangeRate } from "@/hooks/usePayments";
 import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
@@ -9,6 +9,7 @@ import { TableComponent } from "@/components/table/TableComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import FeeForm from "./components/FeeForm";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
+import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
 
 export default function SchoolManagement() {
   const { data: activeSchoolYear } = useActiveSchoolYear();
@@ -29,6 +30,13 @@ export default function SchoolManagement() {
     return (fees as FeeResponse[]).filter((f) => f.schoolYearId === activeSchoolYear.id);
   }, [fees, activeSchoolYear]);
 
+  const hasBothRequiredFees = useMemo(() => {
+    const names = currentSchoolYearFees.map(f => f.name);
+    return names.includes("Inscripción") && names.includes("Enero");
+  }, [currentSchoolYearFees]);
+
+  const canAddFee = !!activeSchoolYear && !hasBothRequiredFees;
+
   const totalPages = Math.max(1, Math.ceil(currentSchoolYearFees.length / itemsPerPage));
   const paginatedFees = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
@@ -42,7 +50,7 @@ export default function SchoolManagement() {
   }, [currentSchoolYearFees.length, itemsPerPage]);
 
   const columns: Column<FeeResponse>[] = [
-    { header: "Tipo de Pago", accessor: "name", className: "font-medium text-gray-800" },
+    { header: "Concepto de Pago", accessor: "name", className: "font-medium text-gray-800" },
     { header: "Monto (USD)", render: (row) => `$ ${Number(row.value).toFixed(2)}` },
     {
       header: "Monto (VES)",
@@ -69,12 +77,14 @@ export default function SchoolManagement() {
           >
             <Edit3 size={16} />
           </button>
-          <button
-            onClick={() => handleDelete(row)}
-            className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-          >
-            <Trash2 size={16} />
-          </button>
+          <DeleteDialog
+            preposition="el concepto"
+            whatsDeleting={row.name}
+            onConfirm={() => handleDelete(row)}
+            buttonType="ghost"
+            buttonStyles="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+            bigMessage={row.name}
+          />
         </div>
       ),
     },
@@ -91,7 +101,6 @@ export default function SchoolManagement() {
   };
 
   const handleDelete = async (fee: FeeResponse) => {
-    if (!confirm(`¿Eliminar el tipo de pago "${fee.name}"?`)) return;
     try {
       await deleteFee(fee.id);
     } catch {
@@ -153,10 +162,12 @@ export default function SchoolManagement() {
           </div>
           <button
             onClick={handleCreate}
-            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
+            disabled={!canAddFee}
+            title={!canAddFee ? "Ya existen Inscripción y Mensualidad para este año escolar" : "Agregar nuevo concepto de pago"}
+            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
           >
             <Plus size={18} />
-            Agregar Tipo de Pago
+            Agregar Concepto de Pago
           </button>
         </div>
       </div>
@@ -168,7 +179,7 @@ export default function SchoolManagement() {
           </div>
         ) : currentSchoolYearFees.length === 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-            No hay tipos de pago configurados para el año escolar actual. Haz clic en "Agregar Tipo de Pago" para crear uno.
+            No hay conceptos de pago configurados para el año escolar actual. Haz clic en "Agregar Concepto de Pago" para crear uno.
           </div>
         ) : (
           <>

@@ -3,7 +3,7 @@ import type { FormField } from "@/components/form/formComponent.interface";
 export const feeFormFields: FormField[] = [
   {
     name: "name",
-    label: "Tipo de Pago",
+    label: "Concepto de Pago",
     type: "select",
     placeholder: "Seleccione tipo de pago",
     options: [

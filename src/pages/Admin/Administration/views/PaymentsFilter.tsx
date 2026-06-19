@@ -68,7 +68,7 @@ export default function PaymentsFilter() {
           )}
         </button>
       </PopoverTrigger>
-      <PopoverContent align="start" sideOffset={8} className="w-80 p-3 space-y-3">
+      <PopoverContent align="start" sideOffset={8} className="w-100 p-3 space-y-3">
         {/* Fecha */}
         <div className="space-y-1.5">
           {sectionLabel("Fecha de Pago")}

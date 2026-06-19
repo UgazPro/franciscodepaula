@@ -4,7 +4,7 @@ import { usePayments } from "@/hooks/usePayments";
 import { useSchoolYears, useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import type { IStudent, StudentEnrollment } from "@/services/users/user.interface";
 import type { PaymentResponse } from "@/services/administration/payments.types";
-import { paymentColumns } from "@/services/administration/payments.tables";
+import { paymentColumns, paymentExpandedRender } from "@/services/administration/payments.tables";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import { useDeletePayment } from "@/queries/usePaymentMutations";
@@ -154,6 +154,7 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
           <TableComponent
             data={paymentList}
             columns={columns}
+            renderExpanded={paymentExpandedRender}
           />
           {meta && (
             <PaginationComponent

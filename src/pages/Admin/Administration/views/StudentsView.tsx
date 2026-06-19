@@ -25,7 +25,7 @@ function getRepresentativeName(student: IStudent): string {
 export default function StudentsView() {
   const { searchTerm, setSearchTerm } = useStudentsStore();
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(9);
   const [viewMode, setViewMode] = useState<"table" | "grid">("grid");
   const selectStudent = useStudentsStore((s) => s.selectStudent);
 

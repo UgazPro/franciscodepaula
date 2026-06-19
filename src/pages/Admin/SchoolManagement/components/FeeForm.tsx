@@ -88,11 +88,11 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
           className="flex items-center gap-1.5 text-sm text-(--blueColor) hover:text-(--darkBlueColor) transition mb-4 cursor-pointer"
         >
           <ArrowLeft size={16} />
-          Volver a tipos de pago
+          Volver a conceptos de pago
         </button>
 
         <h2 className="text-xl font-bold text-gray-800 mb-1">
-          {isEditing ? "Editar Tipo de Pago" : "Crear Tipo de Pago"}
+          {isEditing ? "Editar Concepto de Pago" : "Crear Concepto de Pago"}
         </h2>
         {schoolYear && (
           <p className="text-sm text-gray-500">

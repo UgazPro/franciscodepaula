@@ -88,6 +88,7 @@ export const studentActionColumns = ({ startEdit, deleteStudent }: Actions): Col
                     preposition="a"
                     whatsDeleting={`${student.person.firstNames} ${student.person.lastNames}`}
                     onConfirm={() => deleteStudent(student.id)}
+                    bigMessage={`estudiante`}
                 />
             </div>
         ),
