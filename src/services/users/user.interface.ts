@@ -32,6 +32,18 @@ export interface StudentEnrollment {
     };
 }
 
+export interface RepStudent {
+    id: number;
+    firstNames: string;
+    lastNames: string;
+    identificationNumber: string;
+    status: boolean;
+    section: string | null;
+    relationship: string | null;
+    birthDate: string | null;
+    paymentCount: number;
+}
+
 export interface IRepresentative {
     id: number;
     occupation: string | null;
@@ -48,6 +60,7 @@ export interface IRepresentative {
     };
     studentCount: number;
     status: boolean;
+    students?: RepStudent[];
 }
 
 export interface StudentRepresentative {

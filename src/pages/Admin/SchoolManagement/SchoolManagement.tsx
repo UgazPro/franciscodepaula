@@ -22,7 +22,7 @@ export default function SchoolManagement() {
   const [screen, setScreen] = useState<"list" | "form">("list");
   const [editingFee, setEditingFee] = useState<FeeResponse | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   const currentSchoolYearFees = useMemo(() => {
     if (!activeSchoolYear) return [];
@@ -172,7 +172,7 @@ export default function SchoolManagement() {
           </div>
         ) : (
           <>
-            <TableComponent data={paginatedFees as FeeResponse[]} columns={columns} maxHeight={480} />
+            <TableComponent data={paginatedFees as FeeResponse[]} columns={columns} maxHeight={464} />
             <PaginationComponent
               currentPage={currentPage}
               totalPages={totalPages}

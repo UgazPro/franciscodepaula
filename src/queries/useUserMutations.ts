@@ -9,6 +9,7 @@ export const useCreateStudent = () => {
     postDataApi("/users/students", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["students-with-debts"] });
     },
   });
 };
@@ -21,6 +22,7 @@ export const useUpdateStudent = () => {
     putDataApi(`/users/students/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["students-with-debts"] });
     },
   });
 };
@@ -32,6 +34,7 @@ export const useDeleteStudent = () => {
     mutationFn: (id: number) => deleteDataApi("/users/students", id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });
+      qc.invalidateQueries({ queryKey: ["students-with-debts"] });
     },
   });
 };

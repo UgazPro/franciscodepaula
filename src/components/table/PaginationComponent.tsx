@@ -9,22 +9,22 @@ interface PaginationComponentProps {
     onItemsPerPageChange: (itemsPerPage: number) => void;
 }
 
-const ITEMS_PER_PAGE_OPTIONS = [4, 5, 6, 12, 24, 48];
+const ITEMS_PER_PAGE_OPTIONS = [5, 10, 15, 20, 40, 50];
 
-function getPageNumbers(current: number, total: number): (number | string)[] {
+function getPageNumbers(current: number, total: number): number[] {
     if (total <= 5) return Array.from({ length: total }, (_, i) => i + 1);
 
-    if (current <= 3) return [1, 2, 3, 4, "ellipsis-end", total];
-    if (current >= total - 2) return [1, "ellipsis-start", total - 3, total - 2, total - 1, total];
-    return [1, "ellipsis-start", current - 1, current, current + 1, "ellipsis-end", total];
+    let start = Math.max(2, current - 2);
+    let end = Math.min(total, start + 3);
+    if (end - start < 3) start = Math.max(2, end - 3);
+
+    return [1, start, start + 1, start + 2, start + 3];
 }
 
 export function PaginationComponent({
     currentPage, totalPages, totalItems,
     itemsPerPage, onPageChange, onItemsPerPageChange,
 }: PaginationComponentProps) {
-    if (totalPages <= 1) return null;
-
     const start = (currentPage - 1) * itemsPerPage + 1;
     const end = Math.min(currentPage * itemsPerPage, totalItems);
     const pages = getPageNumbers(currentPage, totalPages);
@@ -46,21 +46,19 @@ export function PaginationComponent({
                 </select>
             </div>
 
-            <div className="flex items-center gap-1">
-                <button
-                    onClick={() => onPageChange(Math.max(1, currentPage - 1))}
-                    disabled={currentPage === 1}
-                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                    <ChevronLeft size={18} />
-                </button>
+            {totalPages > 1 && (
+                <div className="flex items-center gap-1">
+                    <button
+                        onClick={() => onPageChange(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
 
-                {pages.map((page, i) =>
-                    typeof page === "string" ? (
-                        <span key={page} className="px-2 text-gray-400 select-none">...</span>
-                    ) : (
+                    {pages.map((page) =>
                         <button
-                            key={i}
+                            key={page}
                             onClick={() => onPageChange(page)}
                             className={`min-w-[36px] px-3 py-2 rounded-lg text-sm font-medium transition cursor-pointer ${
                                 page === currentPage
@@ -70,17 +68,17 @@ export function PaginationComponent({
                         >
                             {page}
                         </button>
-                    )
-                )}
+                    )}
 
-                <button
-                    onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                    <ChevronRight size={18} />
-                </button>
-            </div>
+                    <button
+                        onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="p-2 border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

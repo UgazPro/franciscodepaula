@@ -441,7 +441,7 @@ export default function StudentDetailView() {
                 </Card>
 
                 {/* ESTADO */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                     <Card className="border order-(--lightBlueColor) shadow-sm">
 
@@ -483,7 +483,7 @@ export default function StudentDetailView() {
 
                     </Card>
 
-                </div>
+                </div> */}
 
             </div>
 
