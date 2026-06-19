@@ -218,7 +218,7 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
                     <p className="font-medium text-gray-600">{payment.payerName ?? "—"}</p>
                     <p className="text-[11px] text-gray-400">{payment.payerIdentification ?? ""}</p>
                   </td>
-                  <td className="px-3 py-1.5 text-gray-600">{sf.fee?.name ?? "—"}</td>
+                  <td className="px-3 py-1.5 text-gray-600">{sf.fee?.name === "Inscripción" ? "Inscripción" : `Mensualidad ${sf.fee?.name ?? "—"}`}</td>
                   <td className="px-3 py-1.5 text-blue-900 font-bold">Bs. {vesVal.toFixed(2)}</td>
                   <td className="px-3 py-1.5 text-green-700 font-bold">$ {usdVal.toFixed(2)}</td>
                   <td className="px-3 py-1.5">
@@ -261,7 +261,7 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
                     <span className="text-gray-700">{sf.student.person.firstNames} {sf.student.person.lastNames}</span>
                   </div>
                 </td>
-                <td className="px-3 py-1.5 text-gray-600">{sf.fee?.name ?? "—"}</td>
+                <td className="px-3 py-1.5 text-gray-600">{sf.fee?.name === "Inscripción" ? "Inscripción" : `Mensualidad ${sf.fee?.name ?? "—"}`}</td>
                 <td className="px-3 py-1.5 text-blue-900 font-bold">Bs. {vesVal.toFixed(2)}</td>
                 <td className="px-3 py-1.5 text-green-700 font-bold">$ {usdVal.toFixed(2)}</td>
                 <td className="px-3 py-1.5">

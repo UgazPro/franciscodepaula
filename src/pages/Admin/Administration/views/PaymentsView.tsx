@@ -20,7 +20,7 @@ export default function PaymentsView() {
   const exchangeRate = latestExchange?.rate ? Number(latestExchange.rate) : 0;
 
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [pdfLoading, setPdfLoading] = useState(false);
 
   useEffect(() => {

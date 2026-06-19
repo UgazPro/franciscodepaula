@@ -41,7 +41,7 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
 
   const [selectedSchoolYearId, setSelectedSchoolYearId] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(4);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
 
   useEffect(() => {
     if (activeSchoolYear && selectedSchoolYearId === null) {

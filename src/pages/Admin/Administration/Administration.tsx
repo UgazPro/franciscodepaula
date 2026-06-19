@@ -28,7 +28,7 @@ export default function Administracion() {
     const { activeTab, setActiveTab } = useAdministrationStore();
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(6);
+    const [itemsPerPage] = useState(10);
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [showPagoModal, setShowPagoModal] = useState(false);
