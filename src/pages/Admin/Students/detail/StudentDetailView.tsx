@@ -19,7 +19,7 @@ export default function StudentDetailView() {
     const {
         selectedStudent,
         setScreen,
-        openForm,
+        startEdit,
     } = useStudentsStore();
 
     if (!selectedStudent) return null;
@@ -516,7 +516,7 @@ export default function StudentDetailView() {
                         </Button>
 
                         <Button
-                            onClick={() => console.log("Editar información")}
+                            onClick={() => startEdit(selectedStudent)}
                             className="bg-(--blueColor) hover:bg-(--darkBlueColor) text-white"
                         >
                             <Edit className="h-4 w-4 mr-2" />

@@ -56,10 +56,11 @@ export default function Students() {
                 secondaryChildren={
                     <div>
                         {screen === "detail" && <div className="h-full overflow-y-auto"><StudentDetailView /></div>}
+                        {screen === "form" && <StudentForm />}
                     </div>
                 }
 
-                toggle={screen === "detail" ? true : false}
+                toggle={screen === "detail" || screen === "form"}
 
             />
 
