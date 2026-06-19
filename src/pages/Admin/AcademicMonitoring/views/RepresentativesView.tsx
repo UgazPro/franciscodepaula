@@ -4,7 +4,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useRepresentatives } from "@/hooks/useUsers";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
-import { representativeColumns } from "@/services/users/representative.tables";
+import { representativeColumns, representativeExpandedRender } from "@/services/users/representative.tables";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
 import { type PaginatedResponse } from "@/services/users/user.service";
 import type { IRepresentative } from "@/services/users/user.interface";
@@ -26,7 +26,7 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
   const [searchTerm, setSearchTerm] = useState("");
   const [filterView, setFilterView] = useState<FilterView>("active");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filterOpen, setFilterOpen] = useState(false);
 
   const viewParam = filterView === "active" ? "active" : undefined;
@@ -119,6 +119,7 @@ export default function RepresentativesView({ onCreate, onEdit }: Representative
           <TableComponent
             data={representatives as IRepresentative[]}
             columns={representativeColumns(onEdit)}
+            renderExpanded={representativeExpandedRender}
             maxHeight={438}
           />
           {meta && (

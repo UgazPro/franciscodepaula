@@ -37,7 +37,7 @@ export default function StudentListView({ filteredStudents }: StudentListViewPro
                     selectStudent(student);
                     window.scrollTo({ top: 0, behavior: "smooth" });
                 }}
-                maxHeight={450}
+                maxHeight={440}
             />
 
         </div>

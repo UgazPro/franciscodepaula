@@ -270,8 +270,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       form.clearErrors(["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"]);
       const result = step1Schema.safeParse(form.getValues());
       if (!result.success) {
-        result.error.errors.forEach((err) => {
-          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message });
+        const issues = result.error?.issues ?? [];
+        issues.forEach((err) => {
+          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message ?? "" });
         });
         return;
       }
@@ -280,8 +281,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       form.clearErrors(["birthCountry", "state", "municipality", "parish", "currentParish", "address"]);
       const result = step2Schema.safeParse(form.getValues());
       if (!result.success) {
-        result.error.errors.forEach((err) => {
-          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message });
+        const issues = result.error?.issues ?? [];
+        issues.forEach((err) => {
+          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message ?? "" });
         });
         return;
       }

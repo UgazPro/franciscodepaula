@@ -37,7 +37,7 @@ export default function AcademicMonitoring() {
     const [selectedRepresentative, setSelectedRepresentative] = useState<IRepresentative | null>(null);
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(5);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
 
     const commonFilters = {
         view: filterView,
