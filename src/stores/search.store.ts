@@ -3,14 +3,21 @@ import { create } from "zustand";
 export interface SearchResult {
   id: number;
   type: "student" | "employee" | "representative";
+  studentStatus?: boolean | null;
+  userStatus?: boolean | null;
+  email?: string | null;
+  phone?: string | null;
+  occupation?: string | null;
+  role?: string;
   person: {
     id: number;
     firstNames: string;
     lastNames: string;
     identificationNumber: string;
     profilePhoto: string | null;
+    birthDate?: string;
+    gender?: string | null;
   };
-  role?: string;
 }
 
 interface SearchStore {

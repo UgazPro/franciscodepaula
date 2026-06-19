@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback, memo } from "react";
 import { Link, useLocation } from "react-router";
-import { User, ChevronDown, Settings, LogOut, HelpCircle, Menu, Loader2 } from "lucide-react";
+import { ChevronDown, LogOut, Home, Menu, Loader2 } from "lucide-react";
 import { useUserData } from "@/helpers/token";
 import { useExchangeRate } from "@/hooks/usePayments";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import { useSearchStore } from "@/stores/search.store";
+import { useAuthStore } from "@/stores/auth.store";
 import type { SearchResult } from "@/stores/search.store";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
 
@@ -97,6 +98,7 @@ export default function AdminHeader() {
   const searchRef = useRef<HTMLDivElement>(null);
 
   const userDB = useUserData();
+  const logout = useAuthStore((s) => s.logout);
   const { data: latestExchange } = useExchangeRate();
 
   const query = useSearchStore((s) => s.query);
@@ -205,7 +207,7 @@ export default function AdminHeader() {
               <SearchFilterComponent
                 searchTerm={query}
                 setSearchTerm={handleInputChange}
-                placeHolder="Buscar estudiantes, profesores..."
+                placeHolder="Buscar estudiantes, representantes o personal institucional..."
               />
               <SearchDropdown
                 show={showDropdown}
@@ -249,33 +251,17 @@ export default function AdminHeader() {
                     </div>
                     <div className="py-2">
                       <Link
-                        to="/admin/perfil"
+                        to="/"
                         onClick={() => setShowUserMenu(false)}
                         className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-gray-700"
                       >
-                        <User size={16} />
-                        <span>Mi Perfil</span>
-                      </Link>
-                      <Link
-                        to="/admin/configuracion"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-gray-700"
-                      >
-                        <Settings size={16} />
-                        <span>Configuración</span>
-                      </Link>
-                      <Link
-                        to="/ayuda"
-                        onClick={() => setShowUserMenu(false)}
-                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50 transition text-gray-700"
-                      >
-                        <HelpCircle size={16} />
-                        <span>Ayuda</span>
+                        <Home size={16} />
+                        <span>Home</span>
                       </Link>
                     </div>
                     <div className="border-t border-gray-100 py-2">
                       <button
-                        onClick={() => setShowUserMenu(false)}
+                        onClick={() => { logout(); setShowUserMenu(false); }}
                         className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-red-600 w-full"
                       >
                         <LogOut size={16} />
