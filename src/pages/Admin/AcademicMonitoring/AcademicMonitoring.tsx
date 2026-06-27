@@ -12,16 +12,20 @@ import StudentsNoResults from "../Students/views/StudentNoResultsView";
 import SchoolYearPanel from "./views/SchoolYearPanel";
 import RepresentativesView from "./views/RepresentativesView";
 import RepresentativeForm from "./views/RepresentativeForm";
+import SubjectsView from "./views/SubjectsView";
+import TeacherAssignmentsView from "./views/TeacherAssignmentsView";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "representantes" | "school-year";
+type ActiveTab = "estudiantes" | "representantes" | "school-year" | "materias" | "profesores";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
     { value: "representantes" as const, label: "Representantes" },
     { value: "school-year" as const, label: "Año Escolar" },
+    { value: "materias" as const, label: "Materias" },
+    { value: "profesores" as const, label: "Profesores" },
 ];
 
 export default function AcademicMonitoring() {
@@ -209,6 +213,14 @@ export default function AcademicMonitoring() {
                         }
                         toggle={!!repFormMode}
                     />
+                </div>
+            ) : activeTab === "materias" ? (
+                <div className="flex-1 min-h-0">
+                    <SubjectsView />
+                </div>
+            ) : activeTab === "profesores" ? (
+                <div className="flex-1 min-h-0">
+                    <TeacherAssignmentsView />
                 </div>
             ) : (
                 <>
