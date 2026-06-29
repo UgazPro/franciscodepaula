@@ -11,6 +11,9 @@ export const employeeSchema = z.object({
   email: z.string().email("Email inválido"),
   phone: z.string().optional(),
   roleId: z.number({ message: "Seleccione un rol" }),
+  hireDate: z.date().refine((date) => !isNaN(date.getTime()), {
+    message: "Fecha de contratación inválida",
+  }),
 });
 
 export type EmployeeFormValues = z.infer<typeof employeeSchema>;

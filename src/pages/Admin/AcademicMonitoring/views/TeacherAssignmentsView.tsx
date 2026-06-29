@@ -1,247 +1,231 @@
-import { Plus, Loader2, BookOpen, Edit3, Power } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
-import { SelectComponentForm } from "@/components/form/renderFormComponents/SelectComponent";
-import { TableComponent } from "@/components/table/TableComponent";
-import { PaginationComponent } from "@/components/table/PaginationComponent";
+import { useState, useMemo, useCallback } from "react";
+import { BookOpen, ArrowLeft, Loader2, UserCheck, UserX, GraduationCap, Users } from "lucide-react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
-import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
-import { useTeacherAssignments, useTeachers } from "@/hooks/useTeacherAssignments";
-import { useSubjects } from "@/hooks/useSubjects";
-import { useActiveSchoolYear, useSections } from "@/hooks/useSchoolYears";
-import { useCreateTeacherAssignment, useUpdateTeacherAssignment, useToggleTeacherAssignmentStatus } from "@/queries/useTeacherAssignmentMutations";
-import type { TeacherAssignmentResponse } from "@/services/teacher-assignment/teacher-assignment.types";
+import { TableComponent } from "@/components/table/TableComponent";
+import { StatCard } from "@/components/statCard/StatCard";
+import { buildSectionColumns } from "@/services/teacher-assignment/teacher-assignment.tables";
+import type { LevelData, TeacherAssignmentsViewProps } from "@/services/teacher-assignment/teacher-assignment.types";
+import { useTeacherAssignmentOverview, useTeachers } from "@/hooks/useTeacherAssignments";
+import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
+import { useCreateTeacherAssignment, useUpdateTeacherAssignment } from "@/queries/useTeacherAssignmentMutations";
 
-const assignmentSchema = z.object({
-  teacherId: z.number({ message: "Seleccione un docente" }),
-  subjectId: z.number({ message: "Seleccione una materia" }),
-  sectionId: z.number({ message: "Seleccione una sección" }),
-});
+export default function TeacherAssignmentsView({ tabsComponent }: TeacherAssignmentsViewProps) {
 
-type AssignmentFormValues = z.infer<typeof assignmentSchema>;
-
-export default function TeacherAssignmentsView() {
-  const { data: assignments = [], isLoading } = useTeacherAssignments();
+  const { data: overviewData = [], isLoading } = useTeacherAssignmentOverview();
   const { data: teachers = [] } = useTeachers();
-  const { data: subjects = [] } = useSubjects();
   const { data: activeSchoolYear } = useActiveSchoolYear();
-  const { data: allSections = [] } = useSections();
   const { mutateAsync: createAssignment } = useCreateTeacherAssignment();
   const { mutateAsync: updateAssignment } = useUpdateTeacherAssignment();
-  const { mutateAsync: toggleAssignmentStatus } = useToggleTeacherAssignmentStatus();
 
-  const [screen, setScreen] = useState<"list" | "form">("list");
-  const [editingAssignment, setEditingAssignment] = useState<TeacherAssignmentResponse | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-
-  const allAssignments = (assignments as TeacherAssignmentResponse[]).filter(
-    (a) => a.employee && a.subject && a.section
-  );
-
-  const totalPages = Math.max(1, Math.ceil(allAssignments.length / itemsPerPage));
-  const paginatedAssignments = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return allAssignments.slice(start, start + itemsPerPage);
-  }, [allAssignments, currentPage, itemsPerPage]);
-
-  useEffect(() => {
-    if (currentPage > totalPages) setCurrentPage(totalPages);
-  }, [allAssignments.length, itemsPerPage]);
-
-  const activeSections = useMemo(() => {
-    if (!activeSchoolYear) return [];
-    return (allSections as any[]).filter(
-      (s: any) => s.schoolYearId === activeSchoolYear.id
-    );
-  }, [allSections, activeSchoolYear]);
+  const [screen, setScreen] = useState<"list" | "detail">("list");
+  const [selectedLevel, setSelectedLevel] = useState<LevelData | null>(null);
+  const [assigningSubject, setAssigningSubject] = useState<{ sectionId: number; levelSubjectId: number } | null>(null);
+  const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const teacherOptions = useMemo(() => {
     return (teachers as any[]).map((t: any) => ({
-      label: `${t.person.firstNames} ${t.person.lastNames} — ${t.person.identificationNumber}`,
-      value: t.id,
+      id: t.employee.id,
+      name: `${t.person.firstNames} ${t.person.lastNames}`,
+      idNumber: t.person.identificationNumber,
     }));
   }, [teachers]);
 
-  const subjectOptions = useMemo(() => {
-    return (subjects as any[]).filter((s: any) => s.status !== false).map((s: any) => ({
-      label: `${s.subject}${s.code ? ` (${s.code})` : ""}`,
-      value: s.id,
-    }));
-  }, [subjects]);
+  const levels = Array.isArray(overviewData) ? (overviewData as LevelData[]) : [];
 
-  const sectionOptions = useMemo(() => {
-    return activeSections.map((s: any) => ({
-      label: `${s.highSchoolLevel?.level ?? ""} — ${s.section}`,
-      value: s.id,
-    }));
-  }, [activeSections]);
-
-  const form = useForm<AssignmentFormValues>({
-    resolver: zodResolver(assignmentSchema),
-    defaultValues: { teacherId: undefined as any, subjectId: undefined as any, sectionId: undefined as any },
-  });
-
-  const handleCreate = () => {
-    setEditingAssignment(null);
-    form.reset({ teacherId: undefined as any, subjectId: undefined as any, sectionId: undefined as any });
-    setScreen("form");
-  };
-
-  const handleEdit = (assignment: TeacherAssignmentResponse) => {
-    form.reset({
-      teacherId: assignment.teacherId,
-      subjectId: assignment.subjectId,
-      sectionId: assignment.sectionId,
-    });
-    setEditingAssignment(assignment);
-    setScreen("form");
-  };
-
-  const handleDelete = async (assignment: TeacherAssignmentResponse) => {
-    try {
-      await toggleAssignmentStatus(assignment.id);
-    } catch {
-      // interceptor handles the toast
-    }
-  };
-
-  const handleSave = async (data: AssignmentFormValues) => {
-    try {
-      if (editingAssignment) {
-        await updateAssignment({ id: editingAssignment.id, data });
-      } else {
-        await createAssignment(data);
-      }
-      setScreen("list");
-      setEditingAssignment(null);
-      form.reset({ teacherId: undefined as any, subjectId: undefined as any, sectionId: undefined as any });
-    } catch {
-      // interceptor handles the toast
-    }
+  const selectLevel = (level: LevelData) => {
+    setSelectedLevel(level);
+    setAssigningSubject(null);
+    setScreen("detail");
   };
 
   const handleBack = () => {
-    form.reset({ teacherId: undefined as any, subjectId: undefined as any, sectionId: undefined as any });
+    setSelectedLevel(null);
+    setAssigningSubject(null);
     setScreen("list");
-    setEditingAssignment(null);
   };
 
+  const handleTeacherChange = useCallback(async (sectionId: number, levelSubjectId: number, newTeacherId: number) => {
+    const key = `${sectionId}-${levelSubjectId}`;
+    setProcessingIds((prev) => new Set(prev).add(key));
+
+    try {
+      if (!selectedLevel) return;
+      const section = selectedLevel.sections.find((s) => s.sectionId === sectionId);
+      if (!section) return;
+      const subject = section.subjects.find((s) => s.levelSubjectId === levelSubjectId);
+      const existingAssignment = subject?.assignment;
+
+      if (existingAssignment) {
+        await updateAssignment({
+          id: existingAssignment.id,
+          data: { teacherId: newTeacherId },
+        });
+      } else {
+        await createAssignment({
+          teacherId: newTeacherId,
+          levelSubjectId,
+          sectionId,
+        });
+      }
+    } catch {
+      // interceptor handles the toast
+    }
+
+    setProcessingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+    setAssigningSubject(null);
+  }, [selectedLevel, createAssignment, updateAssignment]);
+
   const summaryList = (
-    <div className="">
+    <div>
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-linear-to-br from-teal-900 to-teal-800 rounded-xl">
-              <BookOpen size={24} className="text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-800">Asignación Docente</h1>
-              <p className="text-sm text-gray-500">
-                {activeSchoolYear
-                  ? `Año Escolar: ${activeSchoolYear.name} — ${allAssignments.length} asignación(es)`
-                  : "Cargando año escolar..."
-                }
-              </p>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-linear-to-br from-teal-900 to-teal-800 rounded-xl">
+            <BookOpen size={24} className="text-white" />
           </div>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
-          >
-            <Plus size={18} />
-            Nueva Asignación
-          </button>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Asignación Docente</h1>
+            <p className="text-sm text-gray-500">
+              {activeSchoolYear
+                ? `Año Escolar: ${activeSchoolYear.name} — ${levels.length} nivel(es)`
+                : "Cargando año escolar..."
+              }
+            </p>
+          </div>
         </div>
       </div>
 
       {isLoading ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400 flex items-center justify-center gap-2">
           <Loader2 size={20} className="animate-spin" />
-          Cargando asignaciones...
+          Cargando niveles...
         </div>
-      ) : allAssignments.length === 0 ? (
+      ) : levels.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-          No hay asignaciones registradas. Haz clic en "Nueva Asignación" para crear una.
+          No hay niveles configurados para el año escolar activo.
         </div>
       ) : (
-        <>
-          <TableComponent data={paginatedAssignments as TeacherAssignmentResponse[]} columns={[    {      header: "Docente",      render: (row) => (        <div className="flex items-center gap-3">          <div className="w-10 h-10 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">            {row.employee.user.person.firstNames.charAt(0)}            {row.employee.user.person.lastNames.charAt(0)}          </div>          <div>            <p className="font-medium text-gray-800">              {row.employee.user.person.firstNames} {row.employee.user.person.lastNames}            </p>            <p className="text-xs text-gray-400">{row.employee.user.person.identificationNumber}</p>          </div>        </div>      ),    },    {      header: "Materia",      render: (row) => (        <span className="font-medium text-gray-800">{row.subject.subject}</span>      ),    },    {      header: "Nivel / Sección",      render: (row) => (        <span className="text-gray-600">          {row.section.highSchoolLevel.level} — {row.section.section}        </span>      ),    },    {      header: "Estado",      render: (row) => (        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${row.status ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>          {row.status ? "Activa" : "Inactiva"}        </span>      ),    },    {      header: "Acciones",      headerClassName: "text-right",      className: "text-right",      render: (row) => (        <div className="flex items-center justify-end gap-1">          <button type="button" onClick={() => handleEdit(row)} className="p-2 text-gray-500 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer">            <Edit3 size={16} />          </button>          <DeleteDialog            preposition="la asignación"            whatsDeleting={`${row.employee.user.person.firstNames} ${row.employee.user.person.lastNames} — ${row.subject.subject}`}            onConfirm={() => handleDelete(row)}            buttonType="ghost"            buttonStyles="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg cursor-pointer"            icon={<Power size={28} />}            confirmText="Desactivar"            title={`¿Desactivar asignación?`}            description={`¿Estás seguro de que deseas desactivar la asignación de ${row.employee.user.person.firstNames} ${row.employee.user.person.lastNames} a ${row.subject.subject}?`}            iconBgClass="bg-orange-100"            iconColorClass="text-orange-600"            confirmClass="bg-orange-500 hover:bg-orange-600"          />        </div>      ),    },  ]} maxHeight={464} />
-          <PaginationComponent
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={allAssignments.length}
-            itemsPerPage={itemsPerPage}
-            onPageChange={setCurrentPage}
-            onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
-          />
-        </>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {levels.map((level) => (
+            <button
+              key={level.highSchoolLevelId}
+              onClick={() => selectLevel(level)}
+              className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 text-left hover:shadow-md hover:border-(--blueColor)/30 transition cursor-pointer group"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-bold text-gray-800 group-hover:text-(--blueColor) transition">
+                  {level.level}
+                </h3>
+                <div className="p-2 bg-(--blueColor)/10 rounded-lg group-hover:bg-(--blueColor)/20 transition">
+                  <GraduationCap size={20} className="text-(--blueColor)" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <StatCard label="Total" value={level.totalStudents} icon={<Users size={16} />} color="text-blue-600" bgColor="bg-blue-50" />
+                <StatCard label="Masculinos" value={level.maleStudents} icon={<UserCheck size={16} />} color="text-sky-600" bgColor="bg-sky-50" />
+                <StatCard label="Femeninos" value={level.femaleStudents} icon={<UserX size={16} />} color="text-pink-600" bgColor="bg-pink-50" />
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                <span className="text-sm text-gray-400">
+                  {level.sections.length} sección(es)
+                </span>
+                <span className="text-xs text-(--blueColor) font-medium opacity-0 group-hover:opacity-100 transition">
+                  Ver detalle →
+                </span>
+              </div>
+            </button>
+          ))}
+        </div>
       )}
     </div>
   );
 
-  const formView = (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex items-center gap-3 mb-6 pb-3 border-b border-(--lightBlueColor)/20">
-        <button type="button" onClick={handleBack} className="p-2 hover:bg-(--grayColor) rounded-lg transition cursor-pointer">
-          <BookOpen size={20} className="text-(--darkBlueColor)" />
-        </button>
-        <h2 className="text-lg font-semibold text-(--darkBlueColor)">
-          {editingAssignment ? "Editar Asignación" : "Nueva Asignación"}
-        </h2>
+  const detailView = selectedLevel ? (
+    <div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+          >
+            <ArrowLeft size={20} className="text-(--blueColor)" />
+          </button>
+          <div className="p-3 bg-linear-to-br from-teal-900 to-teal-800 rounded-xl">
+            <GraduationCap size={24} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">{selectedLevel.level}</h1>
+            <p className="text-sm text-gray-500">
+              {selectedLevel.sections.length} sección(es)
+            </p>
+          </div>
+        </div>
       </div>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(handleSave)}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <SelectComponentForm
-              form={form}
-              name="teacherId"
-              label="Docente"
-              placeholder="Seleccione un docente"
-              options={teacherOptions}
-            />
-            <SelectComponentForm
-              form={form}
-              name="subjectId"
-              label="Materia"
-              placeholder="Seleccione una materia"
-              options={subjectOptions}
-            />
-            <SelectComponentForm
-              form={form}
-              name="sectionId"
-              label="Sección"
-              placeholder="Seleccione una sección"
-              options={sectionOptions}
-            />
-          </div>
+      {selectedLevel.sections.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-400">
+          Este nivel no tiene secciones configuradas.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {selectedLevel.sections.map((section) => (
+            <div key={section.sectionId} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="font-semibold text-gray-700">Sección {section.section}</h3>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                    Total: {section.totalStudents}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-sky-100 text-sky-700">
+                    M: {section.maleStudents}
+                  </span>
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-pink-100 text-pink-700">
+                    F: {section.femaleStudents}
+                  </span>
+                </div>
+              </div>
 
-          <div className="flex justify-end gap-4 pt-6 mt-6 border-t border-(--lightBlueColor)/20">
-            <Button type="button" variant="outline"
-              className="border-(--lightBlueColor) text-(--darkBlueColor) hover:bg-(--grayColor) cursor-pointer"
-              onClick={handleBack}>
-              Cancelar
-            </Button>
-            <Button type="submit"
-              className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
-              {editingAssignment ? "Actualizar asignación" : "Crear asignación"}
-            </Button>
-          </div>
-        </form>
-      </Form>
+              {section.subjects.length === 0 ? (
+                <div className="p-4 text-center text-sm text-gray-400">
+                  No hay materias asignadas a este nivel.
+                </div>
+              ) : (
+                <TableComponent
+                  data={section.subjects}
+                  columns={buildSectionColumns(
+                    section.sectionId,
+                    processingIds,
+                    assigningSubject,
+                    teacherOptions,
+                    handleTeacherChange,
+                    setAssigningSubject,
+                  )}
+                  maxHeight={500}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
-  );
+  ) : null;
 
   return (
     <PageTransitionComponent
-      primaryChildren={summaryList}
-      secondaryChildren={formView}
-      toggle={screen === "form"}
+      primaryChildren={
+        <>
+          {tabsComponent}
+          {summaryList}
+        </>
+      }
+      secondaryChildren={detailView}
+      toggle={screen === "detail"}
     />
   );
 }

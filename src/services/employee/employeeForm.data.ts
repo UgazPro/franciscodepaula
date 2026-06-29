@@ -46,15 +46,12 @@ export const employeeFields: FormField[] = [
     label: "Rol",
     type: "select",
     placeholder: "Seleccione un rol",
-    options: [
-      { label: "Director", value: "Director" },
-      { label: "SubDirector", value: "SubDirector" },
-      { label: "Coordinador", value: "Coordinador" },
-      { label: "Administrativo", value: "Administrativo" },
-      { label: "Contador", value: "Contador" },
-      { label: "Secretaria", value: "Secretaria" },
-      { label: "Docente", value: "Docente" },
-    ],
+    options: [],
+  },
+  {
+    name: "hireDate",
+    label: "Fecha de Contratación",
+    type: "date",
   },
 ];
 

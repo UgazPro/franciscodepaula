@@ -18,14 +18,14 @@ import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "representantes" | "school-year" | "materias" | "profesores";
+type ActiveTab = "estudiantes" | "representantes" | "school-year" | "materias" | "asignaciones";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
     { value: "representantes" as const, label: "Representantes" },
     { value: "school-year" as const, label: "Año Escolar" },
     { value: "materias" as const, label: "Materias" },
-    { value: "profesores" as const, label: "Profesores" },
+    { value: "asignaciones" as const, label: "Asignaciones" },
 ];
 
 export default function AcademicMonitoring() {
@@ -190,15 +190,17 @@ export default function AcademicMonitoring() {
                 </div>
             ) : activeTab === "representantes" ? (
                 <div className="flex-1 min-h-0">
-                    {!repFormMode && <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />}
                     <PageTransitionComponent
                         primaryChildren={
-                            <div className="pr-4">
-                                <RepresentativesView
-                                    onCreate={() => { setRepFormMode("create"); setSelectedRepresentative(null); }}
-                                    onEdit={(rep) => { setSelectedRepresentative(rep); setRepFormMode("edit"); }}
-                                />
-                            </div>
+                            <>
+                                <TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />
+                                <div className="pr-4">
+                                    <RepresentativesView
+                                        onCreate={() => { setRepFormMode("create"); setSelectedRepresentative(null); }}
+                                        onEdit={(rep) => { setSelectedRepresentative(rep); setRepFormMode("edit"); }}
+                                    />
+                                </div>
+                            </>
                         }
                         secondaryChildren={
                             repFormMode ? (
@@ -216,11 +218,11 @@ export default function AcademicMonitoring() {
                 </div>
             ) : activeTab === "materias" ? (
                 <div className="flex-1 min-h-0">
-                    <SubjectsView />
+                    <SubjectsView tabsComponent={<TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />} />
                 </div>
-            ) : activeTab === "profesores" ? (
+            ) : activeTab === "asignaciones" ? (
                 <div className="flex-1 min-h-0">
-                    <TeacherAssignmentsView />
+                    <TeacherAssignmentsView tabsComponent={<TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />} />
                 </div>
             ) : (
                 <>

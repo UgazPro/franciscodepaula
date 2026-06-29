@@ -1,5 +1,5 @@
-import { Plus, Edit3, Loader2, BookOpen, Power } from "lucide-react";
-import { useState, useMemo, useEffect } from "react";
+import { Plus, Edit3, Loader2, BookOpen, Power, Layers } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
@@ -9,27 +9,59 @@ import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { useSubjects } from "@/hooks/useSubjects";
+import { useLevelSubjects, useLevels } from "@/hooks/useLevelSubjects";
 import { useCreateSubject, useUpdateSubject, useToggleSubjectStatus } from "@/queries/useSubjectMutations";
+import { useAssignSubjectToLevel, useRemoveSubjectFromLevel } from "@/queries/useLevelSubjectMutations";
 import { subjectSchema, type SubjectFormValues } from "@/services/subject/subject.schema";
 import { subjectFieldsByName } from "@/services/subject/subjectForm.data";
 import type { Column } from "@/components/table/TableComponent";
 import type { SubjectResponse } from "@/services/subject/subject.types";
 
-export default function SubjectsView() {
+interface SubjectsViewProps {
+  tabsComponent?: React.ReactNode;
+}
+
+export default function SubjectsView({ tabsComponent }: SubjectsViewProps) {
   const { data: subjects = [], isLoading } = useSubjects();
+  const { data: levels = [] } = useLevels();
+  const { data: levelSubjectsData = [] } = useLevelSubjects();
   const { mutateAsync: createSubject } = useCreateSubject();
   const { mutateAsync: updateSubject } = useUpdateSubject();
   const { mutateAsync: toggleSubjectStatus } = useToggleSubjectStatus();
+  const { mutateAsync: assignSubjectToLevel } = useAssignSubjectToLevel();
+  const { mutateAsync: removeSubjectFromLevel } = useRemoveSubjectFromLevel();
 
   const [screen, setScreen] = useState<"list" | "form">("list");
   const [editingSubject, setEditingSubject] = useState<SubjectResponse | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [itemsPerPage, setItemsPerPage] = useState(7);
+  const [levelDialogOpen, setLevelDialogOpen] = useState(false);
+  const [levelDialogSubject, setLevelDialogSubject] = useState<SubjectResponse | null>(null);
+  const [selectedLevelIds, setSelectedLevelIds] = useState<number[]>([]);
 
   const allSubjects = (subjects as SubjectResponse[]).filter(
     (s) => s.subject
   );
+
+  const levelSubjectsMap = useMemo(() => {
+    const map: Record<number, { id: number; level: string }[]> = {};
+    for (const entry of levelSubjectsData as any[]) {
+      for (const ls of entry.levelSubjects ?? []) {
+        const subjectId = ls.subject.id;
+        if (!map[subjectId]) map[subjectId] = [];
+        map[subjectId].push({ id: entry.id, level: entry.level });
+      }
+    }
+    return map;
+  }, [levelSubjectsData]);
 
   const totalPages = Math.max(1, Math.ceil(allSubjects.length / itemsPerPage));
   const paginatedSubjects = useMemo(() => {
@@ -87,6 +119,42 @@ export default function SubjectsView() {
     setEditingSubject(null);
   };
 
+  const openLevelDialog = (subject: SubjectResponse) => {
+    setLevelDialogSubject(subject);
+    const assigned = levelSubjectsMap[subject.id] ?? [];
+    setSelectedLevelIds(assigned.map((l) => l.id));
+    setLevelDialogOpen(true);
+  };
+
+  const toggleLevel = (levelId: number) => {
+    setSelectedLevelIds((prev) =>
+      prev.includes(levelId)
+        ? prev.filter((id) => id !== levelId)
+        : [...prev, levelId]
+    );
+  };
+
+  const saveLevelAssignments = useCallback(async () => {
+    if (!levelDialogSubject) return;
+    const currentAssigned = levelSubjectsMap[levelDialogSubject.id] ?? [];
+    const currentIds = currentAssigned.map((l) => l.id);
+    const toAdd = selectedLevelIds.filter((id) => !currentIds.includes(id));
+    const toRemove = currentIds.filter((id) => !selectedLevelIds.includes(id));
+
+    try {
+      for (const levelId of toAdd) {
+        await assignSubjectToLevel({ levelId, subjectId: levelDialogSubject.id });
+      }
+      for (const levelId of toRemove) {
+        await removeSubjectFromLevel({ levelId, subjectId: levelDialogSubject.id });
+      }
+    } catch {
+      // interceptor handles toast
+    }
+    setLevelDialogOpen(false);
+    setLevelDialogSubject(null);
+  }, [levelDialogSubject, selectedLevelIds, levelSubjectsMap, assignSubjectToLevel, removeSubjectFromLevel]);
+
   const columns: Column<SubjectResponse>[] = [
     { header: "Materia", accessor: "subject", className: "font-medium text-gray-800" },
     {
@@ -94,6 +162,28 @@ export default function SubjectsView() {
       render: (row) => (
         <span className="font-mono text-gray-600">{row.code ?? "—"}</span>
       ),
+    },
+    {
+      header: "Niveles",
+      render: (row) => {
+        const assigned = levelSubjectsMap[row.id] ?? [];
+        return (
+          <div className="flex flex-wrap gap-1">
+            {assigned.length === 0 ? (
+              <span className="text-gray-400 text-xs">Sin asignar</span>
+            ) : (
+              assigned.map((l) => (
+                <span
+                  key={l.id}
+                  className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700"
+                >
+                  {l.level}
+                </span>
+              ))
+            )}
+          </div>
+        );
+      },
     },
     {
       header: "Estado",
@@ -113,6 +203,13 @@ export default function SubjectsView() {
       className: "text-right",
       render: (row) => (
         <div className="flex items-center justify-end gap-1">
+          <button
+            onClick={() => openLevelDialog(row)}
+            title="Asignar niveles"
+            className="p-2 text-gray-500 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition cursor-pointer"
+          >
+            <Layers size={16} />
+          </button>
           <button
             onClick={() => handleEdit(row)}
             className="p-2 text-gray-500 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
@@ -140,6 +237,40 @@ export default function SubjectsView() {
   ];
 
   const f = subjectFieldsByName;
+
+  const levelDialog = levelDialogSubject && (
+    <Dialog open={levelDialogOpen} onOpenChange={(open) => { if (!open) { setLevelDialogOpen(false); setLevelDialogSubject(null); } }}>
+      <DialogContent className="sm:max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Niveles para {levelDialogSubject.subject}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          {(levels as any[]).map((level: any) => (
+            <label
+              key={level.id}
+              className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"
+            >
+              <input
+                type="checkbox"
+                checked={selectedLevelIds.includes(level.id)}
+                onChange={() => toggleLevel(level.id)}
+                className="w-4 h-4 text-(--blueColor) border-gray-300 rounded focus:ring-(--blueColor) cursor-pointer"
+              />
+              <span className="text-sm font-medium text-gray-700">{level.level}</span>
+            </label>
+          ))}
+        </div>
+        <DialogFooter className="pt-2">
+          <Button type="button" variant="outline" onClick={() => { setLevelDialogOpen(false); setLevelDialogSubject(null); }}>
+            Cancelar
+          </Button>
+          <Button type="button" onClick={saveLevelAssignments} className="bg-(--blueColor) hover:bg-(--darkBlueColor) cursor-pointer">
+            Guardar
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 
   const summaryList = (
     <div className="">
@@ -228,10 +359,18 @@ export default function SubjectsView() {
   );
 
   return (
-    <PageTransitionComponent
-      primaryChildren={summaryList}
-      secondaryChildren={formView}
-      toggle={screen === "form"}
-    />
+    <>
+      <PageTransitionComponent
+        primaryChildren={
+          <>
+            {tabsComponent}
+            {summaryList}
+          </>
+        }
+        secondaryChildren={formView}
+        toggle={screen === "form"}
+      />
+      {levelDialog}
+    </>
   );
 }

@@ -1,6 +1,6 @@
+import { Check, X, Loader2, Pencil } from "lucide-react";
 import type { Column } from "@/components/table/TableComponent";
-import type { TeacherAssignmentResponse } from "./teacher-assignment.types";
-import { Pencil } from "lucide-react";
+import type { TeacherAssignmentResponse, SubjectData } from "./teacher-assignment.types";
 
 export const teacherAssignmentColumns = (
   onEdit?: (assignment: TeacherAssignmentResponse) => void
@@ -25,7 +25,7 @@ export const teacherAssignmentColumns = (
   {
     header: "Materia",
     render: (row) => (
-      <span className="font-medium text-gray-800">{row.subject.subject}</span>
+      <span className="font-medium text-gray-800">{row.levelSubject.subject.subject}</span>
     ),
   },
   {
@@ -61,5 +61,94 @@ export const teacherAssignmentColumns = (
         <Pencil size={16} />
       </button>
     ),
+  },
+];
+
+export const buildSectionColumns = (
+  sectionId: number,
+  processingIds: Set<string>,
+  assigningSubject: { sectionId: number; levelSubjectId: number } | null,
+  teacherOptions: { id: number; name: string; idNumber: string }[],
+  onTeacherChange: (sectionId: number, levelSubjectId: number, teacherId: number) => void,
+  onAssigningSubject: (val: { sectionId: number; levelSubjectId: number } | null) => void,
+): Column<SubjectData>[] => [
+  {
+    header: "Materia",
+    className: "font-medium text-gray-800",
+    render: (row) => (
+      <div>
+        <p className="text-sm font-medium text-gray-800">{row.subject}</p>
+        {row.subjectCode && (
+          <p className="text-xs text-gray-400">{row.subjectCode}</p>
+        )}
+      </div>
+    ),
+  },
+  {
+    header: "Docente",
+    render: (row) => {
+      if (row.assignment) {
+        return (
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 text-green-700">
+            <Check size={12} />
+            {row.assignment.teacherName}
+          </span>
+        );
+      }
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-50 text-red-600">
+          <X size={12} />
+          Sin asignar
+        </span>
+      );
+    },
+  },
+  {
+    header: "Acciones",
+    headerClassName: "text-right",
+    className: "text-right",
+    render: (row) => {
+      const key = `${sectionId}-${row.levelSubjectId}`;
+      const isProcessing = processingIds.has(key);
+      const isAssigning = assigningSubject?.sectionId === sectionId && assigningSubject?.levelSubjectId === row.levelSubjectId;
+
+      if (isProcessing) {
+        return <Loader2 size={16} className="animate-spin text-gray-400 mx-auto" />;
+      }
+
+      if (isAssigning) {
+        return (
+          <select
+            autoFocus
+            className="text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-(--blueColor) min-w-[140px]"
+            defaultValue=""
+            onChange={(e) => {
+              const val = e.target.value;
+              if (val) {
+                onTeacherChange(sectionId, row.levelSubjectId, Number(val));
+              }
+            }}
+            onBlur={() => onAssigningSubject(null)}
+          >
+            <option value="" disabled>Seleccionar...</option>
+            {teacherOptions.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} — {t.idNumber}
+              </option>
+            ))}
+          </select>
+        );
+      }
+
+      return (
+        <button
+          type="button"
+          onClick={() => onAssigningSubject({ sectionId, levelSubjectId: row.levelSubjectId })}
+          className="text-xs px-3 py-1.5 rounded-lg border border-(--blueColor)/30 text-(--blueColor) hover:bg-(--blueColor)/5 transition cursor-pointer"
+        >
+          {row.assignment ? "Cambiar" : "Asignar"}
+        </button>
+      );
+    },
   },
 ];
