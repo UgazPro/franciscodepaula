@@ -85,7 +85,7 @@ export interface IStaff {
     status: boolean;
     person: Person;
     role: { id: number; role: string };
-    employee: { id: number } | null;
+    employee: { id: number; baseHourRate: number | null; hireDate: Date | null } | null;
 }
 
 export interface Person {

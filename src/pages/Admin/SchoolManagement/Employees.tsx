@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
-import { useStaff } from "@/hooks/useUsers";
+import { useStaff, useRoles } from "@/hooks/useUsers";
 import { useCreateEmployee, useUpdateEmployee } from "@/queries/useEmployeeMutations";
 import { employeeSchema, type EmployeeFormValues } from "@/services/employee/employee.schema";
 import { employeeFieldsByName } from "@/services/employee/employeeForm.data";
@@ -18,6 +18,7 @@ import type { IStaff } from "@/services/users/user.interface";
 
 export default function Employees() {
   const { data: employees = [], isLoading } = useStaff();
+  const { data: roles = [] } = useRoles();
   const { mutateAsync: createEmployee } = useCreateEmployee();
   const { mutateAsync: updateEmployee } = useUpdateEmployee();
 
@@ -61,6 +62,7 @@ export default function Employees() {
       email: "",
       phone: "",
       roleId: undefined as any,
+      hireDate: undefined as any,
     },
   });
 
@@ -75,6 +77,7 @@ export default function Employees() {
         email: selectedEmployee.email,
         phone: selectedEmployee.phone ?? "",
         roleId: selectedEmployee.role.id,
+        hireDate: selectedEmployee.employee?.hireDate ? new Date(selectedEmployee.employee.hireDate) : undefined as any,
       });
     }
   }, [formMode, selectedEmployee, form]);
@@ -89,6 +92,7 @@ export default function Employees() {
       email: "",
       phone: "",
       roleId: undefined as any,
+      hireDate: undefined as any,
     });
     setSelectedEmployee(null);
     setFormMode("create");
@@ -106,35 +110,24 @@ export default function Employees() {
 
   const onSubmit = async (data: EmployeeFormValues) => {
     try {
+      const payload = {
+        profilePhoto: formMode === "edit" ? selectedEmployee!.person.profilePhoto ?? "" : "",
+        firstNames: data.firstNames,
+        lastNames: data.lastNames,
+        identificationNumber: data.identificationNumber,
+        birthDate: data.birthDate,
+        gender: data.gender,
+        email: data.email,
+        phone: data.phone ?? "",
+        roleId: data.roleId,
+        password: data.identificationNumber,
+        hireDate: data.hireDate,
+      };
+
       if (formMode === "edit" && selectedEmployee) {
-        await updateEmployee({
-          id: selectedEmployee.id,
-          data: {
-            profilePhoto: selectedEmployee.person.profilePhoto ?? "",
-            firstNames: data.firstNames,
-            lastNames: data.lastNames,
-            identificationNumber: data.identificationNumber,
-            birthDate: data.birthDate,
-            gender: data.gender,
-            email: data.email,
-            phone: data.phone ?? "",
-            roleId: data.roleId,
-          },
-        });
+        await updateEmployee({ id: selectedEmployee.id, data: payload });
       } else {
-        await createEmployee({
-          data: {
-            profilePhoto: "",
-            firstNames: data.firstNames,
-            lastNames: data.lastNames,
-            identificationNumber: data.identificationNumber,
-            birthDate: data.birthDate,
-            gender: data.gender,
-            email: data.email,
-            phone: data.phone ?? "",
-            roleId: data.roleId,
-          },
-        });
+        await createEmployee({ data: payload });
       }
       handleBack();
     } catch {
@@ -143,6 +136,11 @@ export default function Employees() {
   };
 
   const f = employeeFieldsByName;
+
+  const roleField = useMemo(() => ({
+    ...employeeFieldsByName.roleId,
+    options: (roles as any[]).map((r: any) => ({ label: r.role, value: r.id })),
+  }), [roles]);
 
   const listView = (
     <div className="">
@@ -209,9 +207,10 @@ export default function Employees() {
             <FieldRenderer field={f.firstNames} />
             <FieldRenderer field={f.lastNames} />
             <FieldRenderer field={f.identificationNumber} />
-            <FieldRenderer field={f.roleId} />
+            <FieldRenderer field={roleField} />
             <FieldRenderer field={f.birthDate} />
             <FieldRenderer field={f.gender} />
+            <FieldRenderer field={f.hireDate} />
             <FieldRenderer field={f.email} />
             <FieldRenderer field={f.phone} />
           </div>

@@ -9,6 +9,14 @@ export const useTeacherAssignments = () => {
   });
 };
 
+export const useTeacherAssignmentOverview = () => {
+  return useQuery({
+    queryKey: ["teacher-assignments-overview"],
+    queryFn: () => getDataApi("/teacher-assignments/overview"),
+    staleTime: 1000 * 60 * 5,
+  });
+};
+
 export const useTeachers = () => {
   return useQuery({
     queryKey: ["teachers"],

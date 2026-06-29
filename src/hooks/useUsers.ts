@@ -52,6 +52,14 @@ export const useStudentById = (studentId: number | null) => {
   });
 };
 
+export const useRoles = () => {
+  return useQuery({
+    queryKey: ["roles"],
+    queryFn: () => getDataApi("/users/roles"),
+    staleTime: 1000 * 60 * 60,
+  });
+};
+
 export const useRepresentativeById = (userId: number | null) => {
   return useQuery({
     queryKey: ["representative-detail", userId],

@@ -6,7 +6,7 @@ export const useCreateEmployee = () => {
 
   return useMutation({
     mutationFn: ({ data }: { data: any }) =>
-      postDataApi("/users/staff", data),
+      postDataApi("/users/employees", data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["staff"] });
     },
@@ -18,7 +18,7 @@ export const useUpdateEmployee = () => {
 
   return useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) =>
-      putDataApi(`/users/staff/${id}`, data),
+      putDataApi(`/users/employees/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["staff"] });
     },

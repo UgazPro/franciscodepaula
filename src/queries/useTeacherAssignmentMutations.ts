@@ -1,14 +1,19 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { postDataApi, putDataApi, patchDataApi } from "@/services/api";
 
+const invalidateAssignments = (qc: ReturnType<typeof useQueryClient>) => {
+  qc.invalidateQueries({ queryKey: ["teacher-assignments"] });
+  qc.invalidateQueries({ queryKey: ["teacher-assignments-overview"] });
+};
+
 export const useCreateTeacherAssignment = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: { teacherId: number; subjectId: number; sectionId: number }) =>
+    mutationFn: (data: { teacherId: number; levelSubjectId: number; sectionId: number }) =>
       postDataApi("/teacher-assignments", data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["teacher-assignments"] });
+      invalidateAssignments(qc);
     },
   });
 };
@@ -17,10 +22,10 @@ export const useUpdateTeacherAssignment = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: { teacherId?: number; subjectId?: number; sectionId?: number } }) =>
+    mutationFn: ({ id, data }: { id: number; data: { teacherId?: number; levelSubjectId?: number; sectionId?: number } }) =>
       putDataApi(`/teacher-assignments/${id}`, data),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["teacher-assignments"] });
+      invalidateAssignments(qc);
     },
   });
 };
@@ -32,7 +37,7 @@ export const useToggleTeacherAssignmentStatus = () => {
     mutationFn: (id: number) =>
       patchDataApi(`/teacher-assignments/${id}/toggle-status`),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["teacher-assignments"] });
+      invalidateAssignments(qc);
     },
   });
 };
