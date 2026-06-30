@@ -206,7 +206,7 @@ export default function TeacherAssignmentsView({ tabsComponent }: TeacherAssignm
                     handleTeacherChange,
                     setAssigningSubject,
                   )}
-                  maxHeight={500}
+                  maxHeight={450}
                 />
               )}
             </div>

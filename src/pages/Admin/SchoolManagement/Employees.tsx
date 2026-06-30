@@ -175,7 +175,7 @@ export default function Employees() {
           <TableComponent
             data={paginatedEmployees as IStaff[]}
             columns={employeeColumns(handleEdit)}
-            maxHeight={464}
+            maxHeight={455}
           />
           <PaginationComponent
             currentPage={currentPage}

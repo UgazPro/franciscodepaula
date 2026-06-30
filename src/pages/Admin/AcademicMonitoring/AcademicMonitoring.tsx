@@ -14,11 +14,12 @@ import RepresentativesView from "./views/RepresentativesView";
 import RepresentativeForm from "./views/RepresentativeForm";
 import SubjectsView from "./views/SubjectsView";
 import TeacherAssignmentsView from "./views/TeacherAssignmentsView";
+import CRPView from "./views/CRPView";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "representantes" | "school-year" | "materias" | "asignaciones";
+type ActiveTab = "estudiantes" | "representantes" | "school-year" | "materias" | "asignaciones" | "crp";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
@@ -26,6 +27,7 @@ const tabs = [
     { value: "school-year" as const, label: "Año Escolar" },
     { value: "materias" as const, label: "Materias" },
     { value: "asignaciones" as const, label: "Asignaciones" },
+    { value: "crp" as const, label: "CRP" },
 ];
 
 export default function AcademicMonitoring() {
@@ -223,6 +225,10 @@ export default function AcademicMonitoring() {
             ) : activeTab === "asignaciones" ? (
                 <div className="flex-1 min-h-0">
                     <TeacherAssignmentsView tabsComponent={<TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />} />
+                </div>
+            ) : activeTab === "crp" ? (
+                <div className="flex-1 min-h-0">
+                    <CRPView tabsComponent={<TabsComponent tabs={tabs} activeTab={activeTab} onChange={setActiveTab} className="mb-4" />} />
                 </div>
             ) : (
                 <>

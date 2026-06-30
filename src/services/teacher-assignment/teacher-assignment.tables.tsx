@@ -1,6 +1,7 @@
-import { Check, X, Loader2, Pencil } from "lucide-react";
+import { Check, X, Loader2, Pencil, Power } from "lucide-react";
 import type { Column } from "@/components/table/TableComponent";
-import type { TeacherAssignmentResponse, SubjectData } from "./teacher-assignment.types";
+import type { TeacherAssignmentResponse, SubjectData, SpecialGroupResponse } from "./teacher-assignment.types";
+import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
 
 export const teacherAssignmentColumns = (
   onEdit?: (assignment: TeacherAssignmentResponse) => void
@@ -150,5 +151,74 @@ export const buildSectionColumns = (
         </button>
       );
     },
+  },
+];
+
+export const specialGroupColumns = (
+  onEdit: (row: SpecialGroupResponse) => void,
+  onToggleStatus: (row: SpecialGroupResponse) => void,
+): Column<SpecialGroupResponse>[] => [
+  {
+    header: "CRP",
+    render: (row) => (
+      <span className="font-medium text-gray-800">{row.groupName}</span>
+    ),
+  },
+  {
+    header: "Profesor",
+    render: (row) => (
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
+          {row.employee.user.person.firstNames.charAt(0)}
+          {row.employee.user.person.lastNames.charAt(0)}
+        </div>
+        <span className="text-sm text-gray-700">
+          {row.employee.user.person.firstNames} {row.employee.user.person.lastNames}
+        </span>
+      </div>
+    ),
+  },
+  {
+    header: "Estado",
+    render: (row) => (
+      <span
+        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          row.status ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}
+      >
+        {row.status ? "Activo" : "Inactivo"}
+      </span>
+    ),
+  },
+  {
+    header: "Acciones",
+    headerClassName: "text-right",
+    className: "text-right",
+    render: (row) => (
+      <div className="flex items-center justify-end gap-1">
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onEdit(row); }}
+          className="p-2 text-gray-500 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
+        >
+          <Pencil size={16} />
+        </button>
+        <DeleteDialog
+          preposition="el grupo"
+          whatsDeleting={row.groupName}
+          onConfirm={() => onToggleStatus(row)}
+          buttonType="ghost"
+          buttonStyles="p-2 text-gray-500 hover:text-orange-600 hover:bg-orange-50 rounded-lg cursor-pointer"
+          bigMessage={row.groupName}
+          icon={<Power size={28} />}
+          confirmText={row.status ? "Desactivar" : "Activar"}
+          title={`${row.status ? "Desactivar" : "Activar"} ${row.groupName}?`}
+          description={`¿Estás seguro de que deseas ${row.status ? "desactivar" : "activar"} ${row.groupName}? ${row.status ? "El grupo quedará inactivo pero no se eliminará permanentemente." : "El grupo volverá a estar activo."}`}
+          iconBgClass={row.status ? "bg-orange-100" : "bg-green-100"}
+          iconColorClass={row.status ? "text-orange-600" : "text-green-600"}
+          confirmClass={row.status ? "bg-orange-500 hover:bg-orange-600" : "bg-green-500 hover:bg-green-600"}
+        />
+      </div>
+    ),
   },
 ];
