@@ -57,12 +57,12 @@ export default function Employees() {
       firstNames: "",
       lastNames: "",
       identificationNumber: "",
-      birthDate: undefined as any,
+      birthDate: undefined as never,
       gender: "",
       email: "",
       phone: "",
-      roleId: undefined as any,
-      hireDate: undefined as any,
+      roleId: undefined as never,
+      hireDate: undefined as never,
     },
   });
 
@@ -77,7 +77,7 @@ export default function Employees() {
         email: selectedEmployee.email,
         phone: selectedEmployee.phone ?? "",
         roleId: selectedEmployee.userRoles[0]?.roleId,
-        hireDate: selectedEmployee.employee?.hireDate ? new Date(selectedEmployee.employee.hireDate) : undefined as any,
+        hireDate: selectedEmployee.employee?.hireDate ? new Date(selectedEmployee.employee.hireDate) : undefined as never,
       });
     }
   }, [formMode, selectedEmployee, form]);
@@ -87,12 +87,12 @@ export default function Employees() {
       firstNames: "",
       lastNames: "",
       identificationNumber: "",
-      birthDate: undefined as any,
+      birthDate: undefined as never,
       gender: "",
       email: "",
       phone: "",
-      roleId: undefined as any,
-      hireDate: undefined as any,
+      roleId: undefined as never,
+      hireDate: undefined as never,
     });
     setSelectedEmployee(null);
     setFormMode("create");

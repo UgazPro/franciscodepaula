@@ -37,8 +37,8 @@ export const useEnrollmentMutation = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (formData: any) => {
-      const payload: any = {
+    mutationFn: async (formData: Record<string, unknown>) => {
+      const payload: Record<string, unknown> = {
         // Student
         firstNames: formData.firstNames,
         lastNames: formData.lastNames,
@@ -93,7 +93,7 @@ export const useUpdateEnrollment = () => {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: number; data: any }) =>
+    mutationFn: ({ id, data }: { id: number; data: Record<string, unknown> }) =>
       putDataApi(`/enrollment/${id}`, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["students"] });

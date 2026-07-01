@@ -11,9 +11,9 @@ interface Props {
     filteredData: Beca[];
     itemsPerPage: number;
     estudiantes: Estudiante[];
-    setEditingItem: (v: any) => void;
+    setEditingItem: (v: Beca | null) => void;
     setShowModal: (v: boolean) => void;
-    setSelectedItem: (v: any) => void;
+    setSelectedItem: (v: Beca | null) => void;
     setShowDeleteModal: (v: boolean) => void;
 }
 
@@ -63,7 +63,7 @@ export default function BecasView({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {paginatedData.map((beca: any) => {
+                            {paginatedData.map((beca) => {
                                 const estudiante = estudiantes.find(e => e.id === beca.estudianteId);
                                 return (
                                     <tr key={beca.id} className="hover:bg-gray-50 transition">
@@ -109,7 +109,7 @@ export default function BecasView({
     );
 }
 
-function PaginationControls({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }: any) {
+function PaginationControls({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void; totalItems: number; itemsPerPage: number }) {
     return (
         <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-sm text-gray-500">

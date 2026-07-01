@@ -53,7 +53,7 @@ export default function SubjectsView({ tabsComponent }: SubjectsViewProps) {
 
   const levelSubjectsMap = useMemo(() => {
     const map: Record<number, { id: number; level: string }[]> = {};
-    for (const entry of levelSubjectsData as any[]) {
+    for (const entry of levelSubjectsData as { id: number; level: string; levelSubjects?: { subject: { id: number } }[] }[]) {
       for (const ls of entry.levelSubjects ?? []) {
         const subjectId = ls.subject.id;
         if (!map[subjectId]) map[subjectId] = [];
@@ -245,7 +245,7 @@ export default function SubjectsView({ tabsComponent }: SubjectsViewProps) {
           <DialogTitle>Niveles para {levelDialogSubject.subject}</DialogTitle>
         </DialogHeader>
         <div className="space-y-3 py-2">
-          {(levels as any[]).map((level: any) => (
+          {(levels as { id: number; level: string }[]).map((level) => (
             <label
               key={level.id}
               className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer"

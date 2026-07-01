@@ -7,10 +7,11 @@ import { Controller } from "react-hook-form";
 import ErrorMessage from "./renderFormComponents/ErrorMessage";
 import { MultiSelectField } from "./renderFormComponents/MultiSelectField";
 import type { FormField } from "./formComponent.interface";
+import type { UseFormReturn, FieldValues } from "react-hook-form";
 
 interface FormComponentProps {
     fields: FormField[];
-    form: any;
+    form: UseFormReturn<FieldValues>;
     otherType?: React.ReactNode;
 }
 

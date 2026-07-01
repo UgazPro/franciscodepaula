@@ -29,7 +29,7 @@ export default function Login() {
     const onSubmit = async (data: LoginFormValues) => {
         try {
             await loginMutation.mutateAsync(data);
-        } catch (error: any) {
+        } catch (error: unknown) {
             setLoginErrorMessage("Usuario Inválido");
             setTimeout(() => setLoginErrorMessage(""), 2500);
         }

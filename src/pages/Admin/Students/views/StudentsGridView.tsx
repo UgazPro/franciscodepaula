@@ -1,7 +1,20 @@
 import { MoreVertical, GraduationCap, User, Phone, Calendar, BookOpen } from "lucide-react";
 
+interface StudentGridItem {
+  id: number;
+  nombre: string;
+  apellido: string;
+  cedula: string;
+  grado: string;
+  seccion: string;
+  representante: string;
+  telefono: string;
+  edad: number;
+  promedio: number;
+}
+
 interface StudentGridViewProps {
-    paginatedEstudiantes: any;
+    paginatedEstudiantes: StudentGridItem[];
 }
 
 export default function StudentsGridView({ paginatedEstudiantes } : StudentGridViewProps) {

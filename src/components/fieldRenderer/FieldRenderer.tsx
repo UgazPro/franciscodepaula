@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
 import { SelectComponentForm } from "@/components/form/renderFormComponents/SelectComponent";
 import { MultiSelectField } from "@/components/fieldRenderer/MultiSelectField";
-import type { FieldValues, UseFormReturn } from "react-hook-form";
+import type { FieldValues, UseFormReturn, FieldPath } from "react-hook-form";
 
 interface FieldRendererProps<T extends FieldValues = FieldValues> {
   field: FormField;
@@ -48,7 +48,7 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
         </label>
         <Controller
           control={form.control}
-          name={field.name as any}
+          name={field.name as FieldPath<T>}
           render={({ field: controllerField }) => (
             <CalendarFieldComponent
               value={controllerField.value as Date | undefined}
@@ -89,7 +89,7 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
           {field.label} <span className="text-red-500">*</span>
         </label>
         <textarea
-          {...form.register(field.name as any)}
+          {...form.register(field.name as FieldPath<T>)}
           rows={3}
           className={cn(
             inputBaseArea,
@@ -131,7 +131,7 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
         <input
           type={field.inputType || "text"}
           disabled={disabled}
-          {...form.register(field.name as any, { valueAsNumber: field.inputType === "number" })}
+          {...form.register(field.name as FieldPath<T>, { valueAsNumber: field.inputType === "number" })}
           placeholder={field.placeholder || `Ingrese ${field.label.toLowerCase()}`}
           className={cn(
             inputBase,

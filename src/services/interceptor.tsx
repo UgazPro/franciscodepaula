@@ -7,7 +7,7 @@ const MUTATION_METHODS = new Set(['post', 'put', 'delete']);
 let interceptorId: number | null = null;
 
 export const useAxiosInterceptor = () => {
-    const isValidMessage = (msg: any) => {
+    const isValidMessage = (msg: unknown) => {
         return typeof msg === 'string' && msg.trim().length > 2;
     };
 

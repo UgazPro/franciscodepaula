@@ -39,10 +39,10 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
     resolver: zodResolver(feeFormSchema),
     defaultValues: {
       name: "",
-      valueUSD: undefined as any,
-      valueVES: undefined as any,
-      startAt: undefined as any,
-      endAt: undefined as any,
+      valueUSD: undefined as never,
+      valueVES: undefined as never,
+      startAt: undefined as never,
+      endAt: undefined as never,
     },
   });
 
@@ -62,7 +62,7 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
     if (exchangeRate && valueUSD && !isNaN(Number(valueUSD)) && Number(valueUSD) > 0) {
       setValue("valueVES", Number(valueUSD) * exchangeRate);
     } else {
-      setValue("valueVES", undefined as any);
+      setValue("valueVES", undefined as never);
     }
   }, [valueUSD, exchangeRate, setValue]);
 

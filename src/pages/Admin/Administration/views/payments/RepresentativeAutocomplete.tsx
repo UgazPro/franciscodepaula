@@ -10,7 +10,7 @@ interface RepresentativeAutocompleteProps {
 
 export default function RepresentativeAutocomplete({ onSelect }: RepresentativeAutocompleteProps) {
   const { data: rawData } = useRepresentatives({ take: 200 });
-  const reps = Array.isArray(rawData) ? rawData : (rawData as any)?.data ?? [];
+  const reps = Array.isArray(rawData) ? rawData : (rawData as { data?: IRepresentative[] } | undefined)?.data ?? [];
 
   const { setValue, watch } = useFormContext();
   const payerName = watch("payerName");

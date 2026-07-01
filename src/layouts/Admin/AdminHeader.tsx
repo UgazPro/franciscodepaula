@@ -122,7 +122,7 @@ export default function AdminHeader() {
 
   useEffect(() => {
     if (rawResults && Array.isArray(rawResults)) {
-      setResults(rawResults as any);
+      setResults(rawResults as SearchResult[]);
     } else {
       setResults([]);
     }

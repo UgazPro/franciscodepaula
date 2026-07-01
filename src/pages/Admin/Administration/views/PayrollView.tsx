@@ -75,7 +75,7 @@ export default function NominasView({
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {paginatedData.map((nom: any) => {
+                            {paginatedData.map((nom) => {
                                 const person = personal.find(p => p.id === nom.personalId);
                                 return (
                                     <tr key={nom.id} className="hover:bg-gray-50 transition">
@@ -133,7 +133,7 @@ export default function NominasView({
     );
 }
 
-function PaginationControls({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }: any) {
+function PaginationControls({ currentPage, totalPages, onPageChange, totalItems, itemsPerPage }: { currentPage: number; totalPages: number; onPageChange: (page: number) => void; totalItems: number; itemsPerPage: number }) {
     return (
         <div className="px-6 py-4 border-t border-gray-100 flex flex-col sm:flex-row justify-between items-center gap-3">
             <p className="text-sm text-gray-500">

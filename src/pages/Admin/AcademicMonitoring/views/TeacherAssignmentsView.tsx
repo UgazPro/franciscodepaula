@@ -5,6 +5,7 @@ import { TableComponent } from "@/components/table/TableComponent";
 import { StatCard } from "@/components/statCard/StatCard";
 import { buildSectionColumns } from "@/services/teacher-assignment/teacher-assignment.tables";
 import type { LevelData, TeacherAssignmentsViewProps } from "@/services/teacher-assignment/teacher-assignment.types";
+import type { IStaff } from "@/services/users/user.interface";
 import { useTeacherAssignmentOverview, useTeachers } from "@/hooks/useTeacherAssignments";
 import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import { useCreateTeacherAssignment, useUpdateTeacherAssignment } from "@/queries/useTeacherAssignmentMutations";
@@ -23,8 +24,8 @@ export default function TeacherAssignmentsView({ tabsComponent }: TeacherAssignm
   const [processingIds, setProcessingIds] = useState<Set<string>>(new Set());
 
   const teacherOptions = useMemo(() => {
-    return (teachers as any[]).map((t: any) => ({
-      id: t.employee.id,
+    return (teachers as IStaff[]).map((t: IStaff) => ({
+      id: t.employee!.id,
       name: `${t.person.firstNames} ${t.person.lastNames}`,
       idNumber: t.person.identificationNumber,
     }));

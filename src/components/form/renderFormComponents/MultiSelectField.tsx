@@ -2,6 +2,7 @@ import { Controller } from "react-hook-form";
 import { Label } from "@/components/ui/label";
 import { useState, useRef, useEffect } from "react";
 import { Check, ChevronDown } from "lucide-react";
+import type { UseFormReturn, FieldValues } from "react-hook-form";
 
 interface Option {
     label: string;
@@ -9,7 +10,7 @@ interface Option {
 }
 
 interface MultiSelectFieldProps {
-    form: any;
+    form: UseFormReturn<FieldValues>;
     name: string;
     label: string;
     options?: Option[];

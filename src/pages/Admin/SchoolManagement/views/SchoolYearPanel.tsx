@@ -42,6 +42,26 @@ import {
   GraduationCap,
 } from "lucide-react";
 
+interface SchoolYear {
+  id: number;
+  name: string;
+  isActive?: boolean;
+}
+
+interface Level {
+  id: number;
+  level: string;
+  _count?: { sections: number };
+}
+
+interface Section {
+  id: number;
+  schoolYearId: number;
+  highSchoolLevelId: number;
+  section: string;
+  highSchoolLevel?: Level;
+}
+
 export default function SchoolYearPanel() {
   const { data: schoolYears = [], isLoading: loadingYears } = useSchoolYears();
   const { data: levels = [] } = useLevels();
@@ -76,7 +96,7 @@ export default function SchoolYearPanel() {
   }, [activeYear, selectedYearId]);
 
   const selectedYear = useMemo(
-    () => schoolYears.find((y: any) => y.id === selectedYearId) ?? null,
+    () => schoolYears.find((y: SchoolYear) => y.id === selectedYearId) ?? null,
     [schoolYears, selectedYearId],
   );
 
@@ -84,15 +104,15 @@ export default function SchoolYearPanel() {
     () =>
       selectedYearId
         ? allSections.filter(
-            (s: any) => s.schoolYearId === selectedYearId,
+            (s: Section) => s.schoolYearId === selectedYearId,
           )
         : [],
     [allSections, selectedYearId],
   );
 
   const sectionsByLevel = useMemo(() => {
-    const map: Record<number, any[]> = {};
-    for (const sec of sectionsForYear as any[]) {
+    const map: Record<number, Section[]> = {};
+    for (const sec of sectionsForYear as Section[]) {
       if (!map[sec.highSchoolLevelId]) map[sec.highSchoolLevelId] = [];
       map[sec.highSchoolLevelId].push(sec);
     }
@@ -100,7 +120,7 @@ export default function SchoolYearPanel() {
   }, [sectionsForYear]);
 
   const sortedLevels = useMemo(
-    () => [...(levels as any[])].sort((a, b) => a.id - b.id),
+    () => [...(levels as Level[])].sort((a, b) => a.id - b.id),
     [levels],
   );
 
@@ -110,7 +130,7 @@ export default function SchoolYearPanel() {
     setSectionDialogOpen(true);
   };
 
-  const openEditSection = (section: any) => {
+  const openEditSection = (section: Section) => {
     setEditSectionData({
       id: section.id,
       highSchoolLevelId: section.highSchoolLevelId,
@@ -179,7 +199,7 @@ export default function SchoolYearPanel() {
     setLevelDialogOpen(true);
   };
 
-  const openEditLevel = (level: any) => {
+  const openEditLevel = (level: Level) => {
     setEditLevelData({ id: level.id, level: level.level });
     setLevelDialogOpen(true);
   };
@@ -215,7 +235,7 @@ export default function SchoolYearPanel() {
                   <SelectValue placeholder="Seleccionar año" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(schoolYears as any[]).map((year: any) => (
+                  {(schoolYears as SchoolYear[]).map((year: SchoolYear) => (
                     <SelectItem key={year.id} value={String(year.id)}>
                       {year.name} {year.isActive ? "(Activo)" : ""}
                     </SelectItem>
@@ -233,7 +253,7 @@ export default function SchoolYearPanel() {
               </p>
             ) : (
               <div className="space-y-2">
-                {sortedLevels.map((level: any) => {
+                {sortedLevels.map((level: Level) => {
                   const levelSections = sectionsByLevel[level.id] ?? [];
                   return (
                     <div
@@ -300,7 +320,7 @@ export default function SchoolYearPanel() {
                             Sin secciones
                           </span>
                         ) : (
-                          levelSections.map((sec: any) => (
+                          levelSections.map((sec: Section) => (
                             <div key={sec.id} className="group flex items-center">
                               <Badge
                                 variant="outline"

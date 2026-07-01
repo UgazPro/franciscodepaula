@@ -34,8 +34,8 @@ export default function Administracion() {
     const [showPagoModal, setShowPagoModal] = useState(false);
     const [showReciboModal, setShowReciboModal] = useState(false);
     const [showHorasDetalleModal, setShowHorasDetalleModal] = useState(false);
-    const [selectedItem, setSelectedItem] = useState<any>(null);
-    const [editingItem, setEditingItem] = useState<any>(null);
+    const [selectedItem, setSelectedItem] = useState<Nomina | PagoRepresentante | Beca | null>(null);
+    const [editingItem, setEditingItem] = useState<Nomina | PagoRepresentante | Beca | null>(null);
     const [selectedPersonal, setSelectedPersonal] = useState<Personal | null>(null);
     const [selectedPeriodo, setSelectedPeriodo] = useState(getCurrentPeriod());
 
@@ -108,7 +108,7 @@ export default function Administracion() {
         useAdministrationStore.getState().setActiveTab("dashboard");
     }, []);
 
-    const filteredData: any[] = useMemo(() => {
+    const filteredData: (Nomina | PagoRepresentante | Beca)[] = useMemo(() => {
         if (activeTab === "nominas") {
             return nominas.filter(n => {
                 const person = personal.find(p => p.id === n.personalId);
@@ -132,7 +132,7 @@ export default function Administracion() {
     }, [activeTab, nominas, pagos, becas, personal, estudiantes, searchTerm]);
 
     const totalPages = Math.ceil(filteredData.length / itemsPerPage);
-    const paginatedData: any[] = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    const paginatedData: (Nomina | PagoRepresentante | Beca)[] = filteredData.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
     useEffect(() => {
         setCurrentPage(1);
@@ -486,7 +486,7 @@ export default function Administracion() {
     );
 }
 
-const Modal = ({ title, children, onClose, onSubmit }: any) => (
+const Modal = ({ title, children, onClose, onSubmit }: { title: string; children: React.ReactNode; onClose: () => void; onSubmit: () => void }) => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">

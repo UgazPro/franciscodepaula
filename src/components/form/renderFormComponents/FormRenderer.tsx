@@ -4,10 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { SelectComponentForm } from "./SelectComponent";
 import { CalendarFieldComponent } from "./CalendarFieldComponent";
+import type { FormField } from "../formComponent.interface";
+import type { UseFormReturn, FieldValues } from "react-hook-form";
 
 interface FormRendererProps {
-    field: any;
-    form: any;
+    field: FormField;
+    form: UseFormReturn<FieldValues>;
 }
 
 export function FormRenderer({ field, form, }: FormRendererProps) {

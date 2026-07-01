@@ -16,6 +16,7 @@ import CRPView from "./views/CRP/CRPView";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
+import type { PaginatedResponse } from "@/services/users/user.service";
 
 type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp";
 
@@ -65,9 +66,10 @@ export default function AcademicMonitoring() {
         search: searchTerm,
     });
 
-    const students = (paginatedResult as any)?.data ?? [];
-    const paginationMeta = (paginatedResult as any)?.meta;
-    const filteredStudents = Array.isArray(allStudentsResult) ? allStudentsResult : (allStudentsResult as any)?.data ?? [];
+    const paginatedData = (paginatedResult as PaginatedResponse<IStudent> | undefined);
+    const students = paginatedData?.data ?? [];
+    const paginationMeta = paginatedData?.meta;
+    const filteredStudents = Array.isArray(allStudentsResult) ? allStudentsResult : (allStudentsResult as { data: IStudent[] } | undefined)?.data ?? [];
 
     useEffect(() => {
         setCurrentPage(1);
@@ -115,9 +117,9 @@ export default function AcademicMonitoring() {
             representativePhone: rep?.user?.phone ?? "",
             representativeRelation: studentRep?.relationship ?? "",
             representativeProfession: rep?.occupation ?? "",
-            schoolYearId: enrollment?.schoolYearId ?? undefined as any,
-            levelId: enrollment?.section?.highSchoolLevel?.id ?? undefined as any,
-            sectionId: enrollment?.sectionId ?? undefined as any,
+            schoolYearId: enrollment?.schoolYearId ?? undefined,
+            levelId: enrollment?.section?.highSchoolLevel?.id ?? undefined,
+            sectionId: enrollment?.sectionId ?? undefined,
             enrollmentDate: enrollment?.enrollmentDate ? new Date(enrollment.enrollmentDate) : new Date(),
         };
     }, [mode, selectedStudent]);

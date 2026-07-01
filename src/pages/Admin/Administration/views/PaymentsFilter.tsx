@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/popover";
 import { usePaymentsStore } from "@/stores/payments.store";
 import { useFees, usePaymentMethods } from "@/hooks/usePayments";
+import type { FeeResponse, PaymentMethod } from "@/services/administration/payments.types";
 import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
 
 export default function PaymentsFilter() {
@@ -48,7 +49,7 @@ export default function PaymentsFilter() {
 
   const uniqueFeeNames = useMemo(() => {
     const seen = new Set<string>();
-    return (fees as any[]).filter((f: any) => {
+    return (fees as FeeResponse[]).filter((f) => {
       if (seen.has(f.name)) return false;
       seen.add(f.name);
       return true;
@@ -113,7 +114,7 @@ export default function PaymentsFilter() {
         <div className="space-y-1.5">
           {sectionLabel("Tipo de Pago")}
           <div className="flex flex-wrap gap-1.5">
-            {uniqueFeeNames.map((f: any) => (
+            {uniqueFeeNames.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFilterFeeId(filters.feeId === f.id ? null : f.id)}
@@ -131,7 +132,7 @@ export default function PaymentsFilter() {
         <div className="space-y-1.5">
           {sectionLabel("Método de Pago")}
           <div className="flex flex-wrap gap-1.5">
-            {(paymentMethods as any[]).map((pm: any) => (
+            {(paymentMethods as PaymentMethod[]).map((pm) => (
               <button
                 key={pm.id}
                 onClick={() => setFilterPaymentMethodId(filters.paymentMethodId === pm.id ? null : pm.id)}

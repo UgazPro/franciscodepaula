@@ -41,9 +41,9 @@ export default function PaymentsView() {
     search: searchTerm || undefined,
   });
 
-  const paginatedData = (paginatedResult as any)?.data ?? [];
-  const paginationMeta = (paginatedResult as any)?.meta;
-  const allPayments = Array.isArray(allPaymentsResult) ? allPaymentsResult : (allPaymentsResult as any)?.data ?? [];
+  const paginatedData = (paginatedResult as { data?: PaymentResponse[] } | undefined)?.data ?? [];
+  const paginationMeta = (paginatedResult as { meta?: { page: number; totalPages: number; totalCount: number; take: number } } | undefined)?.meta;
+  const allPayments = Array.isArray(allPaymentsResult) ? allPaymentsResult : (allPaymentsResult as { data?: PaymentResponse[] } | undefined)?.data ?? [];
 
   const totales = useMemo(() => {
     const data = allPayments as PaymentResponse[];
@@ -102,7 +102,7 @@ export default function PaymentsView() {
               onClick={async () => {
                 setPdfLoading(true);
                 try {
-                  await generatePaymentsPdf(allPayments as any);
+                  await generatePaymentsPdf(allPayments as PaymentResponse[]);
                 } catch (error) {
                   console.error("Error generating PDF:", error);
                 } finally {

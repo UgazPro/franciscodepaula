@@ -359,7 +359,7 @@ const AdminPanel = () => {
 
 // Componente para tarjetas de estadísticas principales
 type StatCardProps = {
-  icon: any;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
   title: string;
   value: string | number;
   subtitle?: string;
@@ -397,7 +397,7 @@ const StatCard = ({ icon: Icon, title, value, subtitle, change, color = 'blue' }
 };
 
 // Componente para métricas pequeñas
-const MetricCard = ({ title, value, change, color }: any) => {
+const MetricCard = ({ title, value, change, color }: { title: string; value: string | number; change?: string; color?: string }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 text-center">
       <p className="text-sm text-gray-500 mb-1">{title}</p>

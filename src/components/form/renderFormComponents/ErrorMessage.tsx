@@ -1,13 +1,13 @@
 interface ErrorMessageProps {
     children: React.ReactNode;
-    form?: any;
+    className?: string;
 }
 
-export default function ErrorMessage({children, form}: ErrorMessageProps) {
+export default function ErrorMessage({children, className}: ErrorMessageProps) {
 
     return (
 
-        <div className={`bg-transparent text-red-600 text-sm ${form && "absolute -bottom-6 left-1"}`}>
+        <div className={`bg-transparent text-red-600 text-sm ${className ?? ""}`}>
             {children}
         </div>
 

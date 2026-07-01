@@ -1,7 +1,7 @@
 import { FormField, FormItem, FormLabel, FormControl } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
+import type { UseFormReturn, FieldValues } from 'react-hook-form';
 
 export interface IOptions {
     label: string;
@@ -17,7 +17,7 @@ interface FormSelectProps {
     disabled?: boolean;
 }
 interface FormSelectFormProps {
-    form: any;
+    form: UseFormReturn<FieldValues>;
     label: string;
     placeholder: string;
     name: string;
@@ -70,10 +70,6 @@ export function SelectComponentForm({ form, label, placeholder, name, options, d
 }
 
 export function SelectComponent({ label, value, placeholder, options, onChange, disabled }: FormSelectProps) {
-    useEffect(() => {
-        console.log(value);
-    }, [value])
-
     return (
         <div className='space-y-2 w-40'>
             <Label>{label}</Label>

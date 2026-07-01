@@ -11,11 +11,13 @@ import { step2ByName } from "./enrollment/steps/step2Fields.data";
 import { step3ByName } from "./enrollment/steps/step3Fields.data";
 import { step4ByName } from "./enrollment/steps/step4Fields.data";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
+import type { FormField } from "@/components/form/formComponent.interface";
 import StepperComponent from "@/components/stepper/StepperComponent";
 import { useEnrollmentMutation, useUpdateEnrollment } from "@/queries/useEnrollmentMutations";
 import { useUpdateStudent, useUpdateRepresentative } from "@/queries/useUserMutations";
 import { useLevels, useSections, useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import { useCountries, useStates, useMunicipalities, useParishes } from "@/hooks/useLocations";
+import type { ICountry, IState, IMunicipality, IParish } from "@/services/locations/location.service";
 import { checkIdentification, searchRepresentatives } from "@/services/users/user.service";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 import AutocompleteField from "@/components/locationAutocomplete/AutocompleteField";
@@ -87,9 +89,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       representativeRelation: "",
       representativeProfession: "",
       existingRepresentative: undefined,
-      schoolYearId: undefined as any,
-      levelId: undefined as any,
-      sectionId: undefined as any,
+      schoolYearId: undefined as never,
+      levelId: undefined as never,
+      sectionId: undefined as never,
       enrollmentDate: new Date(),
       ...initialData,
     },
@@ -120,7 +122,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const levelField = useMemo(() => {
     const field = step4ByName.levelId;
     if (field.type === "select") {
-      field.options = (levels ?? []).map((l: any) => ({
+      field.options = (levels ?? []).map((l: { id: number; level: string }) => ({
         label: l.level,
         value: l.id,
       }));
@@ -131,14 +133,14 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const filteredSections = useMemo(() => {
     if (!schoolYearId || !levelId) return [];
     return (sections ?? []).filter(
-      (s: any) => s.schoolYearId === schoolYearId && s.highSchoolLevelId === levelId,
+      (s: { schoolYearId: number; highSchoolLevelId: number }) => s.schoolYearId === schoolYearId && s.highSchoolLevelId === levelId,
     );
   }, [sections, schoolYearId, levelId]);
 
   const sectionField = useMemo(() => {
     const field = step4ByName.sectionId;
     if (field.type === "select") {
-      field.options = filteredSections.map((s: any) => ({
+      field.options = filteredSections.map((s: { id: number; section: string; highSchoolLevel?: { level: string } }) => ({
         label: `${s.section} - ${s.highSchoolLevel?.level ?? ""}`,
         value: s.id,
       }));
@@ -147,20 +149,20 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   }, [filteredSections]);
 
   const { data: countries = [] } = useCountries();
-  const venezuela = countries.find((c: any) => c.name === "Venezuela");
+  const venezuela = countries.find((c: ICountry) => c.name === "Venezuela");
   const { data: states = [] } = useStates(venezuela?.id);
-  const zuliaState = states.find((s: any) => s.name === "Zulia");
+  const zuliaState = states.find((s: IState) => s.name === "Zulia");
   const { data: municipalities = [] } = useMunicipalities(zuliaState?.id);
 
   const selectedMunicipalityObj = municipalities.find(
-    (m: any) => m.name === municipality,
+    (m: IMunicipality) => m.name === municipality,
   );
   const { data: parishes = [] } = useParishes(selectedMunicipalityObj?.id);
 
-  const countryOptions = countries.map((c: any) => ({ label: c.name, value: c.name }));
-  const stateOptions = states.map((s: any) => ({ label: s.name, value: s.name }));
-  const municipalityOptions = municipalities.map((m: any) => ({ label: m.name, value: m.name }));
-  const parishOptions = parishes.map((p: any) => ({ label: p.name, value: p.name }));
+  const countryOptions = countries.map((c: ICountry) => ({ label: c.name, value: c.name }));
+  const stateOptions = states.map((s: IState) => ({ label: s.name, value: s.name }));
+  const municipalityOptions = municipalities.map((m: IMunicipality) => ({ label: m.name, value: m.name }));
+  const parishOptions = parishes.map((p: IParish) => ({ label: p.name, value: p.name }));
 
   // ── Representative search state ──
   const [repSearchQuery, setRepSearchQuery] = useState("");
@@ -189,7 +191,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   };
 
   const selectRepresentative = (rep: IRepresentative) => {
-    setValue("existingRepresentative", rep as any);
+    setValue("existingRepresentative", rep as IRepresentative);
     setRepSearchQuery(`${rep.person.firstNames} ${rep.person.lastNames} - ${rep.person.identificationNumber}`);
     setRepSearchOpen(false);
     setRepSearchResults([]);
@@ -233,7 +235,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   }, [activeSchoolYear, initialData?.schoolYearId]);
 
   useEffect(() => {
-    form.setValue("sectionId", undefined as any);
+    form.setValue("sectionId", undefined as never);
   }, [schoolYearId, levelId]);
 
   useEffect(() => {
@@ -311,7 +313,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           form.setError("representativeIdentification", { message: "La cédula del representante es requerida" });
           hasError = true;
         }
-        if (!vals.representativeBirthDate || isNaN(new Date(vals.representativeBirthDate as any).getTime())) {
+        if (!vals.representativeBirthDate || isNaN(new Date(vals.representativeBirthDate as Date | string).getTime())) {
           form.setError("representativeBirthDate", { message: "La fecha de nacimiento del representante es requerida" });
           hasError = true;
         }
@@ -481,7 +483,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
       onClose();
       resetForm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log(error);
     }
   };
@@ -491,7 +493,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       await enrollmentMutation.mutateAsync(data);
       onClose();
       resetForm();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log(error);
     }
   };
@@ -534,7 +536,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const f1 = step1ByName;
   const f3 = step3ByName;
 
-  const locationFieldRenderer = (field: any) => {
+  const locationFieldRenderer = (field: FormField) => {
     const isVenezuela = birthCountry === "Venezuela";
 
     switch (field.name) {
@@ -592,7 +594,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     }
   };
 
-  const step3FieldRenderer = (field: any) => {
+  const step3FieldRenderer = (field: FormField) => {
     switch (field.name) {
       case "representativeMode":
         return (
@@ -601,7 +603,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => { setValue("representativeMode", "create"); setValue("existingRepresentative", undefined as any); setRepSearchQuery(""); }}
+                onClick={() => { setValue("representativeMode", "create"); setValue("existingRepresentative", undefined as never); setRepSearchQuery(""); }}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer ${
                   representativeMode === "create"
                     ? "bg-(--blueColor) text-white shadow-sm"
@@ -691,9 +693,9 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
           "representativeMode", "representativeFirstNames", "representativeLastNames",
           "representativeIdentification", "representativeBirthDate", "representativeGender",
           "representativeEmail", "representativePhone", "representativeRelation",
-        ] as any;
+        ] as (keyof EnrollmentFormValues)[];
       }
-      return ["representativeMode", "existingRepresentative", "representativeRelation"] as any;
+      return ["representativeMode", "existingRepresentative", "representativeRelation"] as (keyof EnrollmentFormValues)[];
     }
     if (stepNumber === 4) return ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
     return [];

@@ -14,6 +14,7 @@ import { usePaymentMethods, useFees, useExchangeRate } from "@/hooks/usePayments
 import { useCreatePayment, useCreateExchange, useUpdatePayment } from "@/queries/usePaymentMutations";
 import { usePaymentsStore } from "@/stores/payments.store";
 import type { IStudent } from "@/services/users/user.interface";
+import type { FeeResponse } from "@/services/administration/payments.types";
 import type { SelectField } from "@/components/form/formComponent.interface";
 
 interface StudentEntry {
@@ -23,14 +24,14 @@ interface StudentEntry {
 }
 
 const emptyDefaults: PaymentFormValues = {
-  exchangeRate: undefined as any,
+  exchangeRate: undefined as never,
   currency: "VES",
-  totalAmount: undefined as any,
+  totalAmount: undefined as never,
   payerName: "",
   payerIdentification: "",
   payerPhone: "",
   reference: "",
-  paymentMethodId: undefined as any,
+  paymentMethodId: undefined as never,
   description: "",
   paymentDate: new Date(),
 };
@@ -67,7 +68,7 @@ export default function PaymentForm() {
 
     if (isEditMode && selectedPayment) {
       const sfs = selectedPayment.studentFees ?? [];
-      const entries: StudentEntry[] = sfs.map((sf: any) => ({
+      const entries: StudentEntry[] = sfs.map((sf: { student: IStudent; feeId: number }) => ({
         student: sf.student,
         paidFeeIds: [],
         selectedFeeIds: [sf.feeId],
@@ -76,7 +77,7 @@ export default function PaymentForm() {
       reset({
         exchangeRate: Number(selectedPayment.exchange?.rate ?? latestExchange?.rate ?? 0),
         currency: selectedPayment.currency,
-        totalAmount: Number(selectedPayment.totalAmount) || undefined as any,
+        totalAmount: Number(selectedPayment.totalAmount) || undefined as never,
         payerName: selectedPayment.payerName ?? "",
         payerIdentification: selectedPayment.payerIdentification ?? "",
         payerPhone: selectedPayment.payerPhone ?? "",
@@ -106,12 +107,12 @@ export default function PaymentForm() {
   }, [latestExchange, setValue, isEditMode, watchedExchangeRate]);
 
   // All fees available in the system
-  const allFees = (fees ?? []) as any[];
+  const allFees = (fees ?? []) as FeeResponse[];
 
   // Get available fees for a student (excluding already paid ones)
   const getAvailableFees = useCallback(
     (paidFeeIds: number[]) => {
-      return allFees.filter((f: any) => !paidFeeIds.includes(f.id));
+      return allFees.filter((f: FeeResponse) => !paidFeeIds.includes(f.id));
     },
     [allFees],
   );
@@ -156,7 +157,7 @@ export default function PaymentForm() {
     let total = 0;
     for (const entry of studentEntries) {
       for (const feeId of entry.selectedFeeIds) {
-        const fee = allFees.find((f: any) => f.id === feeId);
+        const fee = allFees.find((f: FeeResponse) => f.id === feeId);
         if (fee) total += Number(fee.value);
       }
     }
@@ -217,7 +218,7 @@ export default function PaymentForm() {
       const studentFees = buildStudentFees();
       if (studentFees.length === 0) return;
 
-      const payload: any = {
+      const payload: Record<string, unknown> = {
         paymentMethodId: data.paymentMethodId,
         totalAmount: data.totalAmount,
         currency: data.currency,
@@ -381,12 +382,12 @@ export default function PaymentForm() {
                     <div className="flex flex-wrap gap-4 mb-3">
                       {studentEntries.map((entry) => {
                         const availableFees = getAvailableFees(entry.paidFeeIds);
-                        const feeOptions = availableFees.map((f: any) => ({
+                        const feeOptions = availableFees.map((f: FeeResponse) => ({
                           label: `${f.name}${f.schoolYear?.name ? ` (${f.schoolYear.name})` : ""}`,
                           value: f.id,
                         }));
                         const studentUsd = entry.selectedFeeIds.reduce((sum, fid) => {
-                          const fee = allFees.find((f: any) => f.id === fid);
+                          const fee = allFees.find((f: FeeResponse) => f.id === fid);
                           return sum + (fee ? Number(fee.value) : 0);
                         }, 0);
 
@@ -453,8 +454,8 @@ export default function PaymentForm() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                       {studentEntries.map((entry) => {
                         const selectedFees = entry.selectedFeeIds
-                          .map((fid) => allFees.find((f: any) => f.id === fid))
-                          .filter(Boolean) as any[];
+                          .map((fid) => allFees.find((f: FeeResponse) => f.id === fid))
+                          .filter(Boolean) as FeeResponse[];
                         const subtotalUsd = selectedFees.reduce((s, f) => s + Number(f.value), 0);
                         const subtotalVes = subtotalUsd * (watchedExchangeRate ?? 0);
 
@@ -465,7 +466,7 @@ export default function PaymentForm() {
                             <p className="font-semibold text-gray-800 mb-1.5">
                               {entry.student.person.firstNames} {entry.student.person.lastNames}
                             </p>
-                            {selectedFees.map((fee: any) => {
+                            {selectedFees.map((fee: FeeResponse) => {
                               const usdVal = Number(fee.value);
                               const vesVal = usdVal * (watchedExchangeRate ?? 0);
                               return (

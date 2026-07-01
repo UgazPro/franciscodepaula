@@ -71,7 +71,7 @@ export default function RepresentativeForm({ mode, selectedRepresentative, onClo
       email: selectedRepresentative.email,
       phone: selectedRepresentative.phone ?? "",
       occupation: selectedRepresentative.occupation ?? "",
-      relationship: (selectedRepresentative as any).relationship ?? "",
+      relationship: (selectedRepresentative as IRepresentative & { relationship?: string }).relationship ?? "",
     });
   }, [mode, selectedRepresentative]);
 
@@ -159,7 +159,7 @@ export default function RepresentativeForm({ mode, selectedRepresentative, onClo
   }, []);
 
   const sendForm = async (data: RepresentativeFormValues) => {
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       profilePhoto: "",
       firstNames: data.firstNames,
       lastNames: data.lastNames,
@@ -184,7 +184,7 @@ export default function RepresentativeForm({ mode, selectedRepresentative, onClo
         });
       }
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.log(error);
     }
   };

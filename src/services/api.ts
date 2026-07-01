@@ -25,20 +25,20 @@ export const getImagesApi = async (url: string) => {
     }
 };
 
-function unwrapResponse(responseData: any) {
-    if (responseData && typeof responseData === 'object' && !Array.isArray(responseData) && 'success' in responseData && 'data' in responseData && responseData.data !== null) {
-        if (!responseData.success) return responseData;
-        return responseData.data;
+function unwrapResponse(responseData: unknown) {
+    if (responseData && typeof responseData === 'object' && !Array.isArray(responseData) && 'success' in responseData && 'data' in responseData && (responseData as Record<string, unknown>).data !== null) {
+        if (!(responseData as Record<string, unknown>).success) return responseData;
+        return (responseData as Record<string, unknown>).data;
     }
     return responseData;
 }
 
-export const postDataApi = async (url: string, data: any) => {
+export const postDataApi = async (url: string, data: Record<string, unknown>) => {
     const res = await api.post(url, data);
     return unwrapResponse(res.data);
 };
 
-export const putDataApi = async (endpoint: string, data: any) => {
+export const putDataApi = async (endpoint: string, data: Record<string, unknown>) => {
     return await api.put(endpoint, data).then((response) => {
         return unwrapResponse(response.data);
     }).catch((err) => {
@@ -54,7 +54,7 @@ export const deleteDataApi = async (endpoint: string, data: number) => {
     })
 }
 
-export const postDataImageApi = async (url: string, data: any, img?: File | null,) => {
+export const postDataImageApi = async (url: string, data: Record<string, unknown>, img?: File | null,) => {
     try {
         const formData = new FormData();
 
@@ -94,7 +94,7 @@ export const postDataImageApi = async (url: string, data: any, img?: File | null
     }
 };
 
-export const putDataImageApi = async (url: string, data: any, img?: File | null,) => {
+export const putDataImageApi = async (url: string, data: Record<string, unknown>, img?: File | null,) => {
     try {
         const formData = new FormData();
 

@@ -2,7 +2,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { usePayments } from "@/hooks/usePayments";
 import { useSchoolYears, useActiveSchoolYear } from "@/hooks/useSchoolYears";
-import type { IStudent, StudentEnrollment } from "@/services/users/user.interface";
+import type { IStudent, StudentEnrollment, StudentRepresentative } from "@/services/users/user.interface";
 import type { PaymentResponse } from "@/services/administration/payments.types";
 import { paymentColumns, paymentExpandedRender } from "@/services/administration/payments.tables";
 import { TableComponent } from "@/components/table/TableComponent";
@@ -27,7 +27,7 @@ function getCurrentGradeSection(student: IStudent, schoolYearId?: number | null)
 }
 
 function getRepresentativeInfo(student: IStudent): { name: string; ci: string } | null {
-  const rep = (student.representatives ?? [])[0] as any;
+  const rep = (student.representatives ?? [])[0] as StudentRepresentative | undefined;
   if (!rep) return null;
   const p = rep.representative?.user?.person;
   if (!p) return null;
@@ -58,9 +58,9 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
     schoolYearId: selectedSchoolYearId ?? undefined,
     page: currentPage,
     take: itemsPerPage,
-  } as any);
+  } as { studentId: number; schoolYearId?: number; page: number; take: number });
 
-  const paginatedResult = result as any;
+  const paginatedResult = result as { data?: PaymentResponse[]; meta?: { page: number; totalPages: number; totalCount: number; take: number } } | undefined;
   const paymentList = (paginatedResult?.data ?? []) as PaymentResponse[];
   const meta = paginatedResult?.meta;
 
@@ -128,7 +128,7 @@ export default function StudentPaymentHistory({ student, onBack }: Props) {
                 onChange={(e) => setSelectedSchoolYearId(e.target.value ? Number(e.target.value) : null)}
                 className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-green-500"
               >
-                {(schoolYears as any[]).map((sy: any) => (
+                {(schoolYears as { id: number; name: string; isActive?: boolean }[]).map((sy) => (
                   <option key={sy.id} value={sy.id}>
                     {sy.name} {sy.isActive ? "(Actual)" : ""}
                   </option>

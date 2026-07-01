@@ -1,7 +1,8 @@
 import { useMemo } from "react";
-import { Calendar, Mail, Phone, Users, Briefcase, GraduationCap, UserCheck, UserX, Loader2 } from "lucide-react";
+import { Calendar, Mail, Users, Briefcase, GraduationCap, UserCheck, UserX, Loader2 } from "lucide-react";
 import { useSearchStore } from "@/stores/search.store";
 import { useStudentById, useRepresentativeById } from "@/hooks/useUsers";
+import type { IStudent, IRepresentative, StudentEnrollment, StudentRepresentative, RepStudent } from "@/services/users/user.interface";
 
 const roleColors: Record<string, string> = {
   Administrador: "bg-purple-100 text-purple-700",
@@ -38,7 +39,7 @@ export default function PersonDetailView() {
     if (typeof studentDetail === "object" && "success" in studentDetail && studentDetail.success) {
       return studentDetail.data;
     }
-    return studentDetail as any;
+    return studentDetail as IStudent;
   }, [studentDetail]);
 
   const repData = useMemo(() => {
@@ -46,7 +47,7 @@ export default function PersonDetailView() {
     if (typeof repDetail === "object" && "success" in repDetail && repDetail.success) {
       return repDetail.data;
     }
-    return repDetail as any;
+    return repDetail as IRepresentative;
   }, [repDetail]);
 
   if (!person) return null;
@@ -59,7 +60,7 @@ export default function PersonDetailView() {
   const age = birthDate ? calcAge(birthDate) : null;
 
   const enrollments = studentData?.enrollments ?? [];
-  const activeEnrollment = enrollments.find((e: any) => e.status === true);
+  const activeEnrollment = enrollments.find((e: StudentEnrollment) => e.status === true);
   const representatives = studentData?.representatives ?? [];
 
   const linkedStudents = repData?.representative?.students ?? [];
@@ -187,7 +188,7 @@ export default function PersonDetailView() {
                 </div>
                 {representatives.length > 0 ? (
                   <div className="space-y-2">
-                    {representatives.map((sr: any) => (
+                    {representatives.map((sr: StudentRepresentative) => (
                       <div key={sr.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded-lg">
                         <div>
                           <span className="font-medium text-gray-800">
@@ -238,7 +239,7 @@ export default function PersonDetailView() {
                 </div>
                 {linkedStudents.length > 0 ? (
                   <div className="space-y-2">
-                    {linkedStudents.map((sr: any) => (
+                    {linkedStudents.map((sr: RepStudent) => (
                       <div key={sr.id} className="flex items-center justify-between text-sm p-2 bg-gray-50 rounded-lg">
                         <span className="font-medium text-gray-800">
                           {sr.student.person.firstNames} {sr.student.person.lastNames}

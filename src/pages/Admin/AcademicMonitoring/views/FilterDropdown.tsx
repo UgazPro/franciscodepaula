@@ -50,15 +50,15 @@ export default function FilterDropdown() {
   const sections = useMemo(() => {
     if (!activeSchoolYear) return [];
     const seen = new Set<string>();
-    return (allSections as any[])
-      .filter((s: any) => {
+    return (allSections as { schoolYearId: number; id: number; section?: string; sectionName?: string; name?: string }[])
+      .filter((s) => {
         if (s.schoolYearId !== activeSchoolYear.id) return false;
         const label = s.section ?? s.sectionName ?? s.name ?? String(s.id);
         if (seen.has(label)) return false;
         seen.add(label);
         return true;
       })
-      .map((s: any) => s.section ?? s.sectionName ?? s.name ?? String(s.id));
+      .map((s) => s.section ?? s.sectionName ?? s.name ?? String(s.id));
   }, [allSections, activeSchoolYear]);
 
   const activeFilterCount = useMemo(() => {
@@ -123,7 +123,7 @@ export default function FilterDropdown() {
           <div className="space-y-1.5">
             {sectionLabel("Nivel")}
             <div className="flex flex-wrap gap-1.5">
-              {(levels as any[]).map((lvl: any) => (
+              {(levels as { id: number; level: string }[]).map((lvl) => (
                 <button
                   key={lvl.id}
                   onClick={() => setFilterLevelId(filterLevelId === lvl.id ? null : lvl.id)}
