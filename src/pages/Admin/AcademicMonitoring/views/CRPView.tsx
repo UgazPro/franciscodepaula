@@ -6,6 +6,7 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { TableComponent } from "@/components/table/TableComponent";
+import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { useSpecialGroups, useSpecialGroupStudents, useAvailableStudentsForCRP } from "@/hooks/useSpecialGroups";
 import { useTeachers } from "@/hooks/useTeacherAssignments";
@@ -37,6 +38,8 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [selectedEnrollments, setSelectedEnrollments] = useState<number[]>([]);
   const [enrolledSearch, setEnrolledSearch] = useState("");
   const [availableSearch, setAvailableSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(6);
 
   const { data: groupsData, isLoading } = useSpecialGroups();
   const { data: teachersData } = useTeachers();
@@ -87,6 +90,16 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
       s.student.person.identificationNumber.includes(q)
     );
   }, [availableStudents, availableSearch]);
+
+  const totalPages = Math.max(1, Math.ceil(groups.length / itemsPerPage));
+  const paginatedGroups = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    return groups.slice(start, start + itemsPerPage);
+  }, [groups, currentPage, itemsPerPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [groups.length]);
 
   const form = useForm<SpecialGroupFormValues>({
     resolver: zodResolver(specialGroupSchema),
@@ -344,65 +357,89 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
               No hay grupos CRP registrados. Haz clic en "Crear CRP" para crear uno.
             </div>
           ) : viewMode === "card" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {groups.map((group: SpecialGroupResponse) => (
-                <div
-                  key={group.id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition cursor-pointer group"
-                >
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {paginatedGroups.map((group: SpecialGroupResponse) => (
                   <div
-                    className="flex items-start justify-between mb-4"
-                    onClick={() => handleSelectCRP(group.groupName)}
+                    key={group.id}
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition cursor-pointer group"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 bg-linear-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white font-bold text-lg">
-                        {group.groupName.charAt(0)}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-800 group-hover:text-(--blueColor) transition">
-                          {group.groupName}
-                        </h3>
-                        <p className="text-xs text-gray-500">
-                          {group.employee.user.person.firstNames} {group.employee.user.person.lastNames}
-                        </p>
-                      </div>
-                    </div>
-                    <span
-                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${group.status
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-700"
-                        }`}
-                    >
-                      {group.status ? "Activo" : "Inactivo"}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                    <span
-                      className="text-sm text-gray-400"
+                    <div
+                      className="flex items-start justify-between mb-4"
                       onClick={() => handleSelectCRP(group.groupName)}
                     >
-                      {group._count?.studentGroups ?? 0} estudiante(s)
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEdit(group); }}
-                        className="p-2 text-gray-400 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                        title="Editar CRP"
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-linear-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white font-bold text-lg">
+                          {group.groupName.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-gray-800 group-hover:text-(--blueColor) transition">
+                            {group.groupName}
+                          </h3>
+                          <p className="text-xs text-gray-500">
+                            {group.employee.user.person.firstNames} {group.employee.user.person.lastNames}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${group.status
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                          }`}
                       >
-                        <Edit3 size={16} />
-                      </button>
+                        {group.status ? "Activo" : "Inactivo"}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                      <span
+                        className="text-sm text-gray-400"
+                        onClick={() => handleSelectCRP(group.groupName)}
+                      >
+                        {group._count?.studentGroups ?? 0} estudiante(s)
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEdit(group); }}
+                          className="p-2 text-gray-400 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                          title="Editar CRP"
+                        >
+                          <Edit3 size={16} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <PaginationComponent
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={groups.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
+                />
+              </div>
+            </>
           ) : (
-            <TableComponent
-              data={groups}
-              columns={specialGroupColumns(handleEdit, handleToggleStatus)}
-              onRowClick={(row) => handleSelectCRP(row.groupName)}
-              maxHeight={500}
-            />
+            <div>
+              <TableComponent
+                data={paginatedGroups}
+                columns={specialGroupColumns(handleEdit, handleToggleStatus)}
+                onRowClick={(row) => handleSelectCRP(row.groupName)}
+                maxHeight={450}
+              />
+              <div className="mt-4">
+                <PaginationComponent
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={groups.length}
+                  itemsPerPage={itemsPerPage}
+                  onPageChange={setCurrentPage}
+                  onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
+                />
+              </div>
+            </div>
           )}
         </>
       }
