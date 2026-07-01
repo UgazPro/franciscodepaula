@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postDataApi, putDataApi, patchDataApi } from "@/services/api";
+import { postDataApi, putDataApi } from "@/services/api";
 
 const invalidateAssignments = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ["teacher-assignments"] });
@@ -35,7 +35,7 @@ export const useToggleTeacherAssignmentStatus = () => {
 
   return useMutation({
     mutationFn: (id: number) =>
-      patchDataApi(`/teacher-assignments/${id}/toggle-status`),
+      putDataApi(`/teacher-assignments/${id}/toggle-status`),
     onSuccess: () => {
       invalidateAssignments(qc);
     },

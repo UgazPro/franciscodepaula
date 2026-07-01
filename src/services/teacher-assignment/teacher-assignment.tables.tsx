@@ -1,6 +1,6 @@
-import { Check, X, Loader2, Pencil, Power } from "lucide-react";
+import { Check, X, Loader2, Pencil, Power, Trash2 } from "lucide-react";
 import type { Column } from "@/components/table/TableComponent";
-import type { TeacherAssignmentResponse, SubjectData, SpecialGroupResponse } from "./teacher-assignment.types";
+import type { TeacherAssignmentResponse, SubjectData, SpecialGroupResponse, CRPStudentResponse, AvailableStudentResponse } from "./teacher-assignment.types";
 import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
 
 export const teacherAssignmentColumns = (
@@ -219,6 +219,87 @@ export const specialGroupColumns = (
           confirmClass={row.status ? "bg-orange-500 hover:bg-orange-600" : "bg-green-500 hover:bg-green-600"}
         />
       </div>
+    ),
+  },
+];
+
+export const crpStudentColumns = (
+  onRemove: (studentEnrollmentId: number) => void,
+): Column<CRPStudentResponse>[] => [
+  {
+    header: "Nombre",
+    render: (row) => (
+      <span className="font-medium text-gray-800">
+        {row.studentEnrollment.student.person.firstNames} {row.studentEnrollment.student.person.lastNames}
+      </span>
+    ),
+  },
+  {
+    header: "Cédula",
+    render: (row) => (
+      <span className="text-gray-600">{row.studentEnrollment.student.person.identificationNumber}</span>
+    ),
+  },
+  {
+    header: "Sección",
+    render: (row) => (
+      <span className="text-gray-600">
+        {row.studentEnrollment.section.highSchoolLevel.level} — {row.studentEnrollment.section.section}
+      </span>
+    ),
+  },
+  {
+    header: "",
+    headerClassName: "text-right",
+    className: "text-right",
+    render: (row) => (
+      <button
+        onClick={() => onRemove(row.studentEnrollmentId)}
+        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+        title="Remover del CRP"
+      >
+        <Trash2 size={16} />
+      </button>
+    ),
+  },
+];
+
+export const crpAvailableStudentColumns = (
+  selectedEnrollments: number[],
+  onToggle: (enrollmentId: number) => void,
+): Column<AvailableStudentResponse>[] => [
+  {
+    header: "",
+    className: "w-10",
+    render: (row) => (
+      <input
+        type="checkbox"
+        checked={selectedEnrollments.includes(row.id)}
+        onChange={() => onToggle(row.id)}
+        className="w-4 h-4 text-(--blueColor) border-gray-300 rounded focus:ring-(--blueColor) cursor-pointer"
+      />
+    ),
+  },
+  {
+    header: "Nombre",
+    render: (row) => (
+      <span className="font-medium text-gray-800">
+        {row.student.person.firstNames} {row.student.person.lastNames}
+      </span>
+    ),
+  },
+  {
+    header: "Cédula",
+    render: (row) => (
+      <span className="text-gray-600">{row.student.person.identificationNumber}</span>
+    ),
+  },
+  {
+    header: "Sección",
+    render: (row) => (
+      <span className="text-gray-600">
+        {row.section.highSchoolLevel.level} — {row.section.section}
+      </span>
     ),
   },
 ];

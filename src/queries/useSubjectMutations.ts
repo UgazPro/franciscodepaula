@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postDataApi, putDataApi, patchDataApi } from "@/services/api";
+import { postDataApi, putDataApi } from "@/services/api";
 
 export const useCreateSubject = () => {
   const qc = useQueryClient();
@@ -30,7 +30,7 @@ export const useToggleSubjectStatus = () => {
 
   return useMutation({
     mutationFn: (id: number) =>
-      patchDataApi(`/subjects/${id}/toggle-status`),
+      putDataApi(`/subjects/${id}/toggle-status`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subjects"] });
     },

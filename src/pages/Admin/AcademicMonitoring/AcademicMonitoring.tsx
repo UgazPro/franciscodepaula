@@ -12,7 +12,7 @@ import StudentsNoResults from "../Students/views/StudentNoResultsView";
 import RepresentativesView from "./views/RepresentativesView";
 import RepresentativeForm from "./views/RepresentativeForm";
 import TeacherAssignmentsView from "./views/TeacherAssignmentsView";
-import CRPView from "./views/CRPView";
+import CRPView from "./views/CRP/CRPView";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "./form/enrollment/enrollment.schema";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";

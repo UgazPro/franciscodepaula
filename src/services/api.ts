@@ -46,14 +46,6 @@ export const putDataApi = async (endpoint: string, data: any) => {
     })
 }
 
-export const patchDataApi = async (endpoint: string, data?: any) => {
-  return await api.patch(endpoint, data).then((response) => {
-    return unwrapResponse(response.data);
-  }).catch((err) => {
-    return err.response.data;
-  })
-}
-
 export const deleteDataApi = async (endpoint: string, data: number) => {
     return await api.delete(`${endpoint}/${data}`).then((response) => {
         return unwrapResponse(response.data);

@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect } from "react";
-import { Loader2, Plus, LayoutGrid, LayoutList, Edit3, Users, ArrowLeft, UserPlus, Trash2 } from "lucide-react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { Loader2, Plus, LayoutGrid, LayoutList, Edit3, Users, ArrowLeft, UserPlus } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
@@ -19,10 +19,10 @@ import {
   useRemoveStudentFromSpecialGroup,
 } from "@/queries/useSpecialGroupMutations";
 import { specialGroupSchema, type SpecialGroupFormValues } from "@/services/teacher-assignment/specialGroup.schema";
-import { specialGroupColumns } from "@/services/teacher-assignment/teacher-assignment.tables";
+import { specialGroupColumns, crpStudentColumns, crpAvailableStudentColumns } from "@/services/teacher-assignment/teacher-assignment.tables";
 import type { SpecialGroupResponse, CRPStudentResponse, AvailableStudentResponse } from "@/services/teacher-assignment/teacher-assignment.types";
+import type { IStaff } from "@/services/users/user.interface";
 import type { FormField } from "@/components/form/formComponent.interface";
-import type { Column } from "@/components/table/TableComponent";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
 
 interface CRPViewProps {
@@ -33,6 +33,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [screen, setScreen] = useState<"list" | "students" | "form">("list");
   const [previousScreen, setPreviousScreen] = useState<"list" | "students">("list");
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [statusFilter, setStatusFilter] = useState<"active" | "inactive">("active");
   const [editingGroup, setEditingGroup] = useState<SpecialGroupResponse | null>(null);
   const [selectedCRP, setSelectedCRP] = useState<string | null>(null);
   const [selectedEnrollments, setSelectedEnrollments] = useState<number[]>([]);
@@ -54,23 +55,27 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const { mutateAsync: removeStudent } = useRemoveStudentFromSpecialGroup();
 
   const groups = useMemo(() => {
-    const data = (groupsData as any)?.data ?? (Array.isArray(groupsData) ? groupsData : []);
-    return data.filter((g: SpecialGroupResponse) => g.status !== null);
+    const response = groupsData as { data: SpecialGroupResponse[] } | undefined;
+    const data = response?.data ?? (Array.isArray(groupsData) ? (groupsData as SpecialGroupResponse[]) : []);
+    return data.filter((g) => g.status !== null);
   }, [groupsData]);
 
+  const filteredGroups = useMemo(() => {
+    return groups.filter((g) => statusFilter === "active" ? g.status === true : g.status === false);
+  }, [groups, statusFilter]);
+
   const teachers = useMemo(() => {
-    const data = (teachersData as any)?.data ?? (Array.isArray(teachersData) ? teachersData : []);
-    return data;
+    return Array.isArray(teachersData) ? (teachersData as IStaff[]) : [];
   }, [teachersData]);
 
   const students = useMemo(() => {
-    const data = (studentsData as any)?.data ?? (Array.isArray(studentsData) ? studentsData : []);
-    return data;
+    const response = studentsData as { data: CRPStudentResponse[] };
+    return response?.data ?? (Array.isArray(studentsData) ? (studentsData as CRPStudentResponse[]) : []);
   }, [studentsData]);
 
   const availableStudents = useMemo(() => {
-    const data = (availableStudentsData as any)?.data ?? (Array.isArray(availableStudentsData) ? availableStudentsData : []);
-    return data;
+    const response = availableStudentsData as { data: AvailableStudentResponse[] };
+    return response?.data ?? (Array.isArray(availableStudentsData) ? (availableStudentsData as AvailableStudentResponse[]) : []);
   }, [availableStudentsData]);
 
   const filteredStudents = useMemo(() => {
@@ -91,15 +96,13 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     );
   }, [availableStudents, availableSearch]);
 
-  const totalPages = Math.max(1, Math.ceil(groups.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(filteredGroups.length / itemsPerPage));
   const paginatedGroups = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return groups.slice(start, start + itemsPerPage);
-  }, [groups, currentPage, itemsPerPage]);
+    return filteredGroups.slice(start, start + itemsPerPage);
+  }, [filteredGroups, currentPage, itemsPerPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [groups.length]);
+  const resetPage = useCallback(() => setCurrentPage(1), []);
 
   const form = useForm<SpecialGroupFormValues>({
     resolver: zodResolver(specialGroupSchema),
@@ -121,9 +124,9 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     label: "Profesor",
     type: "select",
     placeholder: "Seleccione un profesor",
-    options: teachers.map((t: any) => ({
+    options: teachers.map((t) => ({
       label: `${t.person.firstNames} ${t.person.lastNames}`,
-      value: t.employee.id,
+      value: t.employee?.id ?? 0,
     })),
   }), [teachers]);
 
@@ -151,7 +154,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const handleSave = async (data: SpecialGroupFormValues) => {
     try {
       if (editingGroup) {
-        const existingGroups = groups.filter((g: SpecialGroupResponse) => g.groupName === editingGroup.groupName);
+        const existingGroups = groups.filter((g) => g.groupName === editingGroup.groupName);
         const levelSubjectId = existingGroups[0]?.levelSubjectId ?? 1;
         await updateGroup({ id: editingGroup.id, data: { ...data, levelSubjectId } });
       } else {
@@ -192,13 +195,13 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     setScreen("students");
   };
 
-  const handleToggleEnrollment = (enrollmentId: number) => {
+  const handleToggleEnrollment = useCallback((enrollmentId: number) => {
     setSelectedEnrollments((prev) =>
       prev.includes(enrollmentId)
         ? prev.filter((id) => id !== enrollmentId)
         : [...prev, enrollmentId]
     );
-  };
+  }, []);
 
   const handleAssignStudents = async () => {
     if (!selectedCRP || selectedEnrollments.length === 0) return;
@@ -210,90 +213,17 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     }
   };
 
-  const handleRemoveStudent = async (studentEnrollmentId: number) => {
+  const handleRemoveStudent = useCallback(async (studentEnrollmentId: number) => {
     if (!selectedCRP) return;
     try {
       await removeStudent({ groupName: selectedCRP, studentEnrollmentId });
     } catch {
       // interceptor handles the toast
     }
-  };
+  }, [selectedCRP, removeStudent]);
 
-  const studentColumns: Column<CRPStudentResponse>[] = [
-    {
-      header: "Nombre",
-      render: (row) => (
-        <span className="font-medium text-gray-800">
-          {row.studentEnrollment.student.person.firstNames} {row.studentEnrollment.student.person.lastNames}
-        </span>
-      ),
-    },
-    {
-      header: "Cédula",
-      render: (row) => (
-        <span className="text-gray-600">{row.studentEnrollment.student.person.identificationNumber}</span>
-      ),
-    },
-    {
-      header: "Sección",
-      render: (row) => (
-        <span className="text-gray-600">
-          {row.studentEnrollment.section.highSchoolLevel.level} — {row.studentEnrollment.section.section}
-        </span>
-      ),
-    },
-    {
-      header: "",
-      headerClassName: "text-right",
-      className: "text-right",
-      render: (row) => (
-        <button
-          onClick={() => handleRemoveStudent(row.studentEnrollmentId)}
-          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-          title="Remover del CRP"
-        >
-          <Trash2 size={16} />
-        </button>
-      ),
-    },
-  ];
-
-  const availableStudentColumns: Column<AvailableStudentResponse & { selected?: boolean }>[] = [
-    {
-      header: "",
-      className: "w-10",
-      render: (row) => (
-        <input
-          type="checkbox"
-          checked={selectedEnrollments.includes(row.id)}
-          onChange={() => handleToggleEnrollment(row.id)}
-          className="w-4 h-4 text-(--blueColor) border-gray-300 rounded focus:ring-(--blueColor) cursor-pointer"
-        />
-      ),
-    },
-    {
-      header: "Nombre",
-      render: (row) => (
-        <span className="font-medium text-gray-800">
-          {row.student.person.firstNames} {row.student.person.lastNames}
-        </span>
-      ),
-    },
-    {
-      header: "Cédula",
-      render: (row) => (
-        <span className="text-gray-600">{row.student.person.identificationNumber}</span>
-      ),
-    },
-    {
-      header: "Sección",
-      render: (row) => (
-        <span className="text-gray-600">
-          {row.section.highSchoolLevel.level} — {row.section.section}
-        </span>
-      ),
-    },
-  ];
+  const studentColumns = useMemo(() => crpStudentColumns(handleRemoveStudent), [handleRemoveStudent]);
+  const availableStudentColumns = useMemo(() => crpAvailableStudentColumns(selectedEnrollments, handleToggleEnrollment), [selectedEnrollments, handleToggleEnrollment]);
 
   const toggle = screen !== "list";
 
@@ -311,11 +241,33 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 <div>
                   <h1 className="text-xl font-bold text-gray-800">Grupos CRP</h1>
                   <p className="text-sm text-gray-500">
-                    {groups.length} CRP(s) registrado(s)
+                    {filteredGroups.length} CRP(s) registrado(s)
                   </p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                <div className="flex border border-gray-200 rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => { setStatusFilter("inactive"); resetPage(); }}
+                    className={`px-3 py-2.5 text-xs font-medium transition cursor-pointer ${
+                      statusFilter === "inactive"
+                        ? "bg-orange-500 text-white"
+                        : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    Inactivos
+                  </button>
+                  <button
+                    onClick={() => { setStatusFilter("active"); resetPage(); }}
+                    className={`px-3 py-2.5 text-xs font-medium transition cursor-pointer ${
+                      statusFilter === "active"
+                        ? "bg-green-500 text-white"
+                        : "text-gray-500 hover:bg-gray-50"
+                    }`}
+                  >
+                    Activos
+                  </button>
+                </div>
                 <div className="flex border border-gray-200 rounded-xl overflow-hidden">
                   <button
                     onClick={() => setViewMode("card")}
@@ -352,14 +304,17 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
               <Loader2 size={20} className="animate-spin" />
               Cargando grupos CRP...
             </div>
-          ) : groups.length === 0 ? (
+          ) : filteredGroups.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
-              No hay grupos CRP registrados. Haz clic en "Crear CRP" para crear uno.
+              {statusFilter === "active"
+                ? "No hay grupos CRP activos. Haz clic en \"Crear CRP\" para crear uno."
+                : "No hay grupos CRP inactivos."
+              }
             </div>
           ) : viewMode === "card" ? (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {paginatedGroups.map((group: SpecialGroupResponse) => (
+                {paginatedGroups.map((group) => (
                   <div
                     key={group.id}
                     className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition cursor-pointer group"
@@ -414,7 +369,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 <PaginationComponent
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={groups.length}
+                  totalItems={filteredGroups.length}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
                   onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
@@ -433,7 +388,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 <PaginationComponent
                   currentPage={currentPage}
                   totalPages={totalPages}
-                  totalItems={groups.length}
+                  totalItems={filteredGroups.length}
                   itemsPerPage={itemsPerPage}
                   onPageChange={setCurrentPage}
                   onItemsPerPageChange={(n) => { setItemsPerPage(n); setCurrentPage(1); }}
@@ -509,7 +464,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 </div>
                 <button
                   onClick={() => {
-                    const group = groups.find((g: SpecialGroupResponse) => g.groupName === selectedCRP);
+                    const group = groups.find((g) => g.groupName === selectedCRP);
                     if (group) handleEdit(group);
                   }}
                   className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { postDataApi, putDataApi, patchDataApi, deleteDataApi } from "@/services/api";
+import { postDataApi, putDataApi, deleteDataApi } from "@/services/api";
 
 const invalidateSpecialGroups = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ["special-groups"] });
@@ -38,7 +38,7 @@ export const useToggleSpecialGroupStatus = () => {
 
   return useMutation({
     mutationFn: (id: number) =>
-      patchDataApi(`/teacher-assignments/special-groups/${id}/toggle-status`),
+      putDataApi(`/teacher-assignments/special-groups/${id}/toggle-status`),
     onSuccess: () => {
       invalidateSpecialGroups(qc);
     },
