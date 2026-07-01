@@ -1,9 +1,19 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
-import { Loader2, Plus, LayoutGrid, LayoutList, Edit3, Users, ArrowLeft, UserPlus } from "lucide-react";
+import { Loader2, Plus, LayoutGrid, LayoutList, Edit3, Users, ArrowLeft, UserPlus, CircleX } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
@@ -24,6 +34,7 @@ import type { SpecialGroupResponse, CRPStudentResponse, AvailableStudentResponse
 import type { IStaff } from "@/services/users/user.interface";
 import type { FormField } from "@/components/form/formComponent.interface";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
+import TooltipComponent from "@/components/TooltipComponent";
 
 interface CRPViewProps {
   tabsComponent?: React.ReactNode;
@@ -37,6 +48,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [editingGroup, setEditingGroup] = useState<SpecialGroupResponse | null>(null);
   const [selectedCRP, setSelectedCRP] = useState<string | null>(null);
   const [selectedEnrollments, setSelectedEnrollments] = useState<number[]>([]);
+  const [studentToRemove, setStudentToRemove] = useState<{ id: number; name: string } | null>(null);
   const [enrolledSearch, setEnrolledSearch] = useState("");
   const [availableSearch, setAvailableSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -213,14 +225,23 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     }
   };
 
-  const handleRemoveStudent = useCallback(async (studentEnrollmentId: number) => {
-    if (!selectedCRP) return;
+  const handleRemoveStudent = useCallback(async (studentEnrollmentId: number, studentName: string) => {
+    setStudentToRemove({ id: studentEnrollmentId, name: studentName });
+  }, []);
+
+  const handleConfirmRemove = useCallback(async () => {
+    if (!studentToRemove || !selectedCRP) return;
     try {
-      await removeStudent({ groupName: selectedCRP, studentEnrollmentId });
+      await removeStudent({ groupName: selectedCRP, studentEnrollmentId: studentToRemove.id });
+      setStudentToRemove(null);
     } catch {
-      // interceptor handles the toast
+      setStudentToRemove(null);
     }
-  }, [selectedCRP, removeStudent]);
+  }, [studentToRemove, selectedCRP, removeStudent]);
+
+  const handleCancelRemove = useCallback(() => {
+    setStudentToRemove(null);
+  }, []);
 
   const studentColumns = useMemo(() => crpStudentColumns(handleRemoveStudent), [handleRemoveStudent]);
   const availableStudentColumns = useMemo(() => crpAvailableStudentColumns(selectedEnrollments, handleToggleEnrollment), [selectedEnrollments, handleToggleEnrollment]);
@@ -350,16 +371,17 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                         className="text-sm text-gray-400"
                         onClick={() => handleSelectCRP(group.groupName)}
                       >
-                        {group._count?.studentGroups ?? 0} estudiante(s)
+                        {group.totalStudents ?? 0} estudiante(s)
                       </span>
                       <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleEdit(group); }}
-                          className="p-2 text-gray-400 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                          title="Editar CRP"
-                        >
-                          <Edit3 size={16} />
-                        </button>
+                        <TooltipComponent content="Editar CRP">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEdit(group); }}
+                            className="p-2 text-gray-400 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                          >
+                            <Edit3 size={16} />
+                          </button>
+                        </TooltipComponent>
                       </div>
                     </div>
                   </div>
@@ -503,6 +525,37 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 ) : (
                   <TableComponent data={filteredStudents} columns={studentColumns} maxHeight={350} />
                 )}
+
+                <AlertDialog open={!!studentToRemove} onOpenChange={(open) => { if (!open) setStudentToRemove(null); }}>
+                  <AlertDialogContent onClick={(e) => e.stopPropagation()} className="bg-white rounded-2xl max-w-md p-0 overflow-hidden">
+                    <div className="p-6 text-center">
+                      <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 bg-red-100">
+                        <CircleX size={28} className="text-red-600" />
+                      </div>
+                      <AlertDialogHeader className="items-center text-center">
+                        <AlertDialogTitle className="w-full text-center text-xl font-bold text-gray-800 mb-2">
+                          ¿Desinscribir estudiante?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="text-gray-500 text-center">
+                          ¿Estás seguro de que deseas desinscribir a{" "}
+                          <strong>{studentToRemove?.name}</strong> de este CRP?
+                          Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="flex gap-3 mt-6">
+                        <AlertDialogCancel className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                          Cancelar
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleConfirmRemove}
+                          className="flex-1 px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition"
+                        >
+                          Desinscribir
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </div>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
 
               {/* Available students */}

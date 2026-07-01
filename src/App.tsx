@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router';
 import { Toaster } from 'react-hot-toast';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import './App.css';
 import Home from './pages/Home/Home';
 import Login from './pages/Login/Login';
@@ -23,6 +24,8 @@ function App() {
     <>
 
       <Toaster />
+
+      <TooltipProvider>
 
       <BrowserRouter>
 
@@ -48,6 +51,8 @@ function App() {
         </Routes>
 
       </BrowserRouter>
+
+      </TooltipProvider>
 
     </>
 

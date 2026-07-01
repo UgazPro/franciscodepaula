@@ -1,4 +1,4 @@
-import { Check, X, Loader2, Pencil, Power, Trash2 } from "lucide-react";
+import { Check, X, Loader2, Pencil, Power, CircleX } from "lucide-react";
 import type { Column } from "@/components/table/TableComponent";
 import type { TeacherAssignmentResponse, SubjectData, SpecialGroupResponse, CRPStudentResponse, AvailableStudentResponse } from "./teacher-assignment.types";
 import { DeleteDialog } from "@/components/dialog/DeleteDialogComponent";
@@ -224,7 +224,7 @@ export const specialGroupColumns = (
 ];
 
 export const crpStudentColumns = (
-  onRemove: (studentEnrollmentId: number) => void,
+  onRemove: (studentEnrollmentId: number, studentName: string) => void,
 ): Column<CRPStudentResponse>[] => [
   {
     header: "Nombre",
@@ -252,15 +252,18 @@ export const crpStudentColumns = (
     header: "",
     headerClassName: "text-right",
     className: "text-right",
-    render: (row) => (
-      <button
-        onClick={() => onRemove(row.studentEnrollmentId)}
-        className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
-        title="Remover del CRP"
-      >
-        <Trash2 size={16} />
-      </button>
-    ),
+    render: (row) => {
+      const studentName = `${row.studentEnrollment.student.person.firstNames} ${row.studentEnrollment.student.person.lastNames}`;
+      return (
+        <button
+          onClick={() => onRemove(row.studentEnrollmentId, studentName)}
+          className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition cursor-pointer"
+          title="Remover del CRP"
+        >
+          <CircleX size={16} />
+        </button>
+      );
+    },
   },
 ];
 
