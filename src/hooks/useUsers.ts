@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getStudents, getStaff, getRepresentatives, type PaginatedResponse } from "@/services/users/user.service";
+import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 import { getDataApi } from "@/services/api";
 
 export const useStudents = (params?: {
@@ -16,7 +17,7 @@ export const useStudents = (params?: {
 }) => {
   return useQuery({
     queryKey: ["students", params],
-    queryFn: () => getStudents(params) as Promise<PaginatedResponse<any>>,
+    queryFn: () => getStudents(params) as Promise<PaginatedResponse<IStudent>>,
     staleTime: 1000 * 60 * 5,
   });
 };
@@ -38,7 +39,7 @@ export const useRepresentatives = (params?: {
 }) => {
   return useQuery({
     queryKey: ["representatives", params],
-    queryFn: () => getRepresentatives(params) as Promise<PaginatedResponse<any>>,
+    queryFn: () => getRepresentatives(params) as Promise<PaginatedResponse<IRepresentative>>,
     staleTime: 1000 * 60 * 5,
   });
 };

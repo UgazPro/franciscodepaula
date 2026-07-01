@@ -162,8 +162,8 @@ export default function Teachers() {
     const [itemsPerPage] = useState(6);
     const [showModal, setShowModal] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
-    const [editingItem, setEditingItem] = useState<any>(null);
-    const [selectedEstudiante, setSelectedEstudiante] = useState<any>(null);
+    const [editingItem, setEditingItem] = useState<Planificacion | null>(null);
+    const [selectedEstudiante, setSelectedEstudiante] = useState<EstudianteNota | null>(null);
 
     // Estados para datos
     const [materias] = useState<Materia[]>(materiasData);
@@ -304,7 +304,7 @@ export default function Teachers() {
                 ].map((tab) => (
                     <button
                         key={tab.id}
-                        onClick={() => setActiveTab(tab.id as any)}
+                        onClick={() => setActiveTab(tab.id as "planificacion" | "notas" | "formatos" | "actividades")}
                         className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium rounded-t-lg transition ${activeTab === tab.id
                                 ? "bg-white text-blue-900 border-b-2 border-green-500"
                                 : "text-gray-500 hover:text-gray-700 hover:bg-gray-50"
@@ -598,7 +598,16 @@ export default function Teachers() {
 
 // ==================== COMPONENTES AUXILIARES ====================
 
-const StatCard = ({ title, value, total, unit, icon: Icon, color }: any) => {
+interface StatCardProps {
+    title: string;
+    value: string | number;
+    total?: number;
+    unit?: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    color: "green" | "red" | "blue" | "yellow" | "orange";
+}
+
+const StatCard = ({ title, value, total, unit, icon: Icon, color }: StatCardProps) => {
     const colors = {
         green: "from-green-500 to-green-600",
         red: "from-red-500 to-red-600",
@@ -624,7 +633,14 @@ const StatCard = ({ title, value, total, unit, icon: Icon, color }: any) => {
     );
 };
 
-const Modal = ({ title, children, onClose, onSubmit }: any) => (
+interface ModalProps {
+    title: string;
+    children: React.ReactNode;
+    onClose: () => void;
+    onSubmit: () => void;
+}
+
+const Modal = ({ title, children, onClose, onSubmit }: ModalProps) => (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">

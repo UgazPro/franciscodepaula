@@ -80,12 +80,15 @@ export interface StudentRepresentative {
 
 export interface IStaff {
     id: number;
+    personId: number;
     email: string;
     phone: string | null;
-    status: boolean;
+    status: boolean | null;
+    createdAt: string;
+    updatedAt: string;
     person: Person;
-    role: { id: number; role: string };
-    employee: { id: number; baseHourRate: number | null; hireDate: Date | null } | null;
+    userRoles: { id: number; userId: number; roleId: number; role: { id: number; role: string } }[];
+    employee: { id: number; userId: number; baseHourRate: number | null; hireDate: Date | string | null } | null;
 }
 
 export interface Person {

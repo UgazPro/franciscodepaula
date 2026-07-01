@@ -41,7 +41,7 @@ export const employeeColumns = (onEdit?: (employee: IStaff) => void): Column<ISt
     header: "Rol",
     render: (emp) => (
       <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-        {emp.role.role}
+        {emp.userRoles[0]?.role.role ?? "Sin rol"}
       </span>
     ),
   },

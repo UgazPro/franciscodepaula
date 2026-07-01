@@ -76,7 +76,7 @@ export default function Employees() {
         gender: selectedEmployee.person.gender,
         email: selectedEmployee.email,
         phone: selectedEmployee.phone ?? "",
-        roleId: selectedEmployee.role.id,
+        roleId: selectedEmployee.userRoles[0]?.roleId,
         hireDate: selectedEmployee.employee?.hireDate ? new Date(selectedEmployee.employee.hireDate) : undefined as any,
       });
     }
@@ -139,7 +139,7 @@ export default function Employees() {
 
   const roleField = useMemo(() => ({
     ...employeeFieldsByName.roleId,
-    options: (roles as any[]).map((r: any) => ({ label: r.role, value: r.id })),
+    options: (roles as { id: number; role: string }[]).map((r) => ({ label: r.role, value: r.id })),
   }), [roles]);
 
   const listView = (
