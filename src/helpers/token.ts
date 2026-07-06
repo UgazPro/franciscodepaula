@@ -4,13 +4,12 @@ import { jwtDecode } from "jwt-decode";
 export interface IToken {
   id: number;
   personId: number;
-  roleId: number;
   email: string;
   phone: string;
   status: boolean;
   createdAt: Date;
   updatedAt: Date;
-  role: Role;
+  userRoles: { id: number; userId: number; roleId: number; role: Role }[];
   person: Person;
   iat: number;
   exp: number;

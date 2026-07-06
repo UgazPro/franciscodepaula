@@ -117,7 +117,7 @@ export default function AdminHeader() {
   const user = {
     name: userDB?.person.firstNames + " " + userDB?.person.lastNames || "Ana Gómez",
     email: userDB?.email,
-    role: userDB?.role.role,
+    role: userDB?.userRoles[0]?.role.role,
   };
 
   useEffect(() => {

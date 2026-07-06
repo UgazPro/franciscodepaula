@@ -1,9 +1,5 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import { Loader2, Plus, LayoutGrid, LayoutList, Edit3, Users, ArrowLeft, UserPlus, CircleX } from "lucide-react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Form } from "@/components/ui/form";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo, useCallback } from "react";
+import { Loader2, UserPlus, LayoutGrid, LayoutList, Users, ArrowLeft, CircleX } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,38 +10,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { useSpecialGroups, useSpecialGroupStudents, useAvailableStudentsForCRP } from "@/hooks/useSpecialGroups";
-import { useTeachers } from "@/hooks/useTeacherAssignments";
-import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import {
-  useCreateSpecialGroup,
-  useUpdateSpecialGroup,
-  useToggleSpecialGroupStatus,
   useAddStudentsToSpecialGroup,
   useRemoveStudentFromSpecialGroup,
 } from "@/queries/useSpecialGroupMutations";
-import { specialGroupSchema, type SpecialGroupFormValues } from "@/services/teacher-assignment/specialGroup.schema";
-import { specialGroupColumns, crpStudentColumns, crpAvailableStudentColumns } from "@/services/teacher-assignment/teacher-assignment.tables";
+import { crpStudentColumns, crpAvailableStudentColumns } from "@/services/teacher-assignment/teacher-assignment.tables";
+import type { Column } from "@/components/table/TableComponent";
 import type { SpecialGroupResponse, CRPStudentResponse, AvailableStudentResponse } from "@/services/teacher-assignment/teacher-assignment.types";
-import type { IStaff } from "@/services/users/user.interface";
-import type { FormField } from "@/components/form/formComponent.interface";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
-import TooltipComponent from "@/components/TooltipComponent";
 
 interface CRPViewProps {
   tabsComponent?: React.ReactNode;
 }
 
 export default function CRPView({ tabsComponent }: CRPViewProps) {
-  const [screen, setScreen] = useState<"list" | "students" | "form">("list");
-  const [previousScreen, setPreviousScreen] = useState<"list" | "students">("list");
+  const [screen, setScreen] = useState<"list" | "students" | "assign">("list");
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive">("active");
-  const [editingGroup, setEditingGroup] = useState<SpecialGroupResponse | null>(null);
   const [selectedCRP, setSelectedCRP] = useState<string | null>(null);
   const [selectedEnrollments, setSelectedEnrollments] = useState<number[]>([]);
   const [studentToRemove, setStudentToRemove] = useState<{ id: number; name: string } | null>(null);
@@ -54,15 +39,16 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
 
+  // Assign screen state
+  const [assignSelectedStudents, setAssignSelectedStudents] = useState<number[]>([]);
+  const [assignSelectedCRP, setAssignSelectedCRP] = useState<string | null>(null);
+  const [assignSearch, setAssignSearch] = useState("");
+  const [assignCRPSearch, setAssignCRPSearch] = useState("");
+
   const { data: groupsData, isLoading } = useSpecialGroups();
-  const { data: teachersData } = useTeachers();
-  const { data: activeSchoolYear } = useActiveSchoolYear();
   const { data: studentsData, isLoading: isLoadingStudents } = useSpecialGroupStudents(selectedCRP);
   const { data: availableStudentsData, isLoading: isLoadingAvailable } = useAvailableStudentsForCRP();
 
-  const { mutateAsync: createGroup } = useCreateSpecialGroup();
-  const { mutateAsync: updateGroup } = useUpdateSpecialGroup();
-  const { mutateAsync: toggleStatus } = useToggleSpecialGroupStatus();
   const { mutateAsync: addStudents } = useAddStudentsToSpecialGroup();
   const { mutateAsync: removeStudent } = useRemoveStudentFromSpecialGroup();
 
@@ -75,10 +61,6 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const filteredGroups = useMemo(() => {
     return groups.filter((g) => statusFilter === "active" ? g.status === true : g.status === false);
   }, [groups, statusFilter]);
-
-  const teachers = useMemo(() => {
-    return Array.isArray(teachersData) ? (teachersData as IStaff[]) : [];
-  }, [teachersData]);
 
   const students = useMemo(() => {
     const response = studentsData as { data: CRPStudentResponse[] };
@@ -108,103 +90,43 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     );
   }, [availableStudents, availableSearch]);
 
+  // Assign screen: filter available students for left panel
+  const filteredAssignStudents = useMemo(() => {
+    if (!assignSearch) return availableStudents;
+    const q = assignSearch.toLowerCase();
+    return availableStudents.filter((s: AvailableStudentResponse) =>
+      `${s.student.person.firstNames} ${s.student.person.lastNames}`.toLowerCase().includes(q) ||
+      s.student.person.identificationNumber.includes(q)
+    );
+  }, [availableStudents, assignSearch]);
+
+  // Assign screen: filter CRPs for right panel
+  const filteredAssignGroups = useMemo(() => {
+    const activeGroups = groups.filter((g) => g.status === true);
+    if (!assignCRPSearch) return activeGroups;
+    const q = assignCRPSearch.toLowerCase();
+    return activeGroups.filter((g) =>
+      g.groupName.toLowerCase().includes(q) ||
+      `${g.employee.user.person.firstNames} ${g.employee.user.person.lastNames}`.toLowerCase().includes(q)
+    );
+  }, [groups, assignCRPSearch]);
+
   const totalPages = Math.max(1, Math.ceil(filteredGroups.length / itemsPerPage));
   const paginatedGroups = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return filteredGroups.slice(start, start + itemsPerPage);
   }, [filteredGroups, currentPage, itemsPerPage]);
 
-  const resetPage = useCallback(() => setCurrentPage(1), []);
-
-  const form = useForm<SpecialGroupFormValues>({
-    resolver: zodResolver(specialGroupSchema),
-    defaultValues: {
-      groupName: "",
-      teacherId: 0,
-      schoolYearId: activeSchoolYear?.id ?? 0,
-    },
-  });
-
-  useEffect(() => {
-    if (activeSchoolYear?.id) {
-      form.setValue("schoolYearId", activeSchoolYear.id);
-    }
-  }, [activeSchoolYear, form]);
-
-  const teacherField: FormField = useMemo(() => ({
-    name: "teacherId",
-    label: "Profesor",
-    type: "select",
-    placeholder: "Seleccione un profesor",
-    options: teachers.map((t) => ({
-      label: `${t.person.firstNames} ${t.person.lastNames}`,
-      value: t.employee?.id ?? 0,
-    })),
-  }), [teachers]);
-
-  const handleCreate = () => {
-    setEditingGroup(null);
-    form.reset({
-      groupName: "",
-      teacherId: 0,
-      schoolYearId: activeSchoolYear?.id ?? 0,
-    });
-    setScreen("form");
-  };
-
-  const handleEdit = (group: SpecialGroupResponse) => {
-    setEditingGroup(group);
-    setPreviousScreen(screen as "list" | "students");
-    form.reset({
-      groupName: group.groupName,
-      teacherId: group.teacherId,
-      schoolYearId: group.schoolYearId,
-    });
-    setScreen("form");
-  };
-
-  const handleSave = async (data: SpecialGroupFormValues) => {
-    try {
-      if (editingGroup) {
-        const existingGroups = groups.filter((g) => g.groupName === editingGroup.groupName);
-        const levelSubjectId = existingGroups[0]?.levelSubjectId ?? 1;
-        await updateGroup({ id: editingGroup.id, data: { ...data, levelSubjectId } });
-      } else {
-        const firstLevelSubjectId = 31;
-        await createGroup({ ...data, levelSubjectId: firstLevelSubjectId });
-      }
-      setScreen("list");
-      setEditingGroup(null);
-    } catch {
-      // interceptor handles the toast
-    }
-  };
-
-  const handleToggleStatus = async (group: SpecialGroupResponse) => {
-    try {
-      await toggleStatus(group.id);
-    } catch {
-      // interceptor handles the toast
-    }
-  };
-
-  const handleBack = () => {
-    if (screen === "form") {
-      setScreen(previousScreen);
-    }
-    setEditingGroup(null);
+  const handleSelectCRP = (groupName: string) => {
+    setSelectedCRP(groupName);
+    setSelectedEnrollments([]);
+    setScreen("students");
   };
 
   const handleBackFromStudents = () => {
     setSelectedCRP(null);
     setSelectedEnrollments([]);
     setScreen("list");
-  };
-
-  const handleSelectCRP = (groupName: string) => {
-    setSelectedCRP(groupName);
-    setSelectedEnrollments([]);
-    setScreen("students");
   };
 
   const handleToggleEnrollment = useCallback((enrollmentId: number) => {
@@ -239,12 +161,78 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     }
   }, [studentToRemove, selectedCRP, removeStudent]);
 
-  const handleCancelRemove = useCallback(() => {
-    setStudentToRemove(null);
+  // Assign screen handlers
+  const handleToggleAssignStudent = useCallback((enrollmentId: number) => {
+    setAssignSelectedStudents((prev) =>
+      prev.includes(enrollmentId)
+        ? prev.filter((id) => id !== enrollmentId)
+        : [...prev, enrollmentId]
+    );
   }, []);
+
+  const handleSelectAssignCRP = useCallback((groupName: string) => {
+    setAssignSelectedCRP((prev) => prev === groupName ? null : groupName);
+  }, []);
+
+  const handleConfirmAssign = async () => {
+    if (!assignSelectedCRP || assignSelectedStudents.length === 0) return;
+    try {
+      await addStudents({ groupName: assignSelectedCRP, studentEnrollmentIds: assignSelectedStudents });
+      setAssignSelectedStudents([]);
+      setAssignSelectedCRP(null);
+    } catch {
+      // interceptor handles the toast
+    }
+  };
+
+  const handleBackFromAssign = () => {
+    setScreen("list");
+    setAssignSelectedStudents([]);
+    setAssignSelectedCRP(null);
+    setAssignSearch("");
+    setAssignCRPSearch("");
+  };
 
   const studentColumns = useMemo(() => crpStudentColumns(handleRemoveStudent), [handleRemoveStudent]);
   const availableStudentColumns = useMemo(() => crpAvailableStudentColumns(selectedEnrollments, handleToggleEnrollment), [selectedEnrollments, handleToggleEnrollment]);
+
+  // Assign screen: available students columns with multi-select
+  const assignStudentColumns = useMemo(() => crpAvailableStudentColumns(assignSelectedStudents, handleToggleAssignStudent), [assignSelectedStudents, handleToggleAssignStudent]);
+
+  const groupTableColumns = useMemo((): Column<SpecialGroupResponse>[] => [
+    {
+      header: "CRP",
+      render: (row) => <span className="font-medium text-gray-800">{row.groupName}</span>,
+    },
+    {
+      header: "Profesor",
+      render: (row) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0">
+            {row.employee.user.person.firstNames.charAt(0)}
+            {row.employee.user.person.lastNames.charAt(0)}
+          </div>
+          <span className="text-sm text-gray-700">
+            {row.employee.user.person.firstNames} {row.employee.user.person.lastNames}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: "Estado",
+      render: (row) => (
+        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+          row.status ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+        }`}>
+          {row.status ? "Activo" : "Inactivo"}
+        </span>
+      ),
+    },
+    {
+      header: "Estudiantes",
+      render: (row) => <span className="text-gray-600">{row.totalStudents ?? 0}</span>,
+    },
+  ], []);
 
   const toggle = screen !== "list";
 
@@ -269,7 +257,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
               <div className="flex items-center gap-2">
                 <div className="flex border border-gray-200 rounded-xl overflow-hidden">
                   <button
-                    onClick={() => { setStatusFilter("inactive"); resetPage(); }}
+                    onClick={() => { setStatusFilter("inactive"); setCurrentPage(1); }}
                     className={`px-3 py-2.5 text-xs font-medium transition cursor-pointer ${
                       statusFilter === "inactive"
                         ? "bg-orange-500 text-white"
@@ -279,7 +267,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                     Inactivos
                   </button>
                   <button
-                    onClick={() => { setStatusFilter("active"); resetPage(); }}
+                    onClick={() => { setStatusFilter("active"); setCurrentPage(1); }}
                     className={`px-3 py-2.5 text-xs font-medium transition cursor-pointer ${
                       statusFilter === "active"
                         ? "bg-green-500 text-white"
@@ -310,11 +298,11 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                   </button>
                 </div>
                 <button
-                  onClick={handleCreate}
+                  onClick={() => setScreen("assign")}
                   className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
                 >
-                  <Plus size={18} />
-                  Crear CRP
+                  <UserPlus size={18} />
+                  Asignar Alumno
                 </button>
               </div>
             </div>
@@ -328,7 +316,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
           ) : filteredGroups.length === 0 ? (
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400">
               {statusFilter === "active"
-                ? "No hay grupos CRP activos. Haz clic en \"Crear CRP\" para crear uno."
+                ? "No hay grupos CRP activos."
                 : "No hay grupos CRP inactivos."
               }
             </div>
@@ -338,12 +326,10 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 {paginatedGroups.map((group) => (
                   <div
                     key={group.id}
+                    onClick={() => handleSelectCRP(group.groupName)}
                     className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition cursor-pointer group"
                   >
-                    <div
-                      className="flex items-start justify-between mb-4"
-                      onClick={() => handleSelectCRP(group.groupName)}
-                    >
+                    <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 bg-linear-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white font-bold text-lg">
                           {group.groupName.charAt(0)}
@@ -366,23 +352,10 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                         {group.status ? "Activo" : "Inactivo"}
                       </span>
                     </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                      <span
-                        className="text-sm text-gray-400"
-                        onClick={() => handleSelectCRP(group.groupName)}
-                      >
+                    <div className="pt-3 border-t border-gray-100">
+                      <span className="text-sm text-gray-400">
                         {group.totalStudents ?? 0} estudiante(s)
                       </span>
-                      <div className="flex items-center gap-1">
-                        <TooltipComponent content="Editar CRP">
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleEdit(group); }}
-                            className="p-2 text-gray-400 hover:text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
-                          >
-                            <Edit3 size={16} />
-                          </button>
-                        </TooltipComponent>
-                      </div>
                     </div>
                   </div>
                 ))}
@@ -402,7 +375,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
             <div>
               <TableComponent
                 data={paginatedGroups}
-                columns={specialGroupColumns(handleEdit, handleToggleStatus)}
+                columns={groupTableColumns}
                 onRowClick={(row) => handleSelectCRP(row.groupName)}
                 maxHeight={450}
               />
@@ -421,79 +394,26 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
         </>
       }
       secondaryChildren={
-        screen === "form" ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-6 pb-3 border-b border-(--lightBlueColor)/20">
-              <button
-                type="button"
-                onClick={handleBack}
-                className="p-2 hover:bg-(--grayColor) rounded-lg transition cursor-pointer"
-              >
-                <ArrowLeft size={20} className="text-(--darkBlueColor)" />
-              </button>
-              <h2 className="text-lg font-semibold text-(--darkBlueColor)">
-                {editingGroup ? "Editar CRP" : "Nuevo CRP"}
-              </h2>
-            </div>
-
-            <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSave)}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FieldRenderer field={{ name: "groupName", label: "Nombre del CRP", type: "text", placeholder: "Ej: Karate, Pintura, Bordado..." }} />
-                  <FieldRenderer field={teacherField} />
-                </div>
-
-                <div className="flex justify-end gap-4 pt-6 mt-6 border-t border-(--lightBlueColor)/20">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="border-(--lightBlueColor) text-(--darkBlueColor) hover:bg-(--grayColor) cursor-pointer"
-                    onClick={handleBack}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button
-                    type="submit"
-                    className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer"
-                  >
-                    {editingGroup ? "Actualizar CRP" : "Crear CRP"}
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </div>
-        ) : screen === "students" && selectedCRP ? (
+        screen === "students" && selectedCRP ? (
           <div>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={handleBackFromStudents}
-                    className="p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
-                  >
-                    <ArrowLeft size={20} className="text-(--blueColor)" />
-                  </button>
-                  <div className="p-3 bg-linear-to-br from-purple-600 to-purple-800 rounded-xl">
-                    <Users size={24} className="text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-800">{selectedCRP}</h1>
-                    <p className="text-sm text-gray-500">
-                      {students.length} estudiante(s) inscrito(s)
-                    </p>
-                  </div>
-                </div>
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => {
-                    const group = groups.find((g) => g.groupName === selectedCRP);
-                    if (group) handleEdit(group);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-(--blueColor) hover:bg-blue-50 rounded-lg transition cursor-pointer"
+                  type="button"
+                  onClick={handleBackFromStudents}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
                 >
-                  <Edit3 size={16} />
-                  Editar
+                  <ArrowLeft size={20} className="text-(--blueColor)" />
                 </button>
+                <div className="p-3 bg-linear-to-br from-purple-600 to-purple-800 rounded-xl">
+                  <Users size={24} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-800">{selectedCRP}</h1>
+                  <p className="text-sm text-gray-500">
+                    {students.length} estudiante(s) inscrito(s)
+                  </p>
+                </div>
               </div>
             </div>
 
@@ -595,6 +515,127 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                   </div>
                 ) : (
                   <TableComponent data={filteredAvailableStudents} columns={availableStudentColumns} maxHeight={350} />
+                )}
+              </div>
+            </div>
+          </div>
+        ) : screen === "assign" ? (
+          <div>
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleBackFromAssign}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                >
+                  <ArrowLeft size={20} className="text-(--blueColor)" />
+                </button>
+                <div className="p-3 bg-linear-to-br from-green-500 to-green-600 rounded-xl">
+                  <UserPlus size={24} className="text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-800">Asignar Alumno a CRP</h1>
+                  <p className="text-sm text-gray-500">
+                    Seleccione los estudiantes y el CRP destino
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Available students (multi-select) */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <UserPlus size={18} className="text-green-600" />
+                    <h2 className="font-semibold text-gray-800">Estudiantes Disponibles</h2>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{availableStudents.length}</span>
+                  </div>
+                  {assignSelectedStudents.length > 0 && (
+                    <span className="text-xs font-medium text-(--blueColor) bg-blue-50 px-2 py-1 rounded-full">
+                      {assignSelectedStudents.length} seleccionado(s)
+                    </span>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <SearchFilterComponent
+                    searchTerm={assignSearch}
+                    setSearchTerm={setAssignSearch}
+                    placeHolder="Buscar por nombre o cédula..."
+                    width="w-full"
+                  />
+                </div>
+                {isLoadingAvailable ? (
+                  <div className="p-8 text-center text-gray-400 flex items-center justify-center gap-2">
+                    <Loader2 size={18} className="animate-spin" />
+                    Cargando...
+                  </div>
+                ) : availableStudents.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">
+                    No hay estudiantes disponibles para asignar.
+                  </div>
+                ) : (
+                  <TableComponent data={filteredAssignStudents} columns={assignStudentColumns} maxHeight={350} />
+                )}
+              </div>
+
+              {/* CRP selection (single-select) */}
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Users size={18} className="text-purple-600" />
+                    <h2 className="font-semibold text-gray-800">Seleccionar CRP</h2>
+                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{filteredAssignGroups.length}</span>
+                  </div>
+                  {assignSelectedStudents.length > 0 && assignSelectedCRP && (
+                    <button
+                      onClick={handleConfirmAssign}
+                      className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-green-500 text-white rounded-lg hover:bg-green-600 transition cursor-pointer"
+                    >
+                      <UserPlus size={14} />
+                      Asignar {assignSelectedStudents.length} a {assignSelectedCRP}
+                    </button>
+                  )}
+                </div>
+                <div className="mb-2">
+                  <SearchFilterComponent
+                    searchTerm={assignCRPSearch}
+                    setSearchTerm={setAssignCRPSearch}
+                    placeHolder="Buscar CRP..."
+                    width="w-full"
+                  />
+                </div>
+                {filteredAssignGroups.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">
+                    No hay grupos CRP activos disponibles.
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[350px] overflow-y-auto">
+                    {filteredAssignGroups.map((group) => (
+                      <div
+                        key={group.id}
+                        onClick={() => handleSelectAssignCRP(group.groupName)}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 transition cursor-pointer ${
+                          assignSelectedCRP === group.groupName
+                            ? "border-(--blueColor) bg-blue-50"
+                            : "border-gray-100 hover:border-gray-200 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="w-10 h-10 bg-linear-to-br from-purple-600 to-purple-800 rounded-xl flex items-center justify-center text-white font-bold text-sm shrink-0">
+                          {group.groupName.charAt(0)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800 truncate">{group.groupName}</p>
+                          <p className="text-xs text-gray-500">
+                            {group.employee.user.person.firstNames} {group.employee.user.person.lastNames}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-xs text-gray-400">{group.totalStudents ?? 0} alumnos</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

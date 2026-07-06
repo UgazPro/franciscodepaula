@@ -11,6 +11,9 @@ import AcademicMonitoring from './pages/Admin/AcademicMonitoring/AcademicMonitor
 import Teachers from './pages/Admin/Teachers/Teachers';
 import Administration from './pages/Admin/Administration/Administration';
 import SchoolManagement from './pages/Admin/SchoolManagement/SchoolManagement';
+import Planning from './pages/Admin/Planning/Planning';
+import Grades from './pages/Admin/Grades/Grades';
+import Formats from './pages/Admin/Formats/Formats';
 import AppLayout from './layouts/App/AppLayout';
 import ProtectedRoute from './ProtectedRoute';
 import { useAxiosInterceptor } from './services/interceptor';
@@ -45,6 +48,9 @@ function App() {
             <Route path="/admin/profesores" element={<Teachers />} />
             <Route path="/admin/gestion-escolar" element={<SchoolManagement />} />
             <Route path="/admin/administracion" element={<Administration />} />
+            <Route path="/admin/planning" element={<Planning />} />
+            <Route path="/admin/grades" element={<Grades />} />
+            <Route path="/admin/formats" element={<Formats />} />
           </Route>
 
 

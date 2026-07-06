@@ -4,12 +4,13 @@ import {
   Users, 
   Building2, 
   CalendarCheck, 
-  UserCog, 
   Settings,
   UserCircle,
   GraduationCap,
   School,
-  ClipboardList
+  ClipboardList,
+  FileText,
+  FileDown
 } from "lucide-react";
 
 export interface SidebarContent {
@@ -51,18 +52,6 @@ export const sidebarData: SidebarContent[] = [
     active: false,
   },
   {
-    name: "Secretaría",
-    icon: ClipboardList,
-    redirectTo: "/admin/secretaria",
-    active: false,
-  },
-  {
-    name: "Coordinación",
-    icon: UserCog,
-    redirectTo: "/admin/coordinacion",
-    active: false,
-  },
-  {
     name: "Estudiantes",
     icon: Users,
     redirectTo: "/admin/estudiantes",
@@ -72,6 +61,24 @@ export const sidebarData: SidebarContent[] = [
     name: "Calendario",
     icon: CalendarCheck,
     redirectTo: "/admin/calendario",
+    active: false,
+  },
+  {
+    name: "Planificación",
+    icon: ClipboardList,
+    redirectTo: "/admin/planning",
+    active: false,
+  },
+  {
+    name: "Notas",
+    icon: FileText,
+    redirectTo: "/admin/grades",
+    active: false,
+  },
+  {
+    name: "Formatos",
+    icon: FileDown,
+    redirectTo: "/admin/formats",
     active: false,
   },
   {

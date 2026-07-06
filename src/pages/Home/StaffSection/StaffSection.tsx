@@ -8,8 +8,8 @@ export function StaffSection() {
   const staffMembers = useMemo(() => {
     const rolesOrder = ["Director", "Subdirector", "Contador", "Control de Estudios"];
     return (staff ?? [])
-      .filter((s) => rolesOrder.includes(s.role.role))
-      .sort((a, b) => rolesOrder.indexOf(a.role.role) - rolesOrder.indexOf(b.role.role));
+      .filter((s) => rolesOrder.includes(s.userRoles[0]?.role.role))
+      .sort((a, b) => rolesOrder.indexOf(a.userRoles[0]?.role.role) - rolesOrder.indexOf(b.userRoles[0]?.role.role));
   }, [staff]);
 
   return (
@@ -54,7 +54,7 @@ export function StaffSection() {
                     <h3 className="text-xl font-bold text-(--darkBlueColor) mb-1">
                       {p.firstNames} {p.lastNames}
                     </h3>
-                    <p className="text-(--greenColor) font-medium">{person.role.role}</p>
+                    <p className="text-(--greenColor) font-medium">{person.userRoles[0]?.role.role}</p>
                   </div>
                 </div>
               );
