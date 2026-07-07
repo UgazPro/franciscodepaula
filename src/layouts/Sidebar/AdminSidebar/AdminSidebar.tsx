@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router";
 import { sidebarData } from "./AdminSidebar.data";
 import { LogOut, Menu, X } from "lucide-react";
 import { useAuthStore } from "@/stores/auth.store";
+import { queryClient } from "@/lib/query-client";
 import LogoComponent from "@/components/logo/LogoComponent";
 
 export default function AdminSidebar() {
@@ -15,6 +16,8 @@ export default function AdminSidebar() {
 
   const handleLogout = () => {
     setIsLoggingOut(true);
+    queryClient.clear();
+    localStorage.removeItem("token");
     logout();
   };
 

@@ -20,11 +20,13 @@ export const useAuthStore = create<AuthState>()(
           isAuthenticated: true,
         }),
 
-      logout: () =>
+      logout: () => {
+        localStorage.removeItem("token");
         set({
           token: null,
           isAuthenticated: false,
-        }),
+        });
+      },
     }),
     {
       name: "auth-storage",

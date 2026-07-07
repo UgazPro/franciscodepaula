@@ -4,6 +4,7 @@ import { LogIn, ArrowLeft, LogOut, Home, ChevronDown } from "lucide-react";
 import NavBar from "../../components/navbars/NavBar";
 import LogoComponent from "@/components/logo/LogoComponent";
 import { useAuthStore } from "@/stores/auth.store";
+import { queryClient } from "@/lib/query-client";
 import { useUserData } from "@/helpers/token";
 
 export default function Header() {
@@ -106,7 +107,7 @@ export default function Header() {
                                             </div>
                                             <div className="border-t border-gray-100 py-2">
                                                 <button
-                                                    onClick={() => { logout(); setShowUserMenu(false); }}
+                                                    onClick={() => { queryClient.clear(); localStorage.removeItem("token"); logout(); setShowUserMenu(false); }}
                                                     className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-red-600 w-full"
                                                 >
                                                     <LogOut size={16} />

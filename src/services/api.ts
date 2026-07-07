@@ -1,4 +1,5 @@
 import { useAuthStore } from "@/stores/auth.store";
+import { queryClient } from "@/lib/query-client";
 import axios from "axios";
 
 export const api = axios.create({
@@ -154,7 +155,9 @@ api.interceptors.response.use(
     (res) => res,
     (error) => {
         if (error.response?.status === 401) {
+            queryClient.clear();
             useAuthStore.getState().logout();
+            localStorage.removeItem("token");
             window.location.href = "/login";
         }
         return Promise.reject(error);

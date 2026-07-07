@@ -6,6 +6,7 @@ import { useExchangeRate } from "@/hooks/usePayments";
 import { useGlobalSearch } from "@/hooks/useGlobalSearch";
 import { useSearchStore } from "@/stores/search.store";
 import { useAuthStore } from "@/stores/auth.store";
+import { queryClient } from "@/lib/query-client";
 import type { SearchResult } from "@/stores/search.store";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
 
@@ -261,7 +262,7 @@ export default function AdminHeader() {
                     </div>
                     <div className="border-t border-gray-100 py-2">
                       <button
-                        onClick={() => { logout(); setShowUserMenu(false); }}
+                        onClick={() => { queryClient.clear(); localStorage.removeItem("token"); logout(); setShowUserMenu(false); }}
                         className="flex items-center gap-3 px-4 py-2 hover:bg-red-50 transition text-red-600 w-full"
                       >
                         <LogOut size={16} />

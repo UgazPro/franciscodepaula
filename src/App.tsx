@@ -48,9 +48,9 @@ function App() {
             <Route path="/admin/profesores" element={<Teachers />} />
             <Route path="/admin/gestion-escolar" element={<SchoolManagement />} />
             <Route path="/admin/administracion" element={<Administration />} />
-            <Route path="/admin/planning" element={<Planning />} />
-            <Route path="/admin/grades" element={<Grades />} />
-            <Route path="/admin/formats" element={<Formats />} />
+            <Route path="/admin/planificacion" element={<Planning />} />
+            <Route path="/admin/notas" element={<Grades />} />
+            <Route path="/admin/formatos" element={<Formats />} />
           </Route>
 
 

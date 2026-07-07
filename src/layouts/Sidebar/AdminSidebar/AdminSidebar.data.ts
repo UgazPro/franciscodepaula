@@ -66,19 +66,19 @@ export const sidebarData: SidebarContent[] = [
   {
     name: "Planificación",
     icon: ClipboardList,
-    redirectTo: "/admin/planning",
+    redirectTo: "/admin/planificacion",
     active: false,
   },
   {
     name: "Notas",
     icon: FileText,
-    redirectTo: "/admin/grades",
+    redirectTo: "/admin/notas",
     active: false,
   },
   {
     name: "Formatos",
     icon: FileDown,
-    redirectTo: "/admin/formats",
+    redirectTo: "/admin/formatos",
     active: false,
   },
   {
