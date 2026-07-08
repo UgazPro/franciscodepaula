@@ -22,6 +22,7 @@ import { crpStudentColumns, crpAvailableStudentColumns } from "@/services/teache
 import type { Column } from "@/components/table/TableComponent";
 import type { SpecialGroupResponse, CRPStudentResponse, AvailableStudentResponse } from "@/services/teacher-assignment/teacher-assignment.types";
 import SearchFilterComponent from "@/components/filters/SearchFilter";
+import DialogComponent from "@/components/dialog/DialogComponent";
 
 interface CRPViewProps {
   tabsComponent?: React.ReactNode;
@@ -36,6 +37,8 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [studentToRemove, setStudentToRemove] = useState<{ id: number; name: string } | null>(null);
   const [enrolledSearch, setEnrolledSearch] = useState("");
   const [availableSearch, setAvailableSearch] = useState("");
+  const [showAllCRPs, setShowAllCRPs] = useState(false);
+  const [searchAllCRPs, setSearchAllCRPs] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(6);
 
@@ -61,6 +64,12 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const filteredGroups = useMemo(() => {
     return groups.filter((g) => statusFilter === "active" ? g.status === true : g.status === false);
   }, [groups, statusFilter]);
+
+  const searchedGroups = useMemo(() => {
+    if (!searchAllCRPs) return filteredGroups;
+    const q = searchAllCRPs.toLowerCase();
+    return filteredGroups.filter((g) => g.groupName.toLowerCase().includes(q));
+  }, [filteredGroups, searchAllCRPs]);
 
   const students = useMemo(() => {
     const response = studentsData as { data: CRPStudentResponse[] };
@@ -111,11 +120,11 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     );
   }, [groups, assignCRPSearch]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredGroups.length / itemsPerPage));
+  const totalPages = Math.max(1, Math.ceil(searchedGroups.length / itemsPerPage));
   const paginatedGroups = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
-    return filteredGroups.slice(start, start + itemsPerPage);
-  }, [filteredGroups, currentPage, itemsPerPage]);
+    return searchedGroups.slice(start, start + itemsPerPage);
+  }, [searchedGroups, currentPage, itemsPerPage]);
 
   const handleSelectCRP = (groupName: string) => {
     setSelectedCRP(groupName);
@@ -193,6 +202,11 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
     setAssignCRPSearch("");
   };
 
+  const handleSearchCRP = useCallback((term: string) => {
+    setSearchAllCRPs(term);
+    setCurrentPage(1);
+  }, []);
+
   const studentColumns = useMemo(() => crpStudentColumns(handleRemoveStudent), [handleRemoveStudent]);
   const availableStudentColumns = useMemo(() => crpAvailableStudentColumns(selectedEnrollments, handleToggleEnrollment), [selectedEnrollments, handleToggleEnrollment]);
 
@@ -237,6 +251,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const toggle = screen !== "list";
 
   return (
+    <>
     <PageTransitionComponent
       primaryChildren={
         <>
@@ -250,7 +265,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 <div>
                   <h1 className="text-xl font-bold text-gray-800">Grupos CRP</h1>
                   <p className="text-sm text-gray-500">
-                    {filteredGroups.length} CRP(s) registrado(s)
+                    {searchedGroups.length} CRP(s) registrado(s)
                   </p>
                 </div>
               </div>
@@ -295,6 +310,20 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                       }`}
                   >
                     <LayoutList size={18} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <SearchFilterComponent
+                    searchTerm={searchAllCRPs}
+                    setSearchTerm={handleSearchCRP}
+                    placeHolder="Buscar CRP..."
+                    width="w-48"
+                  />
+                  <button
+                    onClick={() => setShowAllCRPs(true)}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-linear-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition shadow-md cursor-pointer text-sm font-medium whitespace-nowrap"
+                  >
+                    Ver CRPs
                   </button>
                 </div>
                 <button
@@ -644,5 +673,56 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
       }
       toggle={toggle}
     />
+
+    <DialogComponent
+      openDialog={showAllCRPs}
+      onClose={setShowAllCRPs}
+      dialogTitle="Todos los CRPs"
+      dialogDescription={`${filteredGroups.length} CRP(s)`}
+      className="w-screen h-screen max-w-none max-h-none rounded-none p-6"
+    >
+      <div className="mt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 max-h-[calc(100vh-140px)] overflow-y-auto pr-2">
+          {filteredGroups.length === 0 ? (
+            <div className="col-span-full text-center text-gray-400 py-12">
+              No se encontraron CRPs.
+            </div>
+          ) : (
+            filteredGroups.map((group) => (
+              <div
+                key={group.id}
+                onClick={() => {
+                  handleSelectCRP(group.groupName);
+                  setShowAllCRPs(false);
+                }}
+                className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 hover:shadow-md transition cursor-pointer group"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-semibold text-gray-800 group-hover:text-(--blueColor) transition truncate">
+                    {group.groupName}
+                  </h3>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ml-2 ${
+                      group.status
+                        ? "bg-green-100 text-green-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {group.status ? "Activo" : "Inactivo"}
+                  </span>
+                </div>
+                <p className="text-xs text-gray-500 mb-2 truncate">
+                  {group.employee.user.person.firstNames} {group.employee.user.person.lastNames}
+                </p>
+                <span className="text-xs text-gray-400">
+                  {group.totalStudents ?? 0} estudiante(s)
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </DialogComponent>
+    </>
   );
 }
