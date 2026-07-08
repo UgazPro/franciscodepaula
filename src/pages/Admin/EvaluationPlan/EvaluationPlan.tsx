@@ -16,7 +16,7 @@ import { evaluationColumns } from "@/services/evaluation/evaluation.tables";
 import type { TeacherPlanningSection, EvaluationResponse } from "@/services/evaluation/evaluation.types";
 import type { FormField } from "@/components/form/formComponent.interface";
 
-export default function Planning() {
+export default function EvaluationPlan() {
   const [screen, setScreen] = useState<"list" | "detail">("list");
   const [selectedSection, setSelectedSection] = useState<TeacherPlanningSection | null>(null);
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);

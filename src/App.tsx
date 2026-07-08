@@ -11,7 +11,7 @@ import AcademicMonitoring from './pages/Admin/AcademicMonitoring/AcademicMonitor
 import Teachers from './pages/Admin/Teachers/Teachers';
 import Administration from './pages/Admin/Administration/Administration';
 import SchoolManagement from './pages/Admin/SchoolManagement/SchoolManagement';
-import Planning from './pages/Admin/Planning/Planning';
+import EvaluationPlan from './pages/Admin/EvaluationPlan/EvaluationPlan';
 import Grades from './pages/Admin/Grades/Grades';
 import Formats from './pages/Admin/Formats/Formats';
 import AppLayout from './layouts/App/AppLayout';
@@ -48,7 +48,7 @@ function App() {
             <Route path="/admin/profesores" element={<Teachers />} />
             <Route path="/admin/gestion-escolar" element={<SchoolManagement />} />
             <Route path="/admin/administracion" element={<Administration />} />
-            <Route path="/admin/planificacion" element={<Planning />} />
+            <Route path="/admin/plan-evaluacion" element={<EvaluationPlan />} />
             <Route path="/admin/notas" element={<Grades />} />
             <Route path="/admin/formatos" element={<Formats />} />
           </Route>
