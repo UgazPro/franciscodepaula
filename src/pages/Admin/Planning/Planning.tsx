@@ -152,7 +152,7 @@ export default function Planning() {
               <ClipboardList size={24} className="text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">Planificación</h1>
+              <h1 className="text-xl font-bold text-gray-800">Plan de Evaluación</h1>
               <p className="text-sm text-gray-500">
                 {sections.length} sección(es) asignada(s)
               </p>

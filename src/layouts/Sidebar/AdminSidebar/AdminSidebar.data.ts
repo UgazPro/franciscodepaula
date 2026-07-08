@@ -64,7 +64,7 @@ export const sidebarData: SidebarContent[] = [
     active: false,
   },
   {
-    name: "Planificación",
+    name: "Plan de Evaluación",
     icon: ClipboardList,
     redirectTo: "/admin/planificacion",
     active: false,
