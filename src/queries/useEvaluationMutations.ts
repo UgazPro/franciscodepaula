@@ -4,6 +4,8 @@ import { postDataApi } from "@/services/api";
 const invalidateEvaluations = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ["evaluations"] });
   qc.invalidateQueries({ queryKey: ["teacher-planning"] });
+  qc.invalidateQueries({ queryKey: ["grade-teacher-planning"] });
+  qc.invalidateQueries({ queryKey: ["grade-detail"] });
 };
 
 export const useCreateEvaluation = () => {
@@ -13,11 +15,10 @@ export const useCreateEvaluation = () => {
     mutationFn: (data: {
       teachingGroupId: number;
       periodId: number;
-      evaluationTypeId: number;
+      evaluationType: string;
       topic: string;
       objectives?: string;
       percentage: number;
-      maxScore: number;
       dueDate?: string;
     }) => postDataApi("/evaluations", data),
     onSuccess: () => {

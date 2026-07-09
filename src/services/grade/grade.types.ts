@@ -29,7 +29,6 @@ export interface GradeEvaluation {
   id: number;
   topic: string;
   percentage: number;
-  maxScore: number;
   evaluationType: { evaluationType: string };
 }
 
@@ -59,4 +58,5 @@ export interface GradeStudentRow {
   identificationNumber: string;
   grades: Record<number, number | null>;
   definitiva: number;
+  hasMissingGrades: boolean;
 }

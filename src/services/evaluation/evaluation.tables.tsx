@@ -19,13 +19,15 @@ export const evaluationColumns = (): Column<EvaluationResponse>[] => [
   {
     header: "Ponderación",
     render: (row) => (
-      <span className="text-gray-700">{row.percentage}%</span>
+      <span className="text-gray-700">{Number(row.percentage)}%</span>
     ),
   },
   {
-    header: "Nota Máxima",
+    header: "Puntos",
     render: (row) => (
-      <span className="text-gray-700 font-medium">{row.maxScore}</span>
+      <span className="text-gray-700 font-medium">
+        {((Number(row.percentage) / 100) * 20).toFixed(0)}
+      </span>
     ),
   },
   {

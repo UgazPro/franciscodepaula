@@ -95,7 +95,7 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
             inputBaseArea,
             hasError ? "border-red-500" : "border-(--lightBlueColor)/30",
           )}
-          placeholder="Ej: Av. Principal, Casa #123, Urbanización Las Mercedes"
+          placeholder="Describa los objetivos de la evaluación..."
         />
         {hasError && (
           <p className="text-red-500 text-xs mt-1">{errorMessage}</p>

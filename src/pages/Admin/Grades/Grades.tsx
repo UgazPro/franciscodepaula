@@ -90,11 +90,14 @@ export default function Grades() {
       const studentGrades = currentGradeMap[s.id] ?? {};
       let totalWeighted = 0;
       let totalPercentage = 0;
+      let hasMissingGrades = false;
       for (const ev of evaluations) {
         const score = studentGrades[ev.id];
         if (score !== null && score !== undefined) {
-          totalWeighted += (score / ev.maxScore) * ev.percentage;
+          totalWeighted += (score / 20) * ev.percentage;
           totalPercentage += ev.percentage;
+        } else {
+          hasMissingGrades = true;
         }
       }
       const definitiva = totalPercentage > 0 ? (totalWeighted / totalPercentage) * 20 : 0;
@@ -105,6 +108,7 @@ export default function Grades() {
         identificationNumber: s.person.identificationNumber,
         grades: studentGrades,
         definitiva,
+        hasMissingGrades,
       };
     });
   }, [students, evaluations, currentGradeMap]);

@@ -1,5 +1,6 @@
 import type { Column } from "@/components/table/TableComponent";
 import type { GradeStudentRow, GradeEvaluation } from "./grade.types";
+import { TooltipComponent } from "@/components/tooltip/TooltipComponent";
 
 export function gradeColumns(
   evaluations: GradeEvaluation[],
@@ -31,24 +32,29 @@ export function gradeColumns(
     },
   ];
 
-  const evalColumns: Column<GradeStudentRow>[] = evaluations.map((ev) => ({
-    header: `${ev.percentage}% ${ev.topic.length > 12 ? ev.topic.substring(0, 12) + "…" : ev.topic} (${ev.evaluationType.evaluationType.substring(0, 3)})`,
+  const evalColumns: Column<GradeStudentRow>[] = evaluations.map((ev, idx) => ({
+    header: `EVA ${idx + 1} (${ev.percentage}%)`,
     render: (row) => {
       const currentVal = row.grades[ev.id];
       return (
         <input
           type="number"
           min={0}
-          max={ev.maxScore}
+          max={20}
           step="0.1"
           value={currentVal ?? ""}
           onChange={(e) => onGradeChange(row.id, ev.id, e.target.value)}
-          className="w-16 h-8 px-1 text-center text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) bg-white"
+          className="w-12 h-8 px-1 text-center text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) bg-white"
           placeholder="—"
         />
       );
     },
-    headerClassName: "text-center min-w-[100px]",
+    renderHeader: () => (
+      <TooltipComponent content={`${ev.topic} (${ev.evaluationType.evaluationType})`}>
+        <span className="cursor-default">EVA {idx + 1} ({ev.percentage}%)</span>
+      </TooltipComponent>
+    ),
+    headerClassName: "text-center min-w-[70px]",
     className: "text-center",
   }));
 
@@ -56,8 +62,8 @@ export function gradeColumns(
     {
       header: "Definitiva",
       render: (row) => (
-        <span className={`text-sm font-bold ${row.definitiva >= 10 ? "text-green-600" : row.definitiva >= 0 ? "text-gray-800" : "text-gray-400"}`}>
-          {row.definitiva > 0 ? row.definitiva.toFixed(1) : "—"}
+        <span className={`text-sm font-bold ${row.hasMissingGrades ? "text-gray-400" : row.definitiva >= 10 ? "text-green-600" : "text-gray-800"}`}>
+          {row.hasMissingGrades ? "—" : row.definitiva > 0 ? row.definitiva.toFixed(1) : "—"}
         </span>
       ),
       headerClassName: "text-center",

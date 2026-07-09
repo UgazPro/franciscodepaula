@@ -27,7 +27,6 @@ export interface EvaluationResponse {
   topic: string;
   objectives: string | null;
   percentage: number;
-  maxScore: number;
   dueDate: string | null;
   createdAt: string;
   evaluationType: EvaluationTypeResponse;
@@ -41,10 +40,9 @@ export interface EvaluationResponse {
 export interface CreateEvaluationData {
   teachingGroupId: number;
   periodId: number;
-  evaluationTypeId: number;
+  evaluationType: string;
   topic: string;
   objectives?: string;
   percentage: number;
-  maxScore: number;
   dueDate?: string;
 }
