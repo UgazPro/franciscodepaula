@@ -30,7 +30,7 @@ interface CRPViewProps {
 
 export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [screen, setScreen] = useState<"list" | "students" | "assign">("list");
-  const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const [viewMode, setViewMode] = useState<"card" | "table">("table");
   const [statusFilter, setStatusFilter] = useState<"active" | "inactive">("active");
   const [selectedCRP, setSelectedCRP] = useState<string | null>(null);
   const [selectedEnrollments, setSelectedEnrollments] = useState<number[]>([]);
@@ -40,7 +40,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
   const [showAllCRPs, setShowAllCRPs] = useState(false);
   const [searchAllCRPs, setSearchAllCRPs] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(6);
+  const [itemsPerPage, setItemsPerPage] = useState(50);
 
   // Assign screen state
   const [assignSelectedStudents, setAssignSelectedStudents] = useState<number[]>([]);
@@ -406,7 +406,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 data={paginatedGroups}
                 columns={groupTableColumns}
                 onRowClick={(row) => handleSelectCRP(row.groupName)}
-                maxHeight={450}
+                maxHeight={400}
               />
               <div className="mt-4">
                 <PaginationComponent

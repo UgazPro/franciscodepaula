@@ -1,7 +1,6 @@
 import { 
   LayoutDashboard, 
   BookOpen, 
-  Users, 
   Building2, 
   CalendarCheck, 
   Settings,
@@ -49,12 +48,6 @@ export const sidebarData: SidebarContent[] = [
     name: "Administración",
     icon: Building2,
     redirectTo: "/admin/administracion",
-    active: false,
-  },
-  {
-    name: "Estudiantes",
-    icon: Users,
-    redirectTo: "/admin/estudiantes",
     active: false,
   },
   {
