@@ -11,7 +11,7 @@ interface FieldRendererProps<T extends FieldValues = FieldValues> {
   disabled?: boolean;
   customFieldRenderer?: (
     field: OtherField,
-    form: UseFormReturn<T>,
+    form: UseFormReturn<T>
   ) => React.ReactNode;
 }
 

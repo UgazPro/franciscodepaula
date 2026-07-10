@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Loader2, ClipboardList, ArrowLeft, Users, UserPlus, Calendar } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -9,7 +9,7 @@ import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { useTeacherPlanning, useEvaluationsByTeachingGroup, useEvaluationTypes } from "@/hooks/useEvaluations";
-import { useCreateEvaluation } from "@/queries/useEvaluationMutations";
+import { useCreateEvaluation, useUpdateEvaluation, useDeleteEvaluation } from "@/queries/useEvaluationMutations";
 import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import { evaluationSchema, type EvaluationFormValues } from "@/services/evaluation/evaluation.schema";
 import { evaluationColumns } from "@/services/evaluation/evaluation.tables";
@@ -155,6 +155,9 @@ export default function EvaluationPlan() {
     effectivePeriodId,
   );
   const { mutateAsync: createEvaluation } = useCreateEvaluation();
+  const { mutateAsync: updateEvaluation } = useUpdateEvaluation();
+  const { mutateAsync: deleteEvaluation } = useDeleteEvaluation();
+  const [editingEvaluation, setEditingEvaluation] = useState<EvaluationResponse | null>(null);
 
   const evaluations = useMemo(() => {
     const response = evaluationsData as { data: EvaluationResponse[] } | undefined;
@@ -232,23 +235,55 @@ export default function EvaluationPlan() {
   const handleSave = async (data: EvaluationFormValues) => {
     if (!selectedSection || !effectivePeriodId) return;
     try {
-      await createEvaluation({
-        teachingGroupId: selectedSection.teachingGroupId,
-        periodId: effectivePeriodId,
-        evaluationType: data.evaluationType,
-        topic: data.topic,
-        objectives: data.objectives || undefined,
-        percentage: data.percentage,
-        dueDate: data.dueDate ? data.dueDate.toISOString() : undefined,
-      });
+      if (editingEvaluation) {
+        await updateEvaluation({
+          id: editingEvaluation.id,
+          evaluationType: data.evaluationType,
+          topic: data.topic,
+          objectives: data.objectives || undefined,
+          percentage: data.percentage,
+          dueDate: data.dueDate ? data.dueDate.toISOString() : undefined,
+        });
+      } else {
+        await createEvaluation({
+          teachingGroupId: selectedSection.teachingGroupId,
+          periodId: effectivePeriodId,
+          evaluationType: data.evaluationType,
+          topic: data.topic,
+          objectives: data.objectives || undefined,
+          percentage: data.percentage,
+          dueDate: data.dueDate ? data.dueDate.toISOString() : undefined,
+        });
+      }
       setShowForm(false);
+      setEditingEvaluation(null);
       form.reset();
     } catch {
       // interceptor handles the toast
     }
   };
 
-  const columns = useMemo(() => evaluationColumns(), []);
+  const handleEdit = useCallback((evaluation: EvaluationResponse) => {
+    setEditingEvaluation(evaluation);
+    form.setValue("topic", evaluation.topic);
+    form.setValue("evaluationType", evaluation.evaluationType.evaluationType);
+    form.setValue("percentage", evaluation.percentage as unknown as number);
+    form.setValue("objectives", evaluation.objectives ?? "");
+    if (evaluation.dueDate) {
+      form.setValue("dueDate", new Date(evaluation.dueDate));
+    }
+    setShowForm(true);
+  }, [form]);
+
+  const handleDelete = useCallback(async (id: number) => {
+    try {
+      await deleteEvaluation(id);
+    } catch {
+      // interceptor handles the toast
+    }
+  }, [deleteEvaluation]);
+
+  const columns = useMemo(() => evaluationColumns({ onEdit: handleEdit, onDelete: handleDelete }), [handleEdit, handleDelete]);
 
   const summaryList = (
     <div>
@@ -393,7 +428,7 @@ export default function EvaluationPlan() {
             </div>
           </div>
           <button
-            onClick={() => setShowForm(!showForm)}
+            onClick={() => { setShowForm(!showForm); setEditingEvaluation(null); form.reset(); }}
             className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
           >
             <Calendar size={18} />
@@ -406,7 +441,7 @@ export default function EvaluationPlan() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <div className="flex items-center gap-3 mb-6 pb-3 border-b border-(--lightBlueColor)/20">
             <h2 className="text-lg font-semibold text-(--darkBlueColor)">
-              Nueva Evaluación
+              {editingEvaluation ? "Editar Evaluación" : "Nueva Evaluación"}
             </h2>
           </div>
 
@@ -483,7 +518,7 @@ export default function EvaluationPlan() {
                   type="button"
                   variant="outline"
                   className="border-(--lightBlueColor) text-(--darkBlueColor) hover:bg-(--grayColor) cursor-pointer"
-                  onClick={() => { setShowForm(false); form.reset(); }}
+                  onClick={() => { setShowForm(false); setEditingEvaluation(null); form.reset(); }}
                 >
                   Cancelar
                 </Button>
@@ -491,7 +526,7 @@ export default function EvaluationPlan() {
                   type="submit"
                   className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer"
                 >
-                  Crear Evaluación
+                  {editingEvaluation ? "Guardar Cambios" : "Crear Evaluación"}
                 </Button>
               </div>
             </form>
