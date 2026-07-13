@@ -40,11 +40,8 @@ export default function StudentsForm() {
             birthCountry: "",
             state: "",
             parish: "",
-            previousSchool: "",
             address: "",
             status: true,
-
-            admissionDate: new Date(),
 
             // sectionId: 0,
         }
@@ -68,10 +65,8 @@ export default function StudentsForm() {
                 birthCountry: selectedStudent.birthCountry,
                 state: selectedStudent.state,
                 parish: selectedStudent.parish,
-                previousSchool: selectedStudent.previousSchool,
                 address: selectedStudent.address,
                 status: true,
-                admissionDate: new Date(selectedStudent.admissionDate),
                 // sectionId: 0,
             });
 
@@ -119,10 +114,8 @@ export default function StudentsForm() {
             birthCountry: data.birthCountry,
             state: data.state,
             parish: data.parish,
-            previousSchool: data.previousSchool,
             address: data.address,
             status: true,
-            admissionDate: data.admissionDate,
             // sectionId: 0,
         };
 

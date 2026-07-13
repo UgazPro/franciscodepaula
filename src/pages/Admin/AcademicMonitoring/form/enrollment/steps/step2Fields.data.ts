@@ -45,7 +45,7 @@ export const step2Fields: FormField[] = [
   },
   {
     name: "municipality",
-    label: "Municipio",
+    label: "Municipio de Nacimiento",
     type: "other",
   },
   {
@@ -57,17 +57,6 @@ export const step2Fields: FormField[] = [
     name: "currentParish",
     label: "Parroquia donde Vive",
     type: "other",
-  },
-  {
-    name: "previousSchool",
-    label: "Escuela de Procedencia",
-    type: "text",
-    placeholder: "Ej: U.E. Colegio San José",
-  },
-  {
-    name: "admissionDate",
-    label: "Fecha de Admisión",
-    type: "date",
   },
   {
     name: "address",

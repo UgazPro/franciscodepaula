@@ -28,15 +28,9 @@ export const studentSchema = z.object({
 
   parish: z.string().nonempty("Parroquia Requerida"),
 
-  previousSchool: z.string().nonempty("Escuela Previa Requerida"),
-
   address: z.string().nonempty("Dirección Requerida"),
 
   status: z.boolean(),
-
-  admissionDate: z.date().refine((date) => !isNaN(date.getTime()), {
-    message: "Fecha de admisión inválida",
-  }),
 
   sectionId: z.number().optional()
 

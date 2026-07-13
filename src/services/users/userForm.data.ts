@@ -57,11 +57,6 @@ export const studentMiddleFields: FormField[] = [
 ];
 
 export const studentRightFields: FormField[] = [
-  {
-    name: "admissionDate",
-    label: "Fecha de Admisión",
-    type: "date",
-  },
   // {
   //   name: "sectionId",
   //   label: "Sección",
@@ -69,10 +64,5 @@ export const studentRightFields: FormField[] = [
   //   placeholder: "Seleccione una sección",
   //   options: [],
   // },
-  {
-    name: "previousSchool",
-    label: "Escuela Previa",
-    type: "text",
-  },
   { type: "other", name: "profileImg", label: "Foto del Estudiante" },
 ];

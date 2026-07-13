@@ -90,8 +90,6 @@ export default function Students({ tabsComponent }: StudentsProps) {
             parish: selectedStudent.parish,
             currentParish: selectedStudent.currentParish ?? "",
             address: selectedStudent.address,
-            previousSchool: selectedStudent.previousSchool,
-            admissionDate: new Date(selectedStudent.admissionDate),
             representativeFirstNames: rep?.user?.person?.firstNames ?? "",
             representativeLastNames: rep?.user?.person?.lastNames ?? "",
             representativeIdentification: rep?.user?.person?.identificationNumber ?? "",

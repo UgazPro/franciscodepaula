@@ -1,4 +1,4 @@
-import { X, User, UserCheck, MapPin, Cake, Calendar, Clock, CheckCircle, XCircle, School, ChevronRight, Edit, GraduationCap, Globe, Map, Landmark, ShieldCheck, Star } from "lucide-react";
+import { X, User, UserCheck, MapPin, Cake, Clock, CheckCircle, XCircle, School, Edit, GraduationCap, Globe, Map, Landmark, Star } from "lucide-react";
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -305,36 +305,6 @@ export default function StudentDetailView() {
                             </div>
 
                             <div className="space-y-5">
-
-                                <div>
-
-                                    <p className="text-sm text-gray-500 mb-1">
-                                        Fecha de Admisión
-                                    </p>
-
-                                    <div className="flex items-center gap-2">
-
-                                        <Calendar className="h-4 w-4 text-(--blueColor)" />
-
-                                        <p className="font-medium text-gray-800">
-                                            {dateFormatterIntoLong(selectedStudent.admissionDate)}
-                                        </p>
-
-                                    </div>
-
-                                </div>
-
-                                <div>
-
-                                    <p className="text-sm text-gray-500 mb-1">
-                                        Escuela Previa
-                                    </p>
-
-                                    <p className="font-medium text-gray-800">
-                                        {selectedStudent.previousSchool || "No registrada"}
-                                    </p>
-
-                                </div>
 
                                 <div>
 

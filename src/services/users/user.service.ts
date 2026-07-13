@@ -71,7 +71,6 @@ export const searchStudents = async (search?: string): Promise<IStudent[]> => {
       municipality: '',
       parish: '',
       currentParish: '',
-      previousSchool: '',
       address: '',
       status: true,
       admissionDate: new Date(),

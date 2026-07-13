@@ -51,9 +51,8 @@ export const useEnrollmentMutation = () => {
         municipality: formData.municipality,
         parish: formData.parish,
         currentParish: formData.currentParish,
-        previousSchool: formData.previousSchool || "",
         address: formData.address,
-        admissionDate: formData.admissionDate || new Date(),
+        admissionDate: new Date(),
 
         // Representative mode
         representativeMode: formData.representativeMode || "create",

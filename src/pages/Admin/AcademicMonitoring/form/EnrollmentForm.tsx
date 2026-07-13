@@ -76,8 +76,6 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       parish: "",
       currentParish: "",
       address: "",
-      previousSchool: "",
-      admissionDate: new Date(),
       representativeMode: "create" as const,
       representativeFirstNames: "",
       representativeLastNames: "",
@@ -441,10 +439,8 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       municipality: formData.municipality,
       parish: formData.parish,
       currentParish: formData.currentParish,
-      previousSchool: formData.previousSchool || "",
       address: formData.address,
       status: true,
-      admissionDate: formData.admissionDate || new Date(),
     };
 
     try {
@@ -563,7 +559,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
         return (
           <AutocompleteField
             name="municipality"
-            label="Municipio"
+            label="Municipio de Nacimiento"
             options={municipalityOptions}
             placeholder={isVenezuela ? "Escriba para buscar..." : "Escriba un municipio"}
             disabled={!state}
@@ -599,7 +595,6 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       case "representativeMode":
         return (
           <div className="space-y-2">
-            <label className="text-sm font-medium text-(--darkBlueColor)">¿El representante ya existe?</label>
             <div className="flex gap-3">
               <button
                 type="button"
@@ -787,11 +782,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                 <FieldRenderer field={step2ByName.municipality} customFieldRenderer={locationFieldRenderer} />
                 <FieldRenderer field={step2ByName.parish} customFieldRenderer={locationFieldRenderer} />
                 <FieldRenderer field={step2ByName.currentParish} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={step2ByName.previousSchool} />
-                <FieldRenderer field={step2ByName.admissionDate} />
-                <div className="md:col-span-2">
-                  <FieldRenderer field={step2ByName.address} />
-                </div>
+                <FieldRenderer field={step2ByName.address} />
               </div>
             )}
 
@@ -808,15 +799,15 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                 )}
 
                 {representativeMode !== "existing" && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
                     <FieldRenderer field={f3.representativeFirstNames} />
                     <FieldRenderer field={f3.representativeLastNames} />
                     <FieldRenderer field={f3.representativeIdentification} />
-                    <FieldRenderer field={f3.representativeBirthDate} />
                     <FieldRenderer field={f3.representativeGender} />
+                    <FieldRenderer field={f3.representativeBirthDate} />
+                    <FieldRenderer field={f3.representativeRelation} />
                     <FieldRenderer field={f3.representativeEmail} />
                     <FieldRenderer field={f3.representativePhone} />
-                    <FieldRenderer field={f3.representativeRelation} />
                     <FieldRenderer field={f3.representativeProfession} />
                   </div>
                 )}

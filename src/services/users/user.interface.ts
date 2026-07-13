@@ -9,7 +9,6 @@ export interface IStudent {
     municipality:   string;
     parish:         string;
     currentParish:  string;
-    previousSchool: string;
     address:        string;
     status:         boolean;
     admissionDate:  Date;

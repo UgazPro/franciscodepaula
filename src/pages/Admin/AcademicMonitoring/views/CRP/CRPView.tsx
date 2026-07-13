@@ -389,7 +389,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                   </div>
                 ))}
               </div>
-              <div className="mt-4">
+              <div className="">
                 <PaginationComponent
                   currentPage={currentPage}
                   totalPages={totalPages}
@@ -408,7 +408,7 @@ export default function CRPView({ tabsComponent }: CRPViewProps) {
                 onRowClick={(row) => handleSelectCRP(row.groupName)}
                 maxHeight={400}
               />
-              <div className="mt-4">
+              <div>
                 <PaginationComponent
                   currentPage={currentPage}
                   totalPages={totalPages}

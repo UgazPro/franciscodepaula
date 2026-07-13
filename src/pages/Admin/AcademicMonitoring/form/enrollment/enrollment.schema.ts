@@ -17,8 +17,6 @@ export const step2Schema = z.object({
   municipality: z.string().min(1, "El municipio es requerido"),
   parish: z.string().min(1, "La parroquia de nacimiento es requerida"),
   currentParish: z.string().min(1, "La parroquia donde vive es requerida"),
-  previousSchool: z.string().optional(),
-  admissionDate: z.date().optional(),
   address: z.string().min(5, "La dirección es requerida"),
 });
 
