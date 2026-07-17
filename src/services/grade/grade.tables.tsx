@@ -38,11 +38,13 @@ export function gradeColumns(
       const currentVal = row.grades[ev.id];
       return (
         <input
-          type="number"
-          min={0}
-          max={20}
-          step="0.1"
+          type="text"
+          inputMode="numeric"
+          maxLength={2}
           value={currentVal ?? ""}
+          onKeyDown={(e) => {
+            if (["-", "e", "E", ".", ",", "+"].includes(e.key)) e.preventDefault();
+          }}
           onChange={(e) => onGradeChange(row.id, ev.id, e.target.value)}
           className="w-12 h-8 px-1 text-center text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) bg-white"
           placeholder="—"

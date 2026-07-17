@@ -1,4 +1,5 @@
-import { X, User, UserCheck, MapPin, Cake, Clock, CheckCircle, XCircle, School, Edit, GraduationCap, Globe, Map, Landmark, Star } from "lucide-react";
+import { useState } from "react";
+import { X, User, UserCheck, MapPin, Cake, Clock, CheckCircle, XCircle, School, Edit, GraduationCap, Globe, Map, Landmark, Star, History, BookOpen, AlertTriangle } from "lucide-react";
 
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -8,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
 import { useStudentsStore } from "@/stores/students.store";
+import { useAcademicHistory, type AcademicHistoryEntry } from "@/hooks/useAcademicHistory";
 
 import {
     calculateMartialTime,
     dateFormatterIntoLong,
 } from "@/helpers/formatter";
+import DialogComponent from "@/components/dialog/DialogComponent";
 
 export default function StudentDetailView() {
 
@@ -21,6 +24,10 @@ export default function StudentDetailView() {
         setScreen,
         startEdit,
     } = useStudentsStore();
+
+    const [selectedEntry, setSelectedEntry] = useState<AcademicHistoryEntry | null>(null);
+
+    const { data: academicHistory } = useAcademicHistory(selectedStudent?.id ?? null);
 
     if (!selectedStudent) return null;
 
@@ -409,6 +416,208 @@ export default function StudentDetailView() {
                     </CardContent>
 
                 </Card>
+
+                {/* HISTORIAL ACADEMICO */}
+                {academicHistory && academicHistory.history.length > 0 && (
+                    <Card className="border order-(--lightBlueColor) shadow-sm">
+
+                        <CardContent className="px-6 py-1">
+
+                            <div className="flex items-center gap-2 mb-5">
+
+                                <History className="h-5 w-5 text-(--blueColor)" />
+
+                                <h3 className="text-lg font-semibold text-(--blueColor)">
+                                    Historial Académico
+                                </h3>
+
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                {academicHistory.history.map((entry, idx) => (
+                                    <Card
+                                        key={idx}
+                                        className={`border shadow-sm cursor-pointer transition-all hover:shadow-md ${
+                                            entry.isCurrentSchool
+                                                ? "border-(--blueColor)/40 bg-(--blueColor)/5"
+                                                : "order-(--lightBlueColor) hover:border-(--blueColor)/20"
+                                        }`}
+                                        onClick={() => setSelectedEntry(entry)}
+                                    >
+                                        <CardContent className="p-4 space-y-3">
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <p className="font-semibold text-gray-800">
+                                                        {entry.schoolYearName || "Sin año escolar"}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                        {entry.level}{entry.section ? ` - ${entry.section}` : ""}
+                                                    </p>
+                                                </div>
+                                                {entry.isCurrentSchool && (
+                                                    <Badge className="bg-(--blueColor)/10 text-(--blueColor) border-(--blueColor)/30 text-[10px] px-1.5 py-0.5 shrink-0">
+                                                        Actual
+                                                    </Badge>
+                                                )}
+                                            </div>
+
+                                            <div className="flex items-center gap-2">
+                                                <School className="h-3.5 w-3.5 text-gray-400" />
+                                                <p className="text-xs text-gray-500 truncate">
+                                                    {entry.schoolName}
+                                                </p>
+                                            </div>
+
+                                            {entry.isCurrentSchool && entry.averageGrade != null && (
+                                                <div className="flex items-center gap-2">
+                                                    <BookOpen className="h-3.5 w-3.5 text-gray-400" />
+                                                    <p className="text-sm">
+                                                        <span className="text-gray-500">Promedio: </span>
+                                                        <span className={`font-bold ${
+                                                            entry.averageGrade >= 10 ? "text-green-600" :
+                                                            entry.averageGrade >= 8 ? "text-yellow-600" :
+                                                            "text-red-600"
+                                                        }`}>
+                                                            {entry.averageGrade.toFixed(1)}
+                                                        </span>
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {entry.isCurrentSchool && entry.totalSubjects != null && (
+                                                <p className="text-xs text-gray-500">
+                                                    {entry.totalSubjects} materias · {entry.totalGrades} evaluaciones
+                                                </p>
+                                            )}
+
+                                            {entry.failedSubjects.length > 0 && (
+                                                <div className="flex items-center gap-1.5">
+                                                    <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
+                                                    <Badge variant="outline" className="text-red-600 border-red-200 text-[10px] px-1.5 py-0.5">
+                                                        {entry.failedSubjects.length} reprobada{entry.failedSubjects.length > 1 ? "s" : ""}
+                                                    </Badge>
+                                                </div>
+                                            )}
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
+
+                        </CardContent>
+
+                    </Card>
+                )}
+
+                {/* MODAL DETALLE HISTORIAL */}
+                <DialogComponent
+                    openDialog={selectedEntry !== null}
+                    onClose={() => setSelectedEntry(null)}
+                    dialogTitle={selectedEntry ? `${selectedEntry.level}${selectedEntry.section ? ` - ${selectedEntry.section}` : ""}` : ""}
+                    dialogDescription={selectedEntry ? `${selectedEntry.schoolYearName || "Sin año escolar"} · ${selectedEntry.schoolName}` : ""}
+                    className="max-w-3xl"
+                >
+                    {selectedEntry && (
+                        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                            {selectedEntry.isCurrentSchool && selectedEntry.subjects.length > 0 ? (
+                                <>
+                                    {/* Promedio general */}
+                                    {selectedEntry.averageGrade != null && (
+                                        <div className="flex items-center gap-3 p-3 bg-(--grayColor)/50 rounded-lg">
+                                            <BookOpen className="h-5 w-5 text-(--blueColor)" />
+                                            <div>
+                                                <p className="text-sm text-gray-500">Promedio General</p>
+                                                <p className={`text-lg font-bold ${
+                                                    selectedEntry.averageGrade >= 10 ? "text-green-600" :
+                                                    selectedEntry.averageGrade >= 8 ? "text-yellow-600" :
+                                                    "text-red-600"
+                                                }`}>
+                                                    {selectedEntry.averageGrade.toFixed(1)} / 20
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Materias */}
+                                    <div className="space-y-3">
+                                        {selectedEntry.subjects.map((subject, sIdx) => (
+                                            <Card key={sIdx} className="border order-(--lightBlueColor)">
+                                                <CardContent className="p-4">
+                                                    <div className="flex items-center justify-between mb-2">
+                                                        <p className="font-semibold text-gray-800">{subject.subjectName}</p>
+                                                        {subject.definitiva != null && (
+                                                            <span className={`text-sm font-bold ${
+                                                                subject.definitiva >= 10 ? "text-green-600" :
+                                                                subject.definitiva >= 8 ? "text-yellow-600" :
+                                                                "text-red-600"
+                                                            }`}>
+                                                                {subject.definitiva.toFixed(1)}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    {subject.grades.length > 0 ? (
+                                                        <div className="space-y-1">
+                                                            {subject.grades.map((grade, gIdx) => (
+                                                                <div key={gIdx} className="flex items-center justify-between text-xs text-gray-600">
+                                                                    <span className="truncate mr-2">
+                                                                        {grade.topic} ({grade.evaluationType} · {grade.percentage}%)
+                                                                    </span>
+                                                                    <span className={`font-medium shrink-0 ${
+                                                                        grade.score != null
+                                                                            ? grade.score >= 10 ? "text-green-600" : grade.score >= 8 ? "text-yellow-600" : "text-red-600"
+                                                                            : "text-gray-400"
+                                                                    }`}>
+                                                                        {grade.score != null ? grade.score.toFixed(1) : "—"}
+                                                                    </span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="text-xs text-gray-400">Sin evaluaciones registradas</p>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        ))}
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="text-center py-6">
+                                    <School className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500">
+                                        {selectedEntry.isCurrentSchool
+                                            ? "Sin calificaciones detalladas para este año"
+                                            : "Escuela anterior · Sin calificaciones registradas en el sistema"
+                                        }
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Materias reprobadas */}
+                            {selectedEntry.failedSubjects.length > 0 && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                        <AlertTriangle className="h-4 w-4 text-red-500" />
+                                        <p className="text-sm font-semibold text-red-600">Materias Reprobadas</p>
+                                    </div>
+                                    {selectedEntry.failedSubjects.map((fs, fsIdx) => (
+                                        <div key={fsIdx} className="p-3 bg-red-50 border border-red-100 rounded-lg">
+                                            <div className="flex items-center justify-between">
+                                                <p className="font-medium text-gray-800">{fs.subjectName}</p>
+                                                {fs.finalAverage != null && (
+                                                    <span className="text-sm font-bold text-red-600">
+                                                        {fs.finalAverage.toFixed(1)}
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {fs.observations && (
+                                                <p className="text-xs text-gray-500 mt-1">{fs.observations}</p>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </DialogComponent>
 
                 {/* ESTADO */}
                 {/* <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

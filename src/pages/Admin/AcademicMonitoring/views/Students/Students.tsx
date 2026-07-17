@@ -3,7 +3,7 @@ import PageTransitionComponent from "@/components/pageTransition/PageTransitionC
 import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
 import StudentListView from "./StudentsListView";
-import StudentDetailView from "./StudentDetailView";
+import StudentDetailView from "./details/StudentDetailView";
 import AcademicMonitoringHeader from "../AcademicMonitoringHeader";
 import { EnrollmentForm } from "../../form/EnrollmentForm";
 import { PaginationComponent } from "@/components/table/PaginationComponent";

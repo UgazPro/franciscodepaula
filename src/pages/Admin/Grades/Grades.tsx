@@ -114,12 +114,24 @@ export default function Grades() {
   }, [students, evaluations, currentGradeMap]);
 
   const handleGradeChange = useCallback((studentId: number, evaluationId: number, value: string) => {
-    const numValue = value === "" ? null : parseFloat(value);
+    const cleaned = value.replace(/[^0-9]/g, "");
+    if (cleaned === "") {
+      setGradeMap(prev => {
+        const newMap = { ...prev };
+        if (!newMap[studentId]) newMap[studentId] = { ...initialGradeMap[studentId] };
+        else newMap[studentId] = { ...newMap[studentId] };
+        newMap[studentId][evaluationId] = null;
+        return newMap;
+      });
+      return;
+    }
+    const num = parseInt(cleaned, 10);
+    const clamped = Math.min(20, Math.max(1, num));
     setGradeMap(prev => {
       const newMap = { ...prev };
       if (!newMap[studentId]) newMap[studentId] = { ...initialGradeMap[studentId] };
       else newMap[studentId] = { ...newMap[studentId] };
-      newMap[studentId][evaluationId] = isNaN(numValue as number) ? null : numValue;
+      newMap[studentId][evaluationId] = clamped;
       return newMap;
     });
   }, [initialGradeMap]);

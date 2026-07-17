@@ -58,3 +58,15 @@ export const useDeleteEvaluation = () => {
     },
   });
 };
+
+export const useAutoAdjustEvaluations = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { teachingGroupId: number; periodId: number }) =>
+      postDataApi("/evaluations/auto-adjust", data),
+    onSuccess: () => {
+      invalidateEvaluations(qc);
+    },
+  });
+};

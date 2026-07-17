@@ -13,7 +13,7 @@ export function TooltipComponent({ content, children }: TooltipComponentProps) {
           {children}
         </TooltipTrigger>
         <TooltipContent side="top" sideOffset={4}>
-          <p className="max-w-xs text-xs">{content}</p>
+          <p className="max-w-xs text-xl">{content}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>

@@ -1,20 +1,23 @@
 import { useState, useMemo, useRef, useCallback } from "react";
-import { Loader2, ClipboardList, ArrowLeft, Users, UserPlus, Calendar } from "lucide-react";
+import { Loader2, ClipboardList, ArrowLeft, Users, UserPlus, Calendar, Settings } from "lucide-react";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Form } from "@/components/ui/form";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { TableComponent } from "@/components/table/TableComponent";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { useTeacherPlanning, useEvaluationsByTeachingGroup, useEvaluationTypes } from "@/hooks/useEvaluations";
-import { useCreateEvaluation, useUpdateEvaluation, useDeleteEvaluation } from "@/queries/useEvaluationMutations";
+import { useCreateEvaluation, useUpdateEvaluation, useDeleteEvaluation, useAutoAdjustEvaluations } from "@/queries/useEvaluationMutations";
 import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
 import { evaluationSchema, type EvaluationFormValues } from "@/services/evaluation/evaluation.schema";
 import { evaluationColumns } from "@/services/evaluation/evaluation.tables";
 import type { TeacherPlanningSection, EvaluationResponse } from "@/services/evaluation/evaluation.types";
 import { cn } from "@/lib/utils";
+import DialogComponent from "@/components/dialog/DialogComponent";
+
 
 interface AutocompleteInputProps {
   value: string;
@@ -158,6 +161,8 @@ export default function EvaluationPlan() {
   const { mutateAsync: updateEvaluation } = useUpdateEvaluation();
   const { mutateAsync: deleteEvaluation } = useDeleteEvaluation();
   const [editingEvaluation, setEditingEvaluation] = useState<EvaluationResponse | null>(null);
+  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
+  const { mutateAsync: autoAdjustEvaluations } = useAutoAdjustEvaluations();
 
   const evaluations = useMemo(() => {
     const response = evaluationsData as { data: EvaluationResponse[] } | undefined;
@@ -219,6 +224,14 @@ export default function EvaluationPlan() {
     return Math.round((pct / 100) * 20 * 100) / 100;
   }, [watchedPercentage]);
 
+  const remainingPercentage = useMemo(() => {
+    const currentTotal = evalSummary?.totalPercentage ?? 0;
+    const editingOldPct = editingEvaluation ? Number(editingEvaluation.percentage) : 0;
+    const base = currentTotal - editingOldPct;
+    const newPct = Number(watchedPercentage) || 0;
+    return 100 - base - newPct;
+  }, [evalSummary, editingEvaluation, watchedPercentage]);
+
   const handleSelectSection = (section: TeacherPlanningSection) => {
     setSelectedSection(section);
     setShowForm(false);
@@ -234,6 +247,19 @@ export default function EvaluationPlan() {
 
   const handleSave = async (data: EvaluationFormValues) => {
     if (!selectedSection || !effectivePeriodId) return;
+
+    // Validate total percentage does not exceed 100%
+    const currentTotal = evalSummary?.totalPercentage ?? 0;
+    const editingOldPct = editingEvaluation ? Number(editingEvaluation.percentage) : 0;
+    const base = currentTotal - editingOldPct;
+    if (base + data.percentage > 100) {
+      form.setError("percentage", {
+        type: "manual",
+        message: `El total sería ${base + data.percentage}%. No puede exceder 100%.`,
+      });
+      return;
+    }
+
     try {
       if (editingEvaluation) {
         await updateEvaluation({
@@ -282,6 +308,16 @@ export default function EvaluationPlan() {
       // interceptor handles the toast
     }
   }, [deleteEvaluation]);
+
+  const handleAutoAdjust = useCallback(async () => {
+    if (!selectedSection?.teachingGroupId || !effectivePeriodId) return;
+    try {
+      await autoAdjustEvaluations({ teachingGroupId: selectedSection.teachingGroupId, periodId: effectivePeriodId });
+      setShowAdjustDialog(false);
+    } catch {
+      // interceptor handles the toast
+    }
+  }, [autoAdjustEvaluations, selectedSection, effectivePeriodId]);
 
   const columns = useMemo(() => evaluationColumns({ onEdit: handleEdit, onDelete: handleDelete }), [handleEdit, handleDelete]);
 
@@ -353,8 +389,8 @@ export default function EvaluationPlan() {
                     {section.groupName ? `CRP (${section.groupName})` : section.subject}
                   </h3>
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${section.isSpecialGroup
-                      ? 'bg-purple-100 text-purple-700'
-                      : 'bg-blue-100 text-blue-700'
+                    ? 'bg-purple-100 text-purple-700'
+                    : 'bg-blue-100 text-blue-700'
                     }`}>
                     {section.isSpecialGroup ? 'extra' : 'regular'}
                   </span>
@@ -428,8 +464,17 @@ export default function EvaluationPlan() {
             </div>
           </div>
           <button
+            onClick={() => setShowAdjustDialog(true)}
+            disabled={evaluations.length === 0}
+            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-amber-500 to-amber-600 text-white rounded-xl hover:from-amber-600 hover:to-amber-700 transition shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Settings size={18} />
+            Ajuste Automático
+          </button>
+          <button
             onClick={() => { setShowForm(!showForm); setEditingEvaluation(null); form.reset(); }}
-            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer"
+            disabled={(evalSummary?.totalPercentage ?? 0) >= 100}
+            className="flex items-center gap-2 px-5 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white rounded-xl hover:from-green-600 hover:to-green-700 transition shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Calendar size={18} />
             {showForm ? "Ver Evaluaciones" : "Crear Evaluación"}
@@ -471,29 +516,36 @@ export default function EvaluationPlan() {
                     <label className="block text-sm font-medium text-(--darkBlueColor) mb-1">
                       Ponderación <span className="text-red-500">*</span>
                     </label>
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="number"
-                        min={0}
-                        max={99}
-                        step={1}
-                        onInput={(e) => {
-                          const input = e.currentTarget;
-                          if (input.value.length > 2) {
-                            input.value = input.value.slice(0, 2);
-                          }
-                        }}
-                        {...form.register("percentage", { valueAsNumber: true })}
-                        placeholder="20"
-                        className={cn(
-                          "w-full px-3 h-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) focus:border-transparent text-sm [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
-                          form.formState.errors.percentage ? "border-red-500" : "border-(--lightBlueColor)/30",
-                        )}
-                      />
-                      <span className="text-sm font-medium text-gray-500">%</span>
-                    </div>
+                    <Select
+                      value={watchedPercentage ? String(watchedPercentage) : ""}
+                      onValueChange={(val) => form.setValue("percentage", Number(val), { shouldValidate: true })}
+                    >
+                      <SelectTrigger className={cn(
+                        "w-full h-10",
+                        form.formState.errors.percentage ? "border-red-500" : "border-(--lightBlueColor)/30",
+                      )}>
+                        <SelectValue placeholder="Seleccione..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[5, 10, 15, 20, 25, 30].map((pct) => (
+                          <SelectItem key={pct} value={String(pct)}>
+                            {pct}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {form.formState.errors.percentage && (
                       <p className="text-red-500 text-xs mt-1">{form.formState.errors.percentage.message}</p>
+                    )}
+                    {!form.formState.errors.percentage && (
+                      <p className={`text-xs mt-1 ${remainingPercentage < 0 ? "text-red-500 font-semibold" : remainingPercentage === 0 ? "text-green-600 font-semibold" : "text-gray-400"}`}>
+                        {remainingPercentage < 0
+                          ? `Excede ${Math.abs(remainingPercentage)}%`
+                          : remainingPercentage === 0
+                            ? "Total: 100%"
+                            : `Disponible: ${remainingPercentage}%`
+                        }
+                      </p>
                     )}
                   </div>
 
@@ -524,7 +576,8 @@ export default function EvaluationPlan() {
                 </Button>
                 <Button
                   type="submit"
-                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer"
+                  disabled={remainingPercentage < 0}
+                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {editingEvaluation ? "Guardar Cambios" : "Crear Evaluación"}
                 </Button>
@@ -588,6 +641,28 @@ export default function EvaluationPlan() {
         secondaryChildren={detailView}
         toggle={toggle}
       />
+      <DialogComponent
+        openDialog={showAdjustDialog}
+        onClose={(open: boolean) => setShowAdjustDialog(open)}
+        className="max-w-xl"
+        dialogTitle="Ajuste Automático"
+        dialogDescription="Esto eliminará todas las evaluaciones sin notas del lapso seleccionado y redistribuirá el 100% entre las evaluaciones restantes que ya tienen calificaciones. ¿Desea continuar?"
+      >
+        <div className="flex justify-end gap-2 mt-4">
+          <button
+            onClick={() => setShowAdjustDialog(false)}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleAutoAdjust}
+            className="px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition"
+          >
+            Aceptar
+          </button>
+        </div>
+      </DialogComponent>
     </div>
   );
 }
