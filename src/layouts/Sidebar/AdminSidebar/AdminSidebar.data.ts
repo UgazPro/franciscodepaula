@@ -1,15 +1,14 @@
-import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Building2, 
-  CalendarCheck, 
+import {
+  LayoutDashboard,
+  BookOpen,
+  Building2,
+  CalendarCheck,
   Settings,
   UserCircle,
-  GraduationCap,
   School,
   ClipboardList,
   FileText,
-  FileDown
+  FileDown,
 } from "lucide-react";
 
 export interface SidebarContent {
@@ -36,12 +35,6 @@ export const sidebarData: SidebarContent[] = [
     name: "Control de Estudio",
     icon: BookOpen,
     redirectTo: "/admin/control-estudio",
-    active: false,
-  },
-  {
-    name: "Profesores",
-    icon: GraduationCap,
-    redirectTo: "/admin/profesores",
     active: false,
   },
   {

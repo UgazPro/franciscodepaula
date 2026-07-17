@@ -7,7 +7,6 @@ import Login from './pages/Login/Login';
 import AdminPanel from './pages/Admin/AdminPanel/AdminPanel';
 import AdminLayout from './layouts/Admin/AdminLayout';
 import AcademicMonitoring from './pages/Admin/AcademicMonitoring/AcademicMonitoring';
-import Teachers from './pages/Admin/Teachers/Teachers';
 import Administration from './pages/Admin/Administration/Administration';
 import SchoolManagement from './pages/Admin/SchoolManagement/SchoolManagement';
 import EvaluationPlan from './pages/Admin/EvaluationPlan/EvaluationPlan';
@@ -43,7 +42,6 @@ function App() {
           }>
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/admin/control-estudio" element={<AcademicMonitoring />} />
-            <Route path="/admin/profesores" element={<Teachers />} />
             <Route path="/admin/gestion-escolar" element={<SchoolManagement />} />
             <Route path="/admin/administracion" element={<Administration />} />
             <Route path="/admin/plan-evaluacion" element={<EvaluationPlan />} />
