@@ -2,12 +2,13 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { useStudentsStore } from "@/stores/students.store";
 import { useStudents } from "@/hooks/useUsers";
-import StudentListView from "./StudentsListView";
+import StudentListView from "./views/StudentListView";
 import StudentDetailView from "./details/StudentDetailView";
 import AcademicMonitoringHeader from "../AcademicMonitoringHeader";
 import { EnrollmentForm } from "../../form/EnrollmentForm";
 import { PaginationComponent } from "@/components/table/PaginationComponent";
-import StudentsNoResults from "./StudentNoResultsView";
+import StudentsNoResults from "./views/StudentNoResultsView";
+import StudentCardView from "./views/StudentCardView";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
 import type { EnrollmentFormValues } from "../../form/enrollment/enrollment.schema";
 import type { IStudent } from "@/services/users/user.interface";
@@ -109,6 +110,10 @@ export default function Students({ tabsComponent }: StudentsProps) {
     const isFormOpen = screen === "form";
     const isDetailOpen = screen === "detail";
 
+    const handleStudentClick = useCallback((student: IStudent) => {
+        useStudentsStore.getState().selectStudent(student);
+    }, []);
+
     return (
         <div className="flex-1 min-h-0">
             <PageTransitionComponent
@@ -129,7 +134,15 @@ export default function Students({ tabsComponent }: StudentsProps) {
                             <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
                         ) : (
                             <>
-                                <StudentListView filteredStudents={students as IStudent[]} />
+                                <div className="hidden md:block">
+                                    <StudentListView filteredStudents={students as IStudent[]} />
+                                </div>
+                                <div className="md:hidden">
+                                    <StudentCardView
+                                        filteredStudents={students as IStudent[]}
+                                        onStudentClick={handleStudentClick}
+                                    />
+                                </div>
                                 {paginationMeta && (
                                     <PaginationComponent
                                         currentPage={paginationMeta.page}
