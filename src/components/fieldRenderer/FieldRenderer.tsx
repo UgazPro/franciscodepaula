@@ -1,4 +1,4 @@
-import type { FormField, OtherField, MultiSelectField as MultiSelectFieldType } from "@/components/form/formComponent.interface";
+import type { FormField, OtherField, MultiSelectField as MultiSelectFieldType, GradeField as GradeFieldType } from "@/components/form/formComponent.interface";
 import { useFormContext, Controller } from "react-hook-form";
 import { cn } from "@/lib/utils";
 import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
@@ -114,6 +114,52 @@ export function FieldRenderer<T extends FieldValues = FieldValues>({
           options={msField.options}
           disabled={disabled}
           placeholder={msField.placeholder || "Seleccione..."}
+        />
+        {hasError && (
+          <p className="text-red-500 text-xs mt-1">{errorMessage}</p>
+        )}
+      </div>
+    );
+  }
+
+  if (field.type === "grade") {
+    const gField = field as GradeFieldType;
+    const min = gField.min ?? 1;
+    const max = gField.max ?? 20;
+    return (
+      <div>
+        {field.label && (
+          <label className={labelStyle}>{field.label}</label>
+        )}
+        <Controller
+          control={form.control}
+          name={field.name as FieldPath<T>}
+          render={({ field: controllerField }) => (
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={2}
+              value={controllerField.value ?? ""}
+              placeholder={gField.placeholder || "—"}
+              onKeyDown={(e) => {
+                if (["-", "e", "E", ".", ",", "+"].includes(e.key)) e.preventDefault();
+              }}
+              onChange={(e) => {
+                const cleaned = e.target.value.replace(/[^0-9]/g, "");
+                if (cleaned === "") {
+                  controllerField.onChange(null);
+                  return;
+                }
+                const num = parseInt(cleaned, 10);
+                const clamped = Math.min(max, Math.max(min, num));
+                controllerField.onChange(clamped);
+              }}
+              className={cn(
+                "w-12 h-8 px-1 text-center text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) bg-white",
+                gField.inputClassName
+              )}
+            />
+          )}
         />
         {hasError && (
           <p className="text-red-500 text-xs mt-1">{errorMessage}</p>

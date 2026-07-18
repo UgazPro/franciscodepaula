@@ -1,3 +1,4 @@
+import { useState, useMemo, useCallback } from "react";
 import { X, User, CheckCircle, XCircle, GraduationCap, Edit } from "lucide-react";
 
 import { format } from "date-fns";
@@ -22,6 +23,34 @@ export default function StudentDetailView() {
     } = useStudentsStore();
 
     const { data: academicHistory } = useAcademicHistory(selectedStudent?.id ?? null);
+
+    const [showForm, setShowForm] = useState(false);
+
+    const currentLevelOrder = useMemo(() => {
+        if (!selectedStudent?.enrollments || selectedStudent.enrollments.length === 0) return 0;
+        const activeEnrollment = selectedStudent.enrollments.find((e) => e.status);
+        if (!activeEnrollment) return 0;
+        const level = activeEnrollment.section?.highSchoolLevel?.level;
+        if (!level) return 0;
+        const match = level.match(/(\d)/);
+        return match ? parseInt(match[1]) : 0;
+    }, [selectedStudent]);
+
+    const nextLevelOrder = useMemo(() => {
+        if (!academicHistory?.history) return 1;
+        const previousOrders = academicHistory.history
+            .filter((h: any) => h.schoolYearId == null && h._levelOrder != null)
+            .map((h: any) => h._levelOrder as number);
+        if (previousOrders.length === 0) return 1;
+        return Math.max(...previousOrders) + 1;
+    }, [academicHistory]);
+
+    const isCreateDisabled = useMemo(() => {
+        return nextLevelOrder >= currentLevelOrder || currentLevelOrder <= 1;
+    }, [nextLevelOrder, currentLevelOrder]);
+
+    const handleOpenForm = useCallback(() => setShowForm(true), []);
+    const handleCloseForm = useCallback(() => setShowForm(false), []);
 
     if (!selectedStudent) return null;
 
@@ -128,6 +157,12 @@ export default function StudentDetailView() {
 
                 <AcademicHistoryInfo
                     academicHistory={academicHistory}
+                    showForm={showForm}
+                    isCreateDisabled={isCreateDisabled}
+                    onCreateClick={handleOpenForm}
+                    onCloseForm={handleCloseForm}
+                    studentId={selectedStudent.id}
+                    currentLevelOrder={currentLevelOrder}
                 />
 
             </div>

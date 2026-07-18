@@ -30,9 +30,19 @@ export interface AcademicHistoryFailedSubject {
   date: string | null;
 }
 
+export interface SchoolHistoryRecord {
+  id: number;
+  levelSubjectId: number | null;
+  schoolId: number;
+  schoolYear: number | null;
+  finalScore: number | null;
+  subjectName: string;
+}
+
 export interface AcademicHistoryEntry {
   schoolYearId: number | null;
   schoolYearName: string | null;
+  schoolYear: number | null;
   level: string;
   section: string | null;
   schoolName: string;
@@ -42,6 +52,7 @@ export interface AcademicHistoryEntry {
   totalGrades: number | null;
   subjects: AcademicHistorySubject[];
   failedSubjects: AcademicHistoryFailedSubject[];
+  records?: SchoolHistoryRecord[];
 }
 
 export interface AcademicHistoryData {
