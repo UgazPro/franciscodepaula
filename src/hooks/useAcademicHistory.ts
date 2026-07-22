@@ -19,15 +19,7 @@ export interface AcademicHistorySubject {
     period: string;
     average: number | null;
   }[];
-}
-
-export interface AcademicHistoryFailedSubject {
-  subjectName: string;
-  finalAverage: number | null;
   typeOf: string | null;
-  status: string | null;
-  observations: string | null;
-  date: string | null;
 }
 
 export interface SchoolHistoryRecord {
@@ -51,7 +43,6 @@ export interface AcademicHistoryEntry {
   totalSubjects: number | null;
   totalGrades: number | null;
   subjects: AcademicHistorySubject[];
-  failedSubjects: AcademicHistoryFailedSubject[];
   records?: SchoolHistoryRecord[];
 }
 

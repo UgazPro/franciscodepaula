@@ -1,6 +1,7 @@
 import type { Column } from "@/components/table/TableComponent";
-import type { GradeStudentRow, GradeEvaluation } from "./grade.types";
+import type { GradeStudentRow, GradeEvaluation, TeacherOverview, TeacherGroupRow } from "./grade.types";
 import { TooltipComponent } from "@/components/tooltip/TooltipComponent";
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 
 export function gradeColumns(
   evaluations: GradeEvaluation[],
@@ -75,3 +76,103 @@ export function gradeColumns(
 
   return [...baseColumns, ...evalColumns, ...definitivaColumn];
 }
+
+export const teacherOverviewColumns = (): Column<TeacherOverview>[] => [
+  {
+    header: "Profesor",
+    render: (row) => (
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+          {row.teacherName.split(" ").map((n) => n.charAt(0)).join("").slice(0, 2)}
+        </div>
+        <div>
+          <p className="font-medium text-gray-800">{row.teacherName}</p>
+          <p className="text-xs text-gray-400">{row.identificationNumber}</p>
+        </div>
+      </div>
+    ),
+  },
+  {
+    header: "Materias Cargadas",
+    render: (row) => {
+      const unloaded = row.groups.filter((g) => !g.isLoaded).map((g) => g.subject);
+      const label = (
+        <span className={`font-medium cursor-help ${row.loadedCount === row.totalCount ? "text-green-600" : "text-gray-700"}`}>
+          {row.loadedCount}/{row.totalCount}
+        </span>
+      );
+      if (unloaded.length === 0) return label;
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>{label}</TooltipTrigger>
+            <TooltipContent side="bottom" sideOffset={4} className="w-auto max-w-xs p-2.5">
+              <p className="text-xs font-semibold mb-1.5">Materias sin cargar:</p>
+              <ul className="space-y-1">
+                {unloaded.map((subj, i) => (
+                  <li key={i} className="text-sm flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-400 shrink-0" />
+                    {subj}
+                  </li>
+                ))}
+              </ul>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    },
+  },
+];
+
+export const teacherGroupColumns = (): Column<TeacherGroupRow>[] => [
+  {
+    header: "Año / Sección",
+    render: (row) => (
+      <span className="font-medium text-gray-800">
+        {row.level} {row.section}
+      </span>
+    ),
+  },
+  {
+    header: "Materia",
+    render: (row) => (
+      <span className="text-gray-700">{row.subject}</span>
+    ),
+  },
+  {
+    header: "Evaluaciones",
+    render: (row) => (
+      <span className="text-gray-700">
+        {row.evaluationCount} ({row.totalPercentage.toFixed(0)}%)
+      </span>
+    ),
+  },
+  {
+    header: "Notas",
+    render: (row) => {
+      const pct = Math.round(row.loadedPercentage);
+      const barColor = pct >= 70 ? "bg-green-500" : pct >= 40 ? "bg-yellow-500" : "bg-red-500";
+      return (
+        <div className="flex items-center gap-2">
+          <div className="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${barColor}`}
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+          <span className="text-xs text-gray-500 whitespace-nowrap">{pct}%</span>
+        </div>
+      );
+    },
+  },
+  {
+    header: "Cargada",
+    render: (row) => (
+      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+        row.isLoaded ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+      }`}>
+        {row.isLoaded ? "Sí" : "No"}
+      </span>
+    ),
+  },
+];

@@ -7,15 +7,17 @@ import RepresentativesView from "./views/Representatives/RepresentativesView";
 import RepresentativeForm from "./views/Representatives/Form/RepresentativeForm";
 import TeacherAssignmentsView from "./views/TeacherAssignmentsView";
 import CRPView from "./views/CRP/CRPView";
+import UploadGradesManagement from "./views/UploadGradesManagement/UploadGradesManagement";
 import type { IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp";
+type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp" | "carga-notas";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
     { value: "representantes" as const, label: "Representantes" },
     { value: "asignaciones" as const, label: "Asignaciones" },
     { value: "crp" as const, label: "CRP" },
+    { value: "carga-notas" as const, label: "Supervisión de Carga de Notas" },
 ];
 
 export default function AcademicMonitoring() {
@@ -67,6 +69,10 @@ export default function AcademicMonitoring() {
             ) : activeTab === "crp" ? (
                 <div className="flex-1 min-h-0">
                     <CRPView tabsComponent={tabsComponent} />
+                </div>
+            ) : activeTab === "carga-notas" ? (
+                <div className="flex-1 min-h-0">
+                    <UploadGradesManagement tabsComponent={tabsComponent} />
                 </div>
             ) : null}
         </div>

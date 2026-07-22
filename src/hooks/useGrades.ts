@@ -20,3 +20,12 @@ export const useGradeDetail = (teachingGroupId: number | null, periodId?: number
     enabled: !!teachingGroupId,
   });
 };
+
+export const useTeachersOverview = (periodId: number | null) => {
+  return useQuery({
+    queryKey: ["teachers-overview", periodId],
+    queryFn: () => getDataApi(`/grades/teachers-overview?periodId=${periodId}`),
+    staleTime: 1000 * 60 * 5,
+    enabled: !!periodId,
+  });
+};

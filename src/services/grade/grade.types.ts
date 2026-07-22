@@ -51,6 +51,27 @@ export interface SaveGradeData {
   observations?: string;
 }
 
+export interface TeacherOverview {
+  teacherId: number;
+  teacherName: string;
+  teacherPhoto: string | null;
+  identificationNumber: string;
+  loadedCount: number;
+  totalCount: number;
+  groups: TeacherGroupRow[];
+}
+
+export interface TeacherGroupRow {
+  teachingGroupId: number;
+  level: string;
+  section: string;
+  subject: string;
+  evaluationCount: number;
+  totalPercentage: number;
+  loadedPercentage: number;
+  isLoaded: boolean;
+}
+
 export interface GradeStudentRow {
   id: number;
   firstNames: string;

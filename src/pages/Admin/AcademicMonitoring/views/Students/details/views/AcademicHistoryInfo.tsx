@@ -1,5 +1,5 @@
 import { useState, useEffect, type Key } from "react";
-import { History, School, BookOpen, AlertTriangle, ArrowLeft, GraduationCap, Plus, Pencil } from "lucide-react";
+import { History, School, BookOpen, ArrowLeft, GraduationCap, Plus, Pencil } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,15 +23,26 @@ interface AcademicHistoryInfoProps {
 
 interface GradeRow {
     subject1: string;
+    typeOf1: string | null;
     momento1_1: number | null;
     momento1_2: number | null;
     momento1_3: number | null;
     definitiva1: number | null;
     subject2: string | null;
+    typeOf2: string | null;
     momento2_1: number | null;
     momento2_2: number | null;
     momento2_3: number | null;
     definitiva2: number | null;
+}
+
+interface SingleGradeRow {
+    subject: string;
+    typeOf: string | null;
+    momento1: number | null;
+    momento2: number | null;
+    momento3: number | null;
+    definitiva: number | null;
 }
 
 function getGradeColor(grade: number | null): string {
@@ -200,11 +211,13 @@ export default function AcademicHistoryInfo({
 
             rows.push({
                 subject1: s1.subjectName,
+                typeOf1: s1.typeOf,
                 momento1_1: allPeriodNames.length > 0 ? getPeriodAvg(s1, allPeriodNames[0]) : null,
                 momento1_2: allPeriodNames.length > 1 ? getPeriodAvg(s1, allPeriodNames[1]) : null,
                 momento1_3: allPeriodNames.length > 2 ? getPeriodAvg(s1, allPeriodNames[2]) : null,
                 definitiva1: s1.definitiva,
                 subject2: s2?.subjectName ?? null,
+                typeOf2: s2?.typeOf ?? null,
                 momento2_1: s2 && allPeriodNames.length > 0 ? getPeriodAvg(s2, allPeriodNames[0]) : null,
                 momento2_2: s2 && allPeriodNames.length > 1 ? getPeriodAvg(s2, allPeriodNames[1]) : null,
                 momento2_3: s2 && allPeriodNames.length > 2 ? getPeriodAvg(s2, allPeriodNames[2]) : null,
@@ -309,7 +322,70 @@ export default function AcademicHistoryInfo({
 
     const gradeColumns: Column<GradeRow>[] = [...buildSubject1Columns(), ...buildSubject2Columns()];
 
+    const buildSingleGradeRows = (entry: AcademicHistoryEntry): SingleGradeRow[] => {
+        return entry.subjects.map((s) => {
+            const pa = s.periodAverages || [];
+            const getPA = (idx: number) => pa[idx]?.average ?? null;
+            return {
+                subject: s.subjectName,
+                typeOf: s.typeOf,
+                momento1: getPA(0),
+                momento2: getPA(1),
+                momento3: getPA(2),
+                definitiva: s.definitiva,
+            };
+        });
+    };
+
+    const singleGradeColumns: Column<SingleGradeRow>[] = [
+        {
+            header: "Materia",
+            accessor: "subject",
+            className: "font-medium text-gray-800",
+        },
+        ...(hasPeriodData
+            ? [
+                {
+                    header: "Mom. I",
+                    render: (row: SingleGradeRow) => (
+                        <span className={`font-medium ${getGradeColor(row.momento1)}`}>
+                            {row.momento1 != null ? row.momento1.toFixed(1) : "—"}
+                        </span>
+                    ),
+                },
+                {
+                    header: "Mom. II",
+                    render: (row: SingleGradeRow) => (
+                        <span className={`font-medium ${getGradeColor(row.momento2)}`}>
+                            {row.momento2 != null ? row.momento2.toFixed(1) : "—"}
+                        </span>
+                    ),
+                },
+                {
+                    header: "Mom. III",
+                    render: (row: SingleGradeRow) => (
+                        <span className={`font-medium ${getGradeColor(row.momento3)}`}>
+                            {row.momento3 != null ? row.momento3.toFixed(1) : "—"}
+                        </span>
+                    ),
+                },
+              ]
+            : []),
+        {
+            header: "Def.",
+            render: (row: SingleGradeRow) => (
+                <span className={`font-bold ${getGradeColor(row.definitiva)}`}>
+                    {row.definitiva != null ? row.definitiva.toFixed(1) : "—"}
+                </span>
+            ),
+            className: "text-center",
+        },
+    ];
+
     const gradeRows = selectedEntry ? buildGradeRows(selectedEntry) : [];
+    const singleGradeRows = selectedEntry ? buildSingleGradeRows(selectedEntry) : [];
+    const activeColumns = hasPeriodData ? singleGradeColumns : gradeColumns;
+    const activeRows = hasPeriodData ? singleGradeRows : gradeRows;
     const overallAvg = selectedEntry?.averageGrade;
     const isPreviousSchool = selectedEntry?.schoolYearId == null && selectedEntry?.records;
 
@@ -384,15 +460,6 @@ export default function AcademicHistoryInfo({
                                             {entry.totalGrades != null && entry.totalGrades > 0 && ` · ${entry.totalGrades} evaluacione${entry.totalGrades !== 1 ? "s" : ""}`}
                                         </p>
                                     )}
-
-                                    {entry.failedSubjects.length > 0 && (
-                                        <div className="flex items-center gap-1.5">
-                                            <AlertTriangle className="h-3.5 w-3.5 text-red-500" />
-                                            <span className="text-red-600 text-[10px] font-medium px-1.5 py-0.5 border border-red-200 rounded">
-                                                {entry.failedSubjects.length} reprobada{entry.failedSubjects.length > 1 ? "s" : ""}
-                                            </span>
-                                        </div>
-                                    )}
                                 </CardContent>
                             </Card>
                         );
@@ -441,11 +508,11 @@ export default function AcademicHistoryInfo({
                 </div>
 
                 {/* Grade table */}
-                {gradeRows.length > 0 ? (
+                {activeRows.length > 0 ? (
                     <div className="space-y-4">
                         <TableComponent
-                            data={gradeRows}
-                            columns={gradeColumns}
+                            data={activeRows}
+                            columns={activeColumns}
                             maxHeight={300}
                         />
 
@@ -459,31 +526,6 @@ export default function AcademicHistoryInfo({
                                 <span className={`text-xl font-bold ${getGradeColor(overallAvg)}`}>
                                     {overallAvg.toFixed(1)} / 20
                                 </span>
-                            </div>
-                        )}
-
-                        {/* Failed subjects */}
-                        {selectedEntry.failedSubjects.length > 0 && (
-                            <div className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <AlertTriangle className="h-4 w-4 text-red-500" />
-                                    <p className="text-sm font-semibold text-red-600">Materias Reprobadas</p>
-                                </div>
-                                {selectedEntry.failedSubjects.map((fs, fsIdx) => (
-                                    <div key={fsIdx} className="p-3 bg-red-50 border border-red-100 rounded-lg">
-                                        <div className="flex items-center justify-between">
-                                            <p className="font-medium text-gray-800">{fs.subjectName}</p>
-                                            {fs.finalAverage != null && (
-                                                <span className="text-sm font-bold text-red-600">
-                                                    {fs.finalAverage.toFixed(1)}
-                                                </span>
-                                            )}
-                                        </div>
-                                        {fs.observations && (
-                                            <p className="text-xs text-gray-500 mt-1">{fs.observations}</p>
-                                        )}
-                                    </div>
-                                ))}
                             </div>
                         )}
                     </div>
