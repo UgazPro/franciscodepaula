@@ -1,36 +1,22 @@
-import { useEffect, useMemo, useState, useCallback, useRef, useLayoutEffect } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useMemo, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { ChevronLeft, ChevronRight, Check, Camera, X, ArrowLeft, Search, Loader2 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { enrollmentSchema, type EnrollmentFormValues, step1Schema, step2Schema } from "./enrollment/enrollment.schema";
-import { step1ByName } from "./enrollment/steps/step1Fields.data";
-import { step2ByName } from "./enrollment/steps/step2Fields.data";
-import { step3ByName } from "./enrollment/steps/step3Fields.data";
-import { step4ByName } from "./enrollment/steps/step4Fields.data";
-import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
-import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
-import type { FormField } from "@/components/form/formComponent.interface";
+import { ChevronLeft, ChevronRight, Check, ArrowLeft } from "lucide-react";
+import type { EnrollmentFormValues } from "./enrollment/enrollment.schema";
+import { STEPS, STEPS_REPITIENTE, STEPS_PENDING, EDIT_STEPS } from "./enrollment/enrollment.constants";
 import StepperComponent from "@/components/stepper/StepperComponent";
-import { useEnrollmentMutation, useUpdateEnrollment } from "@/queries/useEnrollmentMutations";
-import { useUpdateStudent, useUpdateRepresentative } from "@/queries/useUserMutations";
-import { useLevels, useSections, useActiveSchoolYear } from "@/hooks/useSchoolYears";
-import { useSchools } from "@/hooks/useSchools";
-import { useCountries, useStates, useMunicipalities, useParishes } from "@/hooks/useLocations";
-import type { ICountry, IState, IMunicipality, IParish } from "@/services/locations/location.service";
-import { checkIdentification, searchRepresentatives } from "@/services/users/user.service";
-import { getDataApi } from "@/services/api";
-import type { IStudent, IRepresentative } from "@/services/users/user.interface";
-import AutocompleteField from "@/components/locationAutocomplete/AutocompleteField";
-import toast from "react-hot-toast";
-import { ToastMessage } from "@/components/toast/ToastMessage";
 import { useStudentsStore } from "@/stores/students.store";
-import type { ApprovedSubject, PendingSubject } from "./enrollment/enrollment.schema";
+import type { IStudent } from "@/services/users/user.interface";
+
+import Step1PersonalData from "./enrollment/steps/Step1PersonalData";
+import Step2LocationData from "./enrollment/steps/Step2LocationData";
+import Step3Representative from "./enrollment/steps/Step3Representative";
+import Step4Assignment from "./enrollment/steps/Step4Assignment";
+import Step5Repitiente from "./enrollment/steps/Step5Repitiente";
+import Step5Pending from "./enrollment/steps/Step5Pending";
+import { useEnrollmentForm } from "./enrollment/useEnrollmentForm";
 
 interface EnrollmentFormProps {
-  open: boolean;
   onClose: () => void;
   initialData?: Partial<EnrollmentFormValues>;
   mode?: "create" | "edit";
@@ -40,26 +26,7 @@ interface EnrollmentFormProps {
   totalSteps: number;
 }
 
-const STEPS = [
-  { title: "Datos Personales", description: "Nombre, cédula, fecha de nacimiento" },
-  { title: "Datos Generales", description: "Lugar de nacimiento, dirección" },
-  { title: "Representante", description: "Datos del representante legal" },
-  { title: "Asignación", description: "Año escolar, nivel y sección" },
-];
-
-const STEPS_REPITIENTE = [
-  ...STEPS,
-  { title: "Materias Aprobadas", description: "Materias aprobadas del año anterior" },
-];
-
-const STEPS_PENDING = [
-  ...STEPS,
-  { title: "Materias Pendientes", description: "Materias reprobadas del año anterior" },
-];
-
-const EDIT_STEPS = STEPS.filter((_, i) => i !== 2);
-
-export function EnrollmentForm({ open, onClose, initialData, mode = "create", selectedStudent, step, setStep, totalSteps }: EnrollmentFormProps) {
+export function EnrollmentForm({ onClose, initialData, mode = "create", selectedStudent, step, setStep, totalSteps }: EnrollmentFormProps) {
   const isEditMode = mode === "edit";
   const enrollmentType = useStudentsStore((s) => s.enrollmentType);
 
@@ -70,777 +37,16 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     return STEPS;
   }, [isEditMode, enrollmentType]);
 
-  const displaySteps = baseSteps;
   const toDisplayStep = useCallback((actual: number) => (isEditMode && actual > 2 ? actual - 1 : actual), [isEditMode]);
   const toActualStep = useCallback((display: number) => (isEditMode && display >= 3 ? display + 1 : display), [isEditMode]);
 
-  const [studentPhotoPreview, setStudentPhotoPreview] = useState<string | null>(null);
-  const [completedStep, setCompletedStep] = useState(mode === "edit" ? totalSteps : 0);
-  const enrollmentMutation = useEnrollmentMutation();
-  const { mutateAsync: updateStudent } = useUpdateStudent();
-  const { mutateAsync: updateRepresentative } = useUpdateRepresentative();
-  const { mutateAsync: updateEnrollment } = useUpdateEnrollment();
-  const { data: activeSchoolYear } = useActiveSchoolYear();
-  const { data: levels = [] } = useLevels();
-  const { data: sections = [] } = useSections();
-  const { data: schoolsData } = useSchools();
-
-  const schools = useMemo(() => {
-    const data = schoolsData as any;
-    return Array.isArray(data) ? data : (data?.data ?? []);
-  }, [schoolsData]);
-
-  // Level subjects for step 5
-  const [levelSubjects, setLevelSubjects] = useState<{ id: number; subject: { subject: string; code: string | null }; highSchoolLevel: { level: string } }[]>([]);
-  const [loadingSubjects, setLoadingSubjects] = useState(false);
-  const [approvedSubjects, setApprovedSubjects] = useState<ApprovedSubject[]>([]);
-  const [pendingSubjects, setPendingSubjects] = useState<PendingSubject[]>([]);
-  const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
-
-  const form = useForm<EnrollmentFormValues>({
-    resolver: zodResolver(enrollmentSchema),
-    defaultValues: {
-      firstNames: "",
-      lastNames: "",
-      identificationNumber: "",
-      birthDate: new Date(),
-      gender: "",
-      profilePhoto: "",
-      birthCountry: "",
-      state: "",
-      municipality: "",
-      parish: "",
-      currentParish: "",
-      address: "",
-      representativeMode: "create" as const,
-      representativeFirstNames: "",
-      representativeLastNames: "",
-      representativeIdentification: "",
-      representativeBirthDate: new Date(),
-      representativeGender: "",
-      representativeEmail: "",
-      representativePhone: "",
-      representativeRelation: "",
-      representativeProfession: "",
-      existingRepresentative: undefined,
-      schoolYearId: undefined as never,
-      levelId: undefined as never,
-      sectionId: undefined as never,
-      enrollmentDate: new Date(),
-      ...initialData,
-    },
-    shouldUnregister: false,
-  });
-
-  const { trigger, setValue, watch } = form;
-
-  const schoolYearId = watch("schoolYearId");
-  const levelId = watch("levelId");
-  const birthCountry = watch("birthCountry");
-  const state = watch("state");
-  const municipality = watch("municipality");
-  const representativeMode = watch("representativeMode");
-  const isLevelDisabled = !schoolYearId;
-  const isSectionDisabled = !schoolYearId || !levelId;
-
-  const schoolYearField = useMemo(() => {
-    const field = step4ByName.schoolYearId;
-    if (field.type === "select") {
-      field.options = activeSchoolYear
-        ? [{ label: activeSchoolYear.name, value: activeSchoolYear.id }]
-        : [];
-    }
-    return step4ByName;
-  }, [activeSchoolYear]);
-
-  const levelField = useMemo(() => {
-    const field = step4ByName.levelId;
-    if (field.type === "select") {
-      const filtered = enrollmentType === "pending"
-        ? (levels ?? []).filter((l: { id: number; level: string }) => {
-            const match = l.level.match(/(\d)/);
-            return match ? parseInt(match[1]) > 1 : true;
-          })
-        : (levels ?? []);
-      field.options = filtered.map((l: { id: number; level: string }) => ({
-        label: l.level,
-        value: l.id,
-      }));
-    }
-    return step4ByName;
-  }, [levels, enrollmentType]);
-
-  const previousYearEndDate = useMemo(() => {
-    if (!activeSchoolYear?.startDate) return "";
-    const d = new Date(activeSchoolYear.startDate);
-    d.setDate(d.getDate() - 1);
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  }, [activeSchoolYear]);
-
-  const previousLevelId = useMemo(() => {
-    if (enrollmentType !== "pending" || !levelId || !levels?.length) return null;
-    const sorted = [...levels].sort((a: any, b: any) => {
-      const na = parseInt((a.level ?? "").match(/(\d)/)?.[1] ?? "99");
-      const nb = parseInt((b.level ?? "").match(/(\d)/)?.[1] ?? "99");
-      return na - nb;
-    });
-    const idx = sorted.findIndex((l: any) => l.id === levelId);
-    return idx > 0 ? sorted[idx - 1].id : null;
-  }, [levelId, levels, enrollmentType]);
-
-  const previousLevelName = useMemo(() => {
-    if (!previousLevelId || !levels?.length) return null;
-    const found = levels.find((l: any) => l.id === previousLevelId);
-    return found?.level ?? null;
-  }, [previousLevelId, levels]);
-
-  const filteredSections = useMemo(() => {
-    if (!schoolYearId || !levelId) return [];
-    return (sections ?? []).filter(
-      (s: { schoolYearId: number; highSchoolLevelId: number }) => s.schoolYearId === schoolYearId && s.highSchoolLevelId === levelId,
-    );
-  }, [sections, schoolYearId, levelId]);
-
-  const sectionField = useMemo(() => {
-    const field = step4ByName.sectionId;
-    if (field.type === "select") {
-      field.options = filteredSections.map((s: { id: number; section: string; highSchoolLevel?: { level: string } }) => ({
-        label: `${s.section} - ${s.highSchoolLevel?.level ?? ""}`,
-        value: s.id,
-      }));
-    }
-    return step4ByName;
-  }, [filteredSections]);
-
-  const { data: countries = [] } = useCountries();
-  const venezuela = countries.find((c: ICountry) => c.name === "Venezuela");
-  const { data: states = [] } = useStates(venezuela?.id);
-  const zuliaState = states.find((s: IState) => s.name === "Zulia");
-  const { data: municipalities = [] } = useMunicipalities(zuliaState?.id);
-
-  const selectedMunicipalityObj = municipalities.find(
-    (m: IMunicipality) => m.name === municipality,
-  );
-  const { data: parishes = [] } = useParishes(selectedMunicipalityObj?.id);
-
-  const countryOptions = countries.map((c: ICountry) => ({ label: c.name, value: c.name }));
-  const stateOptions = states.map((s: IState) => ({ label: s.name, value: s.name }));
-  const municipalityOptions = municipalities.map((m: IMunicipality) => ({ label: m.name, value: m.name }));
-  const parishOptions = parishes.map((p: IParish) => ({ label: p.name, value: p.name }));
-
-  // ── Representative search state ──
-  const [repSearchQuery, setRepSearchQuery] = useState("");
-  const [repSearchResults, setRepSearchResults] = useState<IRepresentative[]>([]);
-  const [repSearchOpen, setRepSearchOpen] = useState(false);
-  const [repHighlightIdx, setRepHighlightIdx] = useState(-1);
-  const repSearchRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
-
-  const fetchReps = useCallback(async (query: string) => {
-    try {
-      const results = await searchRepresentatives(query || undefined);
-      setRepSearchResults(results ?? []);
-      setRepSearchOpen(true);
-      setRepHighlightIdx(-1);
-    } catch {
-      setRepSearchResults([]);
-    }
-  }, []);
-
-  const handleRepSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const q = e.target.value;
-    setRepSearchQuery(q);
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => fetchReps(q), 300);
-  };
-
-  const selectRepresentative = (rep: IRepresentative) => {
-    setValue("existingRepresentative", rep as IRepresentative);
-    setRepSearchQuery(`${rep.person.firstNames} ${rep.person.lastNames} - ${rep.person.identificationNumber}`);
-    setRepSearchOpen(false);
-    setRepSearchResults([]);
-  };
-
-  const handleRepKeyDown = (e: React.KeyboardEvent) => {
-    if (!repSearchOpen || repSearchResults.length === 0) return;
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setRepHighlightIdx((prev) => (prev < repSearchResults.length - 1 ? prev + 1 : 0));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setRepHighlightIdx((prev) => (prev > 0 ? prev - 1 : repSearchResults.length - 1));
-    } else if (e.key === "Enter" && repHighlightIdx >= 0) {
-      e.preventDefault();
-      selectRepresentative(repSearchResults[repHighlightIdx]);
-    } else if (e.key === "Escape") {
-      setRepSearchOpen(false);
-    }
-  };
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      if (repSearchRef.current && !repSearchRef.current.contains(e.target as Node)) {
-        setRepSearchOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
-
-  useLayoutEffect(() => {
-    form.clearErrors();
-  }, [step]);
-
-  useEffect(() => {
-    if (activeSchoolYear && !initialData?.schoolYearId) {
-      form.setValue("schoolYearId", activeSchoolYear.id);
-    }
-  }, [activeSchoolYear, initialData?.schoolYearId]);
-
-  useEffect(() => {
-    form.setValue("sectionId", undefined as never);
-  }, [schoolYearId, levelId]);
-
-  // Fetch level subjects for step 5 when level changes
-  useEffect(() => {
-    if (!levelId || !enrollmentType || enrollmentType === "regular") {
-      setLevelSubjects([]);
-      return;
-    }
-    const fetchLevelId = enrollmentType === "pending" ? previousLevelId : levelId;
-    if (enrollmentType === "pending" && !fetchLevelId) {
-      setLevelSubjects([]);
-      return;
-    }
-    setLoadingSubjects(true);
-    getDataApi(`/enrollment/subjects-by-level/${fetchLevelId}`)
-      .then((res: any) => {
-        const excludedSubjects = ["robótica", "música", "metodología"];
-        const filtered = (res?.data ?? []).filter((ls: any) =>
-          !excludedSubjects.includes(ls.subject.subject.toLowerCase())
-        );
-        setLevelSubjects(filtered);
-        setApprovedSubjects([]);
-        setPendingSubjects([]);
-      })
-      .catch(() => setLevelSubjects([]))
-      .finally(() => setLoadingSubjects(false));
-  }, [levelId, enrollmentType, previousLevelId]);
-
-  useEffect(() => {
-    if (!isEditMode && !initialData?.birthCountry) {
-      form.setValue("birthCountry", "Venezuela");
-    }
-  }, []);
-
-  useEffect(() => {
-    const subscription = form.watch((values, { name }) => {
-      if (name === "birthCountry" && values.birthCountry !== "Venezuela") {
-        form.setValue("state", "");
-        form.setValue("municipality", "");
-        form.setValue("parish", "");
-        form.setValue("currentParish", "");
-      }
-      if (name === "state" && values.state !== "Zulia") {
-        form.setValue("municipality", "");
-        form.setValue("parish", "");
-        form.setValue("currentParish", "");
-      }
-      if (name === "municipality") {
-        form.setValue("parish", "");
-        form.setValue("currentParish", "");
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
-
-  const validateStep = async () => {
-    let fieldsToValidate: (keyof EnrollmentFormValues)[] = [];
-
-    if (step === 1) {
-      form.clearErrors(["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"]);
-      const result = step1Schema.safeParse(form.getValues());
-      if (!result.success) {
-        const issues = result.error?.issues ?? [];
-        issues.forEach((err) => {
-          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message ?? "" });
-        });
-        return;
-      }
-      // fall through to duplicate check + navigation
-    } else if (step === 2) {
-      form.clearErrors(["birthCountry", "state", "municipality", "parish", "currentParish", "address"]);
-      const result = step2Schema.safeParse(form.getValues());
-      if (!result.success) {
-        const issues = result.error?.issues ?? [];
-        issues.forEach((err) => {
-          form.setError(err.path[0] as keyof EnrollmentFormValues, { message: err.message ?? "" });
-        });
-        return;
-      }
-      // fall through to duplicate check + navigation
-    } else if (step === 3) {
-      const vals = form.getValues();
-      let hasError = false;
-
-      form.clearErrors([
-        "representativeFirstNames", "representativeLastNames", "representativeIdentification",
-        "representativeBirthDate", "representativeGender", "representativeEmail",
-        "representativePhone", "representativeRelation", "existingRepresentative",
-      ]);
-
-      if (vals.representativeMode === "create") {
-        if (!vals.representativeFirstNames || vals.representativeFirstNames.trim().length < 2) {
-          form.setError("representativeFirstNames", { message: "Los nombres del representante son requeridos" });
-          hasError = true;
-        }
-        if (!vals.representativeLastNames || vals.representativeLastNames.trim().length < 2) {
-          form.setError("representativeLastNames", { message: "Los apellidos del representante son requeridos" });
-          hasError = true;
-        }
-        if (!vals.representativeIdentification || vals.representativeIdentification.trim().length < 6) {
-          form.setError("representativeIdentification", { message: "La cédula del representante es requerida" });
-          hasError = true;
-        }
-        if (!vals.representativeBirthDate || isNaN(new Date(vals.representativeBirthDate as Date | string).getTime())) {
-          form.setError("representativeBirthDate", { message: "La fecha de nacimiento del representante es requerida" });
-          hasError = true;
-        }
-        if (!vals.representativeGender) {
-          form.setError("representativeGender", { message: "Seleccione el género del representante" });
-          hasError = true;
-        }
-        if (!vals.representativeEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(vals.representativeEmail)) {
-          form.setError("representativeEmail", { message: "Email inválido" });
-          hasError = true;
-        }
-        if (!vals.representativePhone || vals.representativePhone.length < 10) {
-          form.setError("representativePhone", { message: "El teléfono del representante es requerido" });
-          hasError = true;
-        }
-        if (!vals.representativeRelation) {
-          form.setError("representativeRelation", { message: "Indique la relación con el estudiante" });
-          hasError = true;
-        }
-      } else {
-        if (!vals.existingRepresentative) {
-          form.setError("existingRepresentative", { message: "Seleccione un representante existente" });
-          hasError = true;
-        }
-        if (!vals.representativeRelation) {
-          form.setError("representativeRelation", { message: "Indique la relación con el estudiante" });
-          hasError = true;
-        }
-      }
-
-      if (hasError) return;
-
-      // Duplicate identification checks (edit mode only)
-      if (isEditMode && vals.representativeMode === "create") {
-        const repPersonId =
-          selectedStudent?.representatives?.[0]?.representative?.user?.person?.id;
-        const { exists } = await checkIdentification(
-          vals.representativeIdentification || "",
-          repPersonId,
-        );
-        if (exists) {
-          toast.custom((t) => (
-            <ToastMessage success={false} message="Esta cédula ya está registrada por otro estudiante o usuario" visible={t.visible} />
-          ), { duration: 5000 });
-          return;
-        }
-      }
-    } else if (step === 4) {
-      fieldsToValidate = ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
-    } else if (step === 5 && enrollmentType === "repitiente") {
-      if (!selectedSchoolId) {
-        toast.custom((t) => (
-          <ToastMessage success={false} message="Seleccione la escuela de origen" visible={t.visible} />
-        ), { duration: 3000 });
-        return;
-      }
-      const missingSubjects = levelSubjects.filter(ls =>
-        !approvedSubjects.some(a => a.levelSubjectId === ls.id)
-      );
-      if (missingSubjects.length > 0) {
-        toast.custom((t) => (
-          <ToastMessage success={false} message={`Faltan materias por indicar: ${missingSubjects.map(s => s.subject.subject).join(", ")}`} visible={t.visible} />
-        ), { duration: 4000 });
-        return;
-      }
-      for (const subj of approvedSubjects) {
-        if (!subj.isRepeating) {
-          if (subj.finalScore === undefined || subj.finalScore === null) {
-            toast.custom((t) => (
-              <ToastMessage success={false} message={`La materia "${subj.subjectName}" necesita una calificación`} visible={t.visible} />
-            ), { duration: 3000 });
-            return;
-          }
-          if (!subj.typeOf) {
-            toast.custom((t) => (
-              <ToastMessage success={false} message={`Seleccione el tipo de aprobación de ${subj.subjectName}`} visible={t.visible} />
-            ), { duration: 3000 });
-            return;
-          }
-          if (!subj.approvalDate) {
-            toast.custom((t) => (
-              <ToastMessage success={false} message={`La fecha de aprobación de ${subj.subjectName} es requerida`} visible={t.visible} />
-            ), { duration: 3000 });
-            return;
-          }
-        }
-      }
-    } else if (step === 5 && enrollmentType === "pending") {
-      if (pendingSubjects.length === 0) {
-        toast.custom((t) => (
-          <ToastMessage success={false} message="Seleccione al menos una materia pendiente" visible={t.visible} />
-        ), { duration: 3000 });
-        return;
-      }
-      if (pendingSubjects.length > 2) {
-        toast.custom((t) => (
-          <ToastMessage success={false} message="Máximo 2 materias pendientes" visible={t.visible} />
-        ), { duration: 3000 });
-        return;
-      }
-    }
-
-    if (fieldsToValidate.length > 0) {
-      const isValid = await trigger(fieldsToValidate);
-      if (!isValid) return;
-    }
-
-    // Duplicate identification checks for steps 1 (edit mode only)
-    if (isEditMode && step === 1) {
-      const { exists } = await checkIdentification(
-        form.getValues("identificationNumber"),
-        selectedStudent?.personId,
-      );
-      if (exists) {
-        toast.custom((t) => (
-          <ToastMessage success={false} message="Esta cédula ya está registrada por otro estudiante o usuario" visible={t.visible} />
-        ), { duration: 5000 });
-        return;
-      }
-    }
-
-    if (isEditMode && step === 2) {
-        setCompletedStep(prev => Math.max(prev, step));
-        setStep(4);
-      } else if (step < totalSteps) {
-        setCompletedStep(prev => Math.max(prev, step));
-        setStep(step + 1);
-      } else if (isEditMode) {
-        await submitEdit();
-      } else {
-        form.handleSubmit(sendForm)();
-      }
-  };
-
-  const submitEdit = async () => {
-    if (!selectedStudent) return;
-
-    const formData = form.getValues();
-
-    // Final duplicate safety checks
-    const { exists: studentIdExists } = await checkIdentification(
-      formData.identificationNumber,
-      selectedStudent.personId,
-    );
-    if (studentIdExists) {
-      form.setError("identificationNumber", {
-        type: "manual",
-        message: "Esta cédula ya está registrada por otro estudiante o usuario",
-      });
-      return;
-    }
-
-    const repPersonId =
-      selectedStudent.representatives?.[0]?.representative?.user?.person?.id;
-    if (repPersonId) {
-      const { exists: repIdExists } = await checkIdentification(
-        formData.representativeIdentification || "",
-        repPersonId,
-      );
-      if (repIdExists) {
-        form.setError("representativeIdentification", {
-          type: "manual",
-          message: "Esta cédula ya está registrada por otro estudiante o usuario",
-        });
-        return;
-      }
-    }
-
-    const studentPayload = {
-      profilePhoto: formData.profilePhoto || "",
-      firstNames: formData.firstNames,
-      lastNames: formData.lastNames,
-      identificationNumber: formData.identificationNumber,
-      birthDate: formData.birthDate,
-      gender: formData.gender,
-      birthCountry: formData.birthCountry,
-      state: formData.state,
-      municipality: formData.municipality,
-      parish: formData.parish,
-      currentParish: formData.currentParish,
-      address: formData.address,
-      status: true,
-    };
-
-    try {
-      const studentResult = await updateStudent({ id: selectedStudent.id, data: studentPayload });
-      if (studentResult?.success === false) return;
-
-      const repRelationship = selectedStudent.representatives?.[0];
-      if (repRelationship) {
-        const repId = repRelationship.representative.id;
-        const representativePayload = {
-          profilePhoto: "",
-          firstNames: formData.representativeFirstNames,
-          lastNames: formData.representativeLastNames,
-          identificationNumber: formData.representativeIdentification,
-          birthDate: formData.representativeBirthDate,
-          gender: formData.representativeGender,
-          email: formData.representativeEmail,
-          phone: formData.representativePhone,
-          occupation: formData.representativeProfession,
-        };
-        const repResult = await updateRepresentative({ id: repId, data: representativePayload });
-        if (repResult?.success === false) return;
-      }
-
-      const enrollment = selectedStudent.enrollments?.[0];
-      if (enrollment) {
-        const enrollmentPayload = {
-          schoolYearId: formData.schoolYearId,
-          sectionId: formData.sectionId,
-          enrollmentDate: formData.enrollmentDate,
-          status: enrollment.status,
-        };
-        const enrollmentResult = await updateEnrollment({ id: enrollment.id, data: enrollmentPayload });
-        if (enrollmentResult?.success === false) return;
-      }
-
-      onClose();
-      resetForm();
-    } catch (error: unknown) {
-      console.log(error);
-    }
-  };
-
-  const sendForm = async (data: EnrollmentFormValues) => {
-    try {
-      await enrollmentMutation.mutateAsync({
-        ...data,
-        enrollmentType: enrollmentType || "regular",
-        approvedSubjects: approvedSubjects.map((s) => ({
-          ...s,
-          schoolId: selectedSchoolId,
-        })),
-        pendingSubjects,
-      });
-      onClose();
-      resetForm();
-    } catch (error: unknown) {
-      console.log(error);
-    }
-  };
-
-  const goBack = () => {
-    if (isEditMode && step === 4) {
-      setStep(2);
-    } else if (step > 1) {
-      setStep(step - 1);
-    }
-  };
-
-  const resetForm = () => {
-    form.reset();
-    setStep(1);
-    setCompletedStep(mode === "edit" ? totalSteps : 0);
-    setStudentPhotoPreview(null);
-    setRepSearchQuery("");
-    setRepSearchResults([]);
-    setApprovedSubjects([]);
-    setPendingSubjects([]);
-    setLevelSubjects([]);
-    setSelectedSchoolId(null);
-  };
-
-  const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 2 * 1024 * 1024) {
-        alert("La imagen no puede superar 2MB");
-        return;
-      }
-      const preview = URL.createObjectURL(file);
-      setStudentPhotoPreview(preview);
-      setValue("profilePhoto", preview);
-    }
-  };
-
-  const removeStudentPhoto = () => {
-    setStudentPhotoPreview(null);
-    setValue("profilePhoto", "");
-  };
-
-  const f1 = step1ByName;
-  const f3 = step3ByName;
-
-  const locationFieldRenderer = (field: FormField) => {
-    const isVenezuela = birthCountry === "Venezuela";
-
-    switch (field.name) {
-      case "birthCountry":
-        return (
-          <AutocompleteField
-            name="birthCountry"
-            label="País de Nacimiento"
-            options={countryOptions}
-            placeholder="Escriba para buscar..."
-          />
-        );
-      case "state":
-        return (
-          <AutocompleteField
-            name="state"
-            label="Estado de Nacimiento"
-            options={stateOptions}
-            placeholder={isVenezuela ? "Escriba para buscar..." : "Escriba un estado"}
-            disabled={!birthCountry}
-          />
-        );
-      case "municipality":
-        return (
-          <AutocompleteField
-            name="municipality"
-            label="Municipio de Nacimiento"
-            options={municipalityOptions}
-            placeholder={isVenezuela ? "Escriba para buscar..." : "Escriba un municipio"}
-            disabled={!state}
-          />
-        );
-      case "parish":
-        return (
-          <AutocompleteField
-            name="parish"
-            label="Parroquia de Nacimiento"
-            options={parishOptions}
-            placeholder="Escriba una parroquia"
-            disabled={!municipality}
-          />
-        );
-      case "currentParish":
-        return (
-          <AutocompleteField
-            name="currentParish"
-            label="Parroquia donde Vive"
-            options={parishOptions}
-            placeholder="Escriba una parroquia"
-            disabled={!municipality}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  const step3FieldRenderer = (field: FormField) => {
-    switch (field.name) {
-      case "representativeMode":
-        return (
-          <div className="space-y-2">
-            <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => { setValue("representativeMode", "create"); setValue("existingRepresentative", undefined as never); setRepSearchQuery(""); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer ${
-                  representativeMode === "create"
-                    ? "bg-(--blueColor) text-white shadow-sm"
-                    : "border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor)"
-                }`}
-              >
-                Nuevo Representante
-              </button>
-              <button
-                type="button"
-                onClick={() => { setValue("representativeMode", "existing"); }}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition cursor-pointer ${
-                  representativeMode === "existing"
-                    ? "bg-(--blueColor) text-white shadow-sm"
-                    : "border border-(--lightBlueColor)/40 text-(--darkBlueColor) hover:bg-(--grayColor)"
-                }`}
-              >
-                Ya existe
-              </button>
-            </div>
-            {form.formState.errors.representativeMode && (
-              <p className="text-sm text-red-500">{form.formState.errors.representativeMode.message}</p>
-            )}
-          </div>
-        );
-      case "existingRepresentative":
-        if (representativeMode !== "existing") return null;
-        return (
-          <div ref={repSearchRef} className="space-y-2 relative">
-            <label className="text-sm font-medium text-(--darkBlueColor)">Buscar representante por nombre o cédula</label>
-            <div className="relative">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-(--lightBlueColor)" />
-              <input
-                type="text"
-                value={repSearchQuery}
-                onChange={handleRepSearchChange}
-                onKeyDown={handleRepKeyDown}
-                onFocus={() => { if (repSearchResults.length > 0) setRepSearchOpen(true); }}
-                placeholder="Escriba para buscar..."
-                className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-(--lightBlueColor)/40 text-sm text-(--darkBlueColor) placeholder:text-(--lightBlueColor) focus:outline-none focus:ring-2 focus:ring-(--blueColor)/30"
-              />
-            </div>
-            {repSearchOpen && repSearchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-(--lightBlueColor)/20 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                {repSearchResults.map((rep, i) => (
-                  <button
-                    type="button"
-                    key={rep.id}
-                    onMouseDown={() => selectRepresentative(rep)}
-                    className={`w-full text-left px-4 py-3 text-sm transition cursor-pointer ${
-                      i === repHighlightIdx
-                        ? "bg-(--blueColor)/10 text-(--darkBlueColor)"
-                        : "hover:bg-(--grayColor) text-(--darkBlueColor)"
-                    }`}
-                  >
-                    <div className="font-medium">{rep.person.firstNames} {rep.person.lastNames}</div>
-                    <div className="text-xs text-(--lightBlueColor) flex gap-3 mt-0.5">
-                      <span>{rep.person.identificationNumber}</span>
-                      <span>{rep.occupation}</span>
-                      <span>{rep.studentCount} estudiante(s)</span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-            {/* Hidden field error */}
-            {form.formState.errors.existingRepresentative && (
-              <p className="text-sm text-red-500">{form.formState.errors.existingRepresentative.message as string}</p>
-            )}
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
-  const isPending = isEditMode ? false : enrollmentMutation.isPending;
-
-  const isLastStep = step === totalSteps;
+  const hook = useEnrollmentForm({ initialData, mode, selectedStudent, step, setStep, totalSteps, onClose });
 
   const getFieldsForStep = (stepNumber: number): (keyof EnrollmentFormValues)[] => {
     if (stepNumber === 1) return ["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"];
     if (stepNumber === 2) return ["birthCountry", "state", "municipality", "parish", "currentParish", "address"];
     if (stepNumber === 3) {
-      if (representativeMode === "create") {
+      if (hook.representativeMode === "create") {
         return [
           "representativeMode", "representativeFirstNames", "representativeLastNames",
           "representativeIdentification", "representativeBirthDate", "representativeGender",
@@ -855,10 +61,10 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
   const handleStepClick = async (targetStep: number) => {
     if (mode === "edit") {
-      const isValid = await trigger(getFieldsForStep(targetStep));
+      const isValid = await hook.trigger(getFieldsForStep(targetStep));
       if (!isValid) return;
     }
-    if (mode === "edit" || targetStep <= completedStep) {
+    if (mode === "edit" || targetStep <= hook.completedStep) {
       setStep(targetStep);
     }
   };
@@ -880,361 +86,111 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
         </div>
 
         <StepperComponent
-          steps={displaySteps}
+          steps={baseSteps}
           currentStep={toDisplayStep(step)}
           onStepClick={(n) => handleStepClick(toActualStep(n))}
         />
 
-        <Form {...form}>
+        <Form {...hook.form}>
           <form onSubmit={(e) => e.preventDefault()}>
             <div className="space-y-6 mt-4">
-            {/* ==================== PASO 1: DATOS PERSONALES ==================== */}
-            {step === 1 && (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
-                  <div className="flex justify-center md:justify-start">
-                    <div className="relative">
-                      <Avatar className="w-24 h-24 border-4 border-(--blueColor) shadow-lg">
-                        {studentPhotoPreview ? (
-                          <AvatarImage src={studentPhotoPreview} alt="Foto" />
-                        ) : (
-                          <AvatarFallback className="bg-linear-to-br from-(--darkBlueColor) to-(--blueColor) text-white text-2xl">
-                            <Camera size={24} />
-                          </AvatarFallback>
-                        )}
-                      </Avatar>
-                      <label className="absolute -bottom-2 -right-2 p-1.5 bg-(--greenColor) rounded-full cursor-pointer shadow-md hover:brightness-110 transition">
-                        <Camera size={16} className="text-white" />
-                        <input type="file" accept="image/*" className="hidden" onChange={handleStudentPhotoChange} />
-                      </label>
-                      {studentPhotoPreview && (
-                        <button type="button" onClick={removeStudentPhoto}
-                          className="absolute -top-2 -right-2 p-1 bg-red-500 rounded-full shadow-md hover:bg-red-600 transition">
-                          <X size={12} className="text-white" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  <FieldRenderer field={f1.identificationNumber} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FieldRenderer field={f1.firstNames} />
-                  <FieldRenderer field={f1.lastNames} />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <FieldRenderer field={f1.birthDate} />
-                  <FieldRenderer field={f1.gender} />
-                </div>
-              </>
-            )}
-
-            {/* ==================== PASO 2: DATOS GENERALES ==================== */}
-            {step === 2 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FieldRenderer field={step2ByName.birthCountry} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={step2ByName.state} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={step2ByName.municipality} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={step2ByName.parish} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={step2ByName.currentParish} customFieldRenderer={locationFieldRenderer} />
-                <FieldRenderer field={step2ByName.address} />
-              </div>
-            )}
-
-            {/* ==================== PASO 3: DATOS DEL REPRESENTANTE ==================== */}
-            {!isEditMode && step === 3 && (
-              <div className="space-y-5">
-                <FieldRenderer field={f3.representativeMode} customFieldRenderer={step3FieldRenderer} />
-
-                {representativeMode === "existing" && (
-                  <>
-                    <FieldRenderer field={f3.existingRepresentative} customFieldRenderer={step3FieldRenderer} />
-                    <FieldRenderer field={f3.representativeRelation} />
-                  </>
-                )}
-
-                {representativeMode !== "existing" && (
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                    <FieldRenderer field={f3.representativeFirstNames} />
-                    <FieldRenderer field={f3.representativeLastNames} />
-                    <FieldRenderer field={f3.representativeIdentification} />
-                    <FieldRenderer field={f3.representativeGender} />
-                    <FieldRenderer field={f3.representativeBirthDate} />
-                    <FieldRenderer field={f3.representativeRelation} />
-                    <FieldRenderer field={f3.representativeEmail} />
-                    <FieldRenderer field={f3.representativePhone} />
-                    <FieldRenderer field={f3.representativeProfession} />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ==================== PASO 4: ASIGNACIÓN DE SECCIÓN ==================== */}
-            {step === 4 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                <FieldRenderer field={schoolYearField.schoolYearId} />
-                <FieldRenderer field={levelField.levelId} disabled={isLevelDisabled} />
-                <FieldRenderer field={sectionField.sectionId} disabled={isSectionDisabled} />
-                <FieldRenderer field={step4ByName.enrollmentDate} />
-              </div>
-            )}
-
-            {/* ==================== PASO 5: MATERIAS APROBADAS (REPITIENTE) ==================== */}
-            {step === 5 && enrollmentType === "repitiente" && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Indique las materias aprobadas del año anterior. Las materias con "Cursar" se cursarán este año.
-                </p>
-                {loadingSubjects ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 size={20} className="animate-spin text-(--blueColor)" />
-                    <span className="ml-2 text-gray-500">Cargando materias...</span>
-                  </div>
-                ) : levelSubjects.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">No hay materias para este nivel</p>
-                ) : (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-medium text-gray-700">Materia</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-28">Calificación</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-28">Aprobada</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-700 min-w-[200px]">Fecha de Aprobación</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-20">Cursar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {levelSubjects.map((ls) => {
-                          const existing = approvedSubjects.find(a => a.levelSubjectId === ls.id);
-                          const isRepeating = existing?.isRepeating ?? false;
-                          const finalScore = existing?.finalScore;
-                          const typeOf = existing?.typeOf;
-                          const approvalDate = existing?.approvalDate ?? "";
-
-                          const isAutoDateType = ["F", "E", "Q", "T"].includes(typeOf ?? "");
-                          const isManualDateType = ["P", "R"].includes(typeOf ?? "");
-
-                          const updateSubject = (patch: Record<string, unknown>) => {
-                            setApprovedSubjects(prev => {
-                              const filtered = prev.filter(a => a.levelSubjectId !== ls.id);
-                              filtered.push({
-                                levelSubjectId: ls.id,
-                                subjectName: ls.subject.subject,
-                                isRepeating: patch.isRepeating !== undefined ? patch.isRepeating as boolean : isRepeating,
-                                finalScore: patch.finalScore !== undefined ? patch.finalScore as number | undefined : finalScore,
-                                typeOf: patch.typeOf !== undefined ? patch.typeOf as "F" | "R" | "P" | "E" | "Q" | "T" | undefined : typeOf,
-                                approvalDate: patch.approvalDate !== undefined ? patch.approvalDate as string : approvalDate,
-                              });
-                              return filtered;
-                            });
-                          };
-
-                          return (
-                            <tr key={ls.id} className="hover:bg-gray-50">
-                              <td className="px-4 py-3 text-gray-800 font-medium">{ls.subject.subject}</td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="text"
-                                  inputMode="numeric"
-                                  maxLength={2}
-                                  disabled={isRepeating}
-                                  value={finalScore ?? ""}
-                                  placeholder={isRepeating ? "P" : "—"}
-                                  onChange={(e) => {
-                                    let v = e.target.value.replace(/\D/g, "");
-                                    if (v) {
-                                      const n = Math.min(20, Math.max(1, parseInt(v)));
-                                      v = String(n);
-                                    }
-                                    updateSubject({ finalScore: v ? parseInt(v) : undefined });
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (["-", "e", "E", ".", ",", "+"].includes(e.key)) e.preventDefault();
-                                  }}
-                                  className={`w-20 h-9 px-2 text-center text-sm border rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) ${isRepeating ? "bg-gray-100 border-gray-300 text-gray-500" : "border-gray-300"}`}
-                                />
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <select
-                                  disabled={isRepeating}
-                                  value={typeOf ?? ""}
-                                  onChange={(e) => {
-                                    const val = e.target.value as "F" | "R" | "P" | "E" | "Q" | "T" | "";
-                                    const patch: Record<string, unknown> = { typeOf: val || undefined };
-                                    if (["F", "E", "Q", "T"].includes(val)) {
-                                      patch.approvalDate = previousYearEndDate;
-                                    } else if (val === "P" || val === "R") {
-                                      patch.approvalDate = "";
-                                    }
-                                    updateSubject(patch);
-                                  }}
-                                  className={`w-24 h-9 px-1 text-center text-sm border rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) ${isRepeating ? "bg-gray-100 border-gray-300 text-gray-500" : "border-gray-300"}`}
-                                >
-                                  <option value="">—</option>
-                                  <option value="F">F</option>
-                                  <option value="R">R</option>
-                                  <option value="P">P</option>
-                                  <option value="E">E</option>
-                                  <option value="Q">Q</option>
-                                  <option value="T">T</option>
-                                </select>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <div className={isRepeating || isAutoDateType ? "opacity-50 pointer-events-none" : ""}>
-                                  <CalendarFieldComponent
-                                    value={approvalDate ? new Date(approvalDate + "T00:00:00") : undefined}
-                                    onChange={(date) =>
-                                      updateSubject({
-                                        approvalDate: date
-                                          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
-                                          : "",
-                                      })
-                                    }
-                                  />
-                                </div>
-                              </td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={isRepeating}
-                                  onChange={(e) => {
-                                    setApprovedSubjects(prev => {
-                                      const filtered = prev.filter(a => a.levelSubjectId !== ls.id);
-                                      filtered.push({
-                                        levelSubjectId: ls.id,
-                                        subjectName: ls.subject.subject,
-                                        isRepeating: e.target.checked,
-                                        finalScore: undefined,
-                                        typeOf: undefined,
-                                        approvalDate: "",
-                                      });
-                                      return filtered;
-                                    });
-                                  }}
-                                  className="w-4 h-4 rounded border-gray-300 text-(--blueColor) focus:ring-(--blueColor) cursor-pointer"
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {levelSubjects.length > 0 && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Escuela de Origen <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      value={selectedSchoolId ?? ""}
-                      onChange={(e) => setSelectedSchoolId(Number(e.target.value) || null)}
-                      className="w-full max-w-md h-10 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-(--blueColor)"
-                    >
-                      <option value="">Seleccione una escuela...</option>
-                      {schools.map((s: any) => (
-                        <option key={s.id} value={s.id}>
-                          {s.schoolName}{s.schoolCity ? ` — ${s.schoolCity}` : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ==================== PASO 5: MATERIAS PENDIENTES ==================== */}
-            {step === 5 && enrollmentType === "pending" && (
-              <div className="space-y-4">
-                <p className="text-sm text-gray-600">
-                  Seleccione las materias reprobadas del nivel anterior{previousLevelName ? ` (${previousLevelName})` : ""} (máximo 2).
-                </p>
-                {loadingSubjects ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 size={20} className="animate-spin text-(--blueColor)" />
-                    <span className="ml-2 text-gray-500">Cargando materias...</span>
-                  </div>
-                ) : levelSubjects.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-8">No hay materias para este nivel</p>
-                ) : (
-                  <div className="border border-gray-200 rounded-lg overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="text-left px-4 py-3 font-medium text-gray-700">Materia</th>
-                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-24">Seleccionar</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {levelSubjects.map((ls) => {
-                          const isSelected = pendingSubjects.some(p => p.levelSubjectId === ls.id);
-                          return (
-                            <tr key={ls.id} className={`hover:bg-gray-50 ${isSelected ? "bg-blue-50" : ""}`}>
-                              <td className="px-4 py-3 text-gray-800 font-medium">{ls.subject.subject}</td>
-                              <td className="px-4 py-3 text-center">
-                                <input
-                                  type="checkbox"
-                                  checked={isSelected}
-                                  disabled={!isSelected && pendingSubjects.length >= 2}
-                                  onChange={(e) => {
-                                    if (e.target.checked) {
-                                      setPendingSubjects(prev => [...prev, { levelSubjectId: ls.id, subjectName: ls.subject.subject }]);
-                                    } else {
-                                      setPendingSubjects(prev => prev.filter(p => p.levelSubjectId !== ls.id));
-                                    }
-                                  }}
-                                  className="w-4 h-4 rounded border-gray-300 text-(--blueColor) focus:ring-(--blueColor) cursor-pointer"
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ==================== BOTONES DE NAVEGACIÓN ==================== */}
-            <div className="flex justify-between pt-6 border-t border-(--lightBlueColor)/20">
-              {step > 1 ? (
-                <Button type="button" variant="outline" onClick={goBack}
-                  className="cursor-pointer border-(--lightBlueColor)/50 text-(--darkBlueColor) hover:bg-(--grayColor)">
-                  <ChevronLeft size={16} className="mr-2" />
-                  Anterior
-                </Button>
-              ) : (
-                <div />
+              {step === 1 && (
+                <Step1PersonalData
+                  studentPhotoPreview={hook.studentPhotoPreview}
+                  onPhotoChange={hook.handleStudentPhotoChange}
+                  onPhotoRemove={hook.removeStudentPhoto}
+                  f1={hook.f1}
+                />
               )}
 
-              {!isLastStep ? (
-                <Button type="button" onClick={validateStep}
-                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
-                  Siguiente
-                  <ChevronRight size={16} className="ml-2" />
-                </Button>
-              ) : isEditMode ? (
-                <Button type="button" onClick={validateStep}
-                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
-                  <Check size={16} className="mr-2" />
-                  Guardar Cambios
-                </Button>
-              ) : (
-                <Button type="button" disabled={isPending} onClick={validateStep}
-                  className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-60">
-                  {isPending ? "Guardando..." : "Finalizar"}
-                  {!isPending && <Check size={16} className="ml-2" />}
-                </Button>
+              {step === 2 && (
+                <Step2LocationData locationFieldRenderer={hook.locationFieldRenderer} />
               )}
+
+              {!isEditMode && step === 3 && (
+                <Step3Representative
+                  form={hook.form}
+                  f3={hook.f3}
+                  representativeMode={hook.representativeMode}
+                  repSearchQuery={hook.repSearchQuery}
+                  repSearchResults={hook.repSearchResults}
+                  repSearchOpen={hook.repSearchOpen}
+                  repHighlightIdx={hook.repHighlightIdx}
+                  repSearchRef={hook.repSearchRef}
+                  onRepSearchChange={hook.handleRepSearchChange}
+                  onRepKeyDown={hook.handleRepKeyDown}
+                  onSelectRepresentative={hook.selectRepresentative}
+                />
+              )}
+
+              {step === 4 && (
+                <Step4Assignment
+                  schoolYearField={hook.schoolYearField}
+                  levelField={hook.levelField}
+                  sectionField={hook.sectionField}
+                  isLevelDisabled={hook.isLevelDisabled}
+                  isSectionDisabled={hook.isSectionDisabled}
+                />
+              )}
+
+              {step === 5 && enrollmentType === "repitiente" && (
+                <Step5Repitiente
+                  levelSubjects={hook.levelSubjects}
+                  loadingSubjects={hook.loadingSubjects}
+                  approvedSubjects={hook.approvedSubjects}
+                  setApprovedSubjects={hook.setApprovedSubjects}
+                  schools={hook.schools}
+                  selectedSchoolId={hook.selectedSchoolId}
+                  setSelectedSchoolId={hook.setSelectedSchoolId}
+                  previousYearEndDate={hook.previousYearEndDate}
+                />
+              )}
+
+              {step === 5 && enrollmentType === "pending" && (
+                <Step5Pending
+                  levelSubjects={hook.levelSubjects}
+                  loadingSubjects={hook.loadingSubjects}
+                  pendingSubjects={hook.pendingSubjects}
+                  setPendingSubjects={hook.setPendingSubjects}
+                  previousLevelName={hook.previousLevelName}
+                />
+              )}
+
+              {/* NAVIGATION BUTTONS */}
+              <div className="flex justify-between pt-6 border-t border-(--lightBlueColor)/20">
+                {step > 1 ? (
+                  <Button type="button" variant="outline" onClick={hook.goBack}
+                    className="cursor-pointer border-(--lightBlueColor)/50 text-(--darkBlueColor) hover:bg-(--grayColor)">
+                    <ChevronLeft size={16} className="mr-2" />
+                    Anterior
+                  </Button>
+                ) : (
+                  <div />
+                )}
+
+                {!hook.isLastStep ? (
+                  <Button type="button" onClick={hook.validateStep}
+                    className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
+                    Siguiente
+                    <ChevronRight size={16} className="ml-2" />
+                  </Button>
+                ) : isEditMode ? (
+                  <Button type="button" onClick={hook.validateStep}
+                    className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer">
+                    <Check size={16} className="mr-2" />
+                    Guardar Cambios
+                  </Button>
+                ) : (
+                  <Button type="button" disabled={hook.isPending} onClick={hook.validateStep}
+                    className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-60">
+                    {hook.isPending ? "Guardando..." : "Finalizar"}
+                    {!hook.isPending && <Check size={16} className="ml-2" />}
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
-        </form>
-      </Form>
+          </form>
+        </Form>
       </div>
     </div>
   );

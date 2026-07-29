@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { deleteDataApi, postDataApi, putDataApi, putDataImageApi } from "@/services/api";
 import type { StudentFormValues } from "@/services/users/student.schema";
+import type { RepresentativeFormValues } from "@/services/users/representative.schema";
 
 export const useCreateStudent = () => {
   const qc = useQueryClient();

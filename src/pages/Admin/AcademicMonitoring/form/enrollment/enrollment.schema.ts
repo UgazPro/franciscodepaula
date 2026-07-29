@@ -48,7 +48,7 @@ export const approvedSubjectSchema = z.object({
   finalScore: z.number().min(1, "La nota es requerida").max(20, "La nota máxima es 20").optional(),
   typeOf: z.enum(["F", "R", "P", "E", "Q", "T"]).optional(),
   approvalDate: z.string().optional(),
-  schoolId: z.number({ required_error: "La escuela es requerida" }).optional(),
+  schoolId: z.number({ message: "La escuela es requerida" }).optional(),
 });
 
 export const pendingSubjectSchema = z.object({
