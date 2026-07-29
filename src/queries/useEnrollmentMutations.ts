@@ -61,6 +61,20 @@ export const useEnrollmentMutation = () => {
         schoolYearId: formData.schoolYearId,
         sectionId: formData.sectionId,
         enrollmentDate: formData.enrollmentDate || new Date(),
+
+        // Enrollment type (regular, repitiente, pending)
+        enrollmentType: formData.enrollmentType || "regular",
+        approvedSubjects: (formData.approvedSubjects || []).map((s: any) => ({
+          levelSubjectId: s.levelSubjectId,
+          finalScore: s.finalScore,
+          isRepeating: s.isRepeating,
+          typeOf: s.typeOf,
+          approvalDate: s.approvalDate,
+          schoolId: s.schoolId,
+        })),
+        pendingSubjects: (formData.pendingSubjects || []).map((s: any) => ({
+          levelSubjectId: s.levelSubjectId,
+        })),
       };
 
       if (payload.representativeMode === "create") {

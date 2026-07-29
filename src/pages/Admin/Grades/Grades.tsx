@@ -65,7 +65,7 @@ export default function Grades() {
     return filteredSections.slice(start, start + itemsPerPage);
   }, [filteredSections, currentPage, itemsPerPage]);
 
-  const detail = detailData as { data?: { students: { id: number; person: { firstNames: string; lastNames: string; identificationNumber: string } }[]; evaluations: GradeEvaluation[]; grades: { studentId: number; evaluationId: number; score: number | null }[] } } | undefined;
+  const detail = detailData as { data?: { students: { id: number; person: { firstNames: string; lastNames: string; identificationNumber: string }; hasApprovedSubject?: boolean; approvedSubjectScore?: number | null }[]; evaluations: GradeEvaluation[]; grades: { studentId: number; evaluationId: number; score: number | null }[] } } | undefined;
 
   const students = useMemo(() => detail?.data?.students ?? [], [detail]);
   const evaluations = useMemo(() => detail?.data?.evaluations ?? [], [detail]);
@@ -88,16 +88,19 @@ export default function Grades() {
   const tableData: GradeStudentRow[] = useMemo(() => {
     return students.map((s) => {
       const studentGrades = currentGradeMap[s.id] ?? {};
+      const hasApproved = s.hasApprovedSubject ?? false;
       let totalWeighted = 0;
       let totalPercentage = 0;
       let hasMissingGrades = false;
-      for (const ev of evaluations) {
-        const score = studentGrades[ev.id];
-        if (score !== null && score !== undefined) {
-          totalWeighted += (score / 20) * ev.percentage;
-          totalPercentage += ev.percentage;
-        } else {
-          hasMissingGrades = true;
+      if (!hasApproved) {
+        for (const ev of evaluations) {
+          const score = studentGrades[ev.id];
+          if (score !== null && score !== undefined) {
+            totalWeighted += (score / 20) * ev.percentage;
+            totalPercentage += ev.percentage;
+          } else {
+            hasMissingGrades = true;
+          }
         }
       }
       const definitiva = totalPercentage > 0 ? (totalWeighted / totalPercentage) * 20 : 0;
@@ -109,6 +112,8 @@ export default function Grades() {
         grades: studentGrades,
         definitiva,
         hasMissingGrades,
+        hasApprovedSubject: s.hasApprovedSubject ?? false,
+        approvedSubjectScore: s.approvedSubjectScore ?? null,
       };
     });
   }, [students, evaluations, currentGradeMap]);

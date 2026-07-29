@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { ChevronLeft, ChevronRight, Check, Camera, X, ArrowLeft, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Check, Camera, X, ArrowLeft, Search, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { enrollmentSchema, type EnrollmentFormValues, step1Schema, step2Schema } from "./enrollment/enrollment.schema";
 import { step1ByName } from "./enrollment/steps/step1Fields.data";
@@ -11,18 +11,23 @@ import { step2ByName } from "./enrollment/steps/step2Fields.data";
 import { step3ByName } from "./enrollment/steps/step3Fields.data";
 import { step4ByName } from "./enrollment/steps/step4Fields.data";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
+import { CalendarFieldComponent } from "@/components/form/renderFormComponents/CalendarFieldComponent";
 import type { FormField } from "@/components/form/formComponent.interface";
 import StepperComponent from "@/components/stepper/StepperComponent";
 import { useEnrollmentMutation, useUpdateEnrollment } from "@/queries/useEnrollmentMutations";
 import { useUpdateStudent, useUpdateRepresentative } from "@/queries/useUserMutations";
 import { useLevels, useSections, useActiveSchoolYear } from "@/hooks/useSchoolYears";
+import { useSchools } from "@/hooks/useSchools";
 import { useCountries, useStates, useMunicipalities, useParishes } from "@/hooks/useLocations";
 import type { ICountry, IState, IMunicipality, IParish } from "@/services/locations/location.service";
 import { checkIdentification, searchRepresentatives } from "@/services/users/user.service";
+import { getDataApi } from "@/services/api";
 import type { IStudent, IRepresentative } from "@/services/users/user.interface";
 import AutocompleteField from "@/components/locationAutocomplete/AutocompleteField";
 import toast from "react-hot-toast";
 import { ToastMessage } from "@/components/toast/ToastMessage";
+import { useStudentsStore } from "@/stores/students.store";
+import type { ApprovedSubject, PendingSubject } from "./enrollment/enrollment.schema";
 
 interface EnrollmentFormProps {
   open: boolean;
@@ -42,12 +47,30 @@ const STEPS = [
   { title: "Asignación", description: "Año escolar, nivel y sección" },
 ];
 
+const STEPS_REPITIENTE = [
+  ...STEPS,
+  { title: "Materias Aprobadas", description: "Materias aprobadas del año anterior" },
+];
+
+const STEPS_PENDING = [
+  ...STEPS,
+  { title: "Materias Pendientes", description: "Materias reprobadas del año anterior" },
+];
+
 const EDIT_STEPS = STEPS.filter((_, i) => i !== 2);
 
 export function EnrollmentForm({ open, onClose, initialData, mode = "create", selectedStudent, step, setStep, totalSteps }: EnrollmentFormProps) {
   const isEditMode = mode === "edit";
+  const enrollmentType = useStudentsStore((s) => s.enrollmentType);
 
-  const displaySteps = useMemo(() => (isEditMode ? EDIT_STEPS : STEPS), [isEditMode]);
+  const baseSteps = useMemo(() => {
+    if (isEditMode) return EDIT_STEPS;
+    if (enrollmentType === "repitiente") return STEPS_REPITIENTE;
+    if (enrollmentType === "pending") return STEPS_PENDING;
+    return STEPS;
+  }, [isEditMode, enrollmentType]);
+
+  const displaySteps = baseSteps;
   const toDisplayStep = useCallback((actual: number) => (isEditMode && actual > 2 ? actual - 1 : actual), [isEditMode]);
   const toActualStep = useCallback((display: number) => (isEditMode && display >= 3 ? display + 1 : display), [isEditMode]);
 
@@ -60,6 +83,19 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const { data: activeSchoolYear } = useActiveSchoolYear();
   const { data: levels = [] } = useLevels();
   const { data: sections = [] } = useSections();
+  const { data: schoolsData } = useSchools();
+
+  const schools = useMemo(() => {
+    const data = schoolsData as any;
+    return Array.isArray(data) ? data : (data?.data ?? []);
+  }, [schoolsData]);
+
+  // Level subjects for step 5
+  const [levelSubjects, setLevelSubjects] = useState<{ id: number; subject: { subject: string; code: string | null }; highSchoolLevel: { level: string } }[]>([]);
+  const [loadingSubjects, setLoadingSubjects] = useState(false);
+  const [approvedSubjects, setApprovedSubjects] = useState<ApprovedSubject[]>([]);
+  const [pendingSubjects, setPendingSubjects] = useState<PendingSubject[]>([]);
+  const [selectedSchoolId, setSelectedSchoolId] = useState<number | null>(null);
 
   const form = useForm<EnrollmentFormValues>({
     resolver: zodResolver(enrollmentSchema),
@@ -120,13 +156,43 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   const levelField = useMemo(() => {
     const field = step4ByName.levelId;
     if (field.type === "select") {
-      field.options = (levels ?? []).map((l: { id: number; level: string }) => ({
+      const filtered = enrollmentType === "pending"
+        ? (levels ?? []).filter((l: { id: number; level: string }) => {
+            const match = l.level.match(/(\d)/);
+            return match ? parseInt(match[1]) > 1 : true;
+          })
+        : (levels ?? []);
+      field.options = filtered.map((l: { id: number; level: string }) => ({
         label: l.level,
         value: l.id,
       }));
     }
     return step4ByName;
-  }, [levels]);
+  }, [levels, enrollmentType]);
+
+  const previousYearEndDate = useMemo(() => {
+    if (!activeSchoolYear?.startDate) return "";
+    const d = new Date(activeSchoolYear.startDate);
+    d.setDate(d.getDate() - 1);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, [activeSchoolYear]);
+
+  const previousLevelId = useMemo(() => {
+    if (enrollmentType !== "pending" || !levelId || !levels?.length) return null;
+    const sorted = [...levels].sort((a: any, b: any) => {
+      const na = parseInt((a.level ?? "").match(/(\d)/)?.[1] ?? "99");
+      const nb = parseInt((b.level ?? "").match(/(\d)/)?.[1] ?? "99");
+      return na - nb;
+    });
+    const idx = sorted.findIndex((l: any) => l.id === levelId);
+    return idx > 0 ? sorted[idx - 1].id : null;
+  }, [levelId, levels, enrollmentType]);
+
+  const previousLevelName = useMemo(() => {
+    if (!previousLevelId || !levels?.length) return null;
+    const found = levels.find((l: any) => l.id === previousLevelId);
+    return found?.level ?? null;
+  }, [previousLevelId, levels]);
 
   const filteredSections = useMemo(() => {
     if (!schoolYearId || !levelId) return [];
@@ -235,6 +301,32 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
   useEffect(() => {
     form.setValue("sectionId", undefined as never);
   }, [schoolYearId, levelId]);
+
+  // Fetch level subjects for step 5 when level changes
+  useEffect(() => {
+    if (!levelId || !enrollmentType || enrollmentType === "regular") {
+      setLevelSubjects([]);
+      return;
+    }
+    const fetchLevelId = enrollmentType === "pending" ? previousLevelId : levelId;
+    if (enrollmentType === "pending" && !fetchLevelId) {
+      setLevelSubjects([]);
+      return;
+    }
+    setLoadingSubjects(true);
+    getDataApi(`/enrollment/subjects-by-level/${fetchLevelId}`)
+      .then((res: any) => {
+        const excludedSubjects = ["robótica", "música", "metodología"];
+        const filtered = (res?.data ?? []).filter((ls: any) =>
+          !excludedSubjects.includes(ls.subject.subject.toLowerCase())
+        );
+        setLevelSubjects(filtered);
+        setApprovedSubjects([]);
+        setPendingSubjects([]);
+      })
+      .catch(() => setLevelSubjects([]))
+      .finally(() => setLoadingSubjects(false));
+  }, [levelId, enrollmentType, previousLevelId]);
 
   useEffect(() => {
     if (!isEditMode && !initialData?.birthCountry) {
@@ -361,6 +453,57 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       }
     } else if (step === 4) {
       fieldsToValidate = ["schoolYearId", "levelId", "sectionId", "enrollmentDate"];
+    } else if (step === 5 && enrollmentType === "repitiente") {
+      if (!selectedSchoolId) {
+        toast.custom((t) => (
+          <ToastMessage success={false} message="Seleccione la escuela de origen" visible={t.visible} />
+        ), { duration: 3000 });
+        return;
+      }
+      const missingSubjects = levelSubjects.filter(ls =>
+        !approvedSubjects.some(a => a.levelSubjectId === ls.id)
+      );
+      if (missingSubjects.length > 0) {
+        toast.custom((t) => (
+          <ToastMessage success={false} message={`Faltan materias por indicar: ${missingSubjects.map(s => s.subject.subject).join(", ")}`} visible={t.visible} />
+        ), { duration: 4000 });
+        return;
+      }
+      for (const subj of approvedSubjects) {
+        if (!subj.isRepeating) {
+          if (subj.finalScore === undefined || subj.finalScore === null) {
+            toast.custom((t) => (
+              <ToastMessage success={false} message={`La materia "${subj.subjectName}" necesita una calificación`} visible={t.visible} />
+            ), { duration: 3000 });
+            return;
+          }
+          if (!subj.typeOf) {
+            toast.custom((t) => (
+              <ToastMessage success={false} message={`Seleccione el tipo de aprobación de ${subj.subjectName}`} visible={t.visible} />
+            ), { duration: 3000 });
+            return;
+          }
+          if (!subj.approvalDate) {
+            toast.custom((t) => (
+              <ToastMessage success={false} message={`La fecha de aprobación de ${subj.subjectName} es requerida`} visible={t.visible} />
+            ), { duration: 3000 });
+            return;
+          }
+        }
+      }
+    } else if (step === 5 && enrollmentType === "pending") {
+      if (pendingSubjects.length === 0) {
+        toast.custom((t) => (
+          <ToastMessage success={false} message="Seleccione al menos una materia pendiente" visible={t.visible} />
+        ), { duration: 3000 });
+        return;
+      }
+      if (pendingSubjects.length > 2) {
+        toast.custom((t) => (
+          <ToastMessage success={false} message="Máximo 2 materias pendientes" visible={t.visible} />
+        ), { duration: 3000 });
+        return;
+      }
     }
 
     if (fieldsToValidate.length > 0) {
@@ -388,8 +531,10 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
       } else if (step < totalSteps) {
         setCompletedStep(prev => Math.max(prev, step));
         setStep(step + 1);
-      } else {
+      } else if (isEditMode) {
         await submitEdit();
+      } else {
+        form.handleSubmit(sendForm)();
       }
   };
 
@@ -486,7 +631,15 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
   const sendForm = async (data: EnrollmentFormValues) => {
     try {
-      await enrollmentMutation.mutateAsync(data);
+      await enrollmentMutation.mutateAsync({
+        ...data,
+        enrollmentType: enrollmentType || "regular",
+        approvedSubjects: approvedSubjects.map((s) => ({
+          ...s,
+          schoolId: selectedSchoolId,
+        })),
+        pendingSubjects,
+      });
       onClose();
       resetForm();
     } catch (error: unknown) {
@@ -509,6 +662,10 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
     setStudentPhotoPreview(null);
     setRepSearchQuery("");
     setRepSearchResults([]);
+    setApprovedSubjects([]);
+    setPendingSubjects([]);
+    setLevelSubjects([]);
+    setSelectedSchoolId(null);
   };
 
   const handleStudentPhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -677,7 +834,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
 
   const isPending = isEditMode ? false : enrollmentMutation.isPending;
 
-  const isLastStep = isEditMode ? step === totalSteps : step === totalSteps;
+  const isLastStep = step === totalSteps;
 
   const getFieldsForStep = (stepNumber: number): (keyof EnrollmentFormValues)[] => {
     if (stepNumber === 1) return ["firstNames", "lastNames", "identificationNumber", "birthDate", "gender"];
@@ -729,7 +886,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
         />
 
         <Form {...form}>
-          <form onSubmit={isEditMode ? (e) => e.preventDefault() : form.handleSubmit(sendForm)}>
+          <form onSubmit={(e) => e.preventDefault()}>
             <div className="space-y-6 mt-4">
             {/* ==================== PASO 1: DATOS PERSONALES ==================== */}
             {step === 1 && (
@@ -824,6 +981,225 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
               </div>
             )}
 
+            {/* ==================== PASO 5: MATERIAS APROBADAS (REPITIENTE) ==================== */}
+            {step === 5 && enrollmentType === "repitiente" && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Indique las materias aprobadas del año anterior. Las materias con "Cursar" se cursarán este año.
+                </p>
+                {loadingSubjects ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 size={20} className="animate-spin text-(--blueColor)" />
+                    <span className="ml-2 text-gray-500">Cargando materias...</span>
+                  </div>
+                ) : levelSubjects.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No hay materias para este nivel</p>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-medium text-gray-700">Materia</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-28">Calificación</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-28">Aprobada</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-700 min-w-[200px]">Fecha de Aprobación</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-20">Cursar</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {levelSubjects.map((ls) => {
+                          const existing = approvedSubjects.find(a => a.levelSubjectId === ls.id);
+                          const isRepeating = existing?.isRepeating ?? false;
+                          const finalScore = existing?.finalScore;
+                          const typeOf = existing?.typeOf;
+                          const approvalDate = existing?.approvalDate ?? "";
+
+                          const isAutoDateType = ["F", "E", "Q", "T"].includes(typeOf ?? "");
+                          const isManualDateType = ["P", "R"].includes(typeOf ?? "");
+
+                          const updateSubject = (patch: Record<string, unknown>) => {
+                            setApprovedSubjects(prev => {
+                              const filtered = prev.filter(a => a.levelSubjectId !== ls.id);
+                              filtered.push({
+                                levelSubjectId: ls.id,
+                                subjectName: ls.subject.subject,
+                                isRepeating: patch.isRepeating !== undefined ? patch.isRepeating as boolean : isRepeating,
+                                finalScore: patch.finalScore !== undefined ? patch.finalScore as number | undefined : finalScore,
+                                typeOf: patch.typeOf !== undefined ? patch.typeOf as "F" | "R" | "P" | "E" | "Q" | "T" | undefined : typeOf,
+                                approvalDate: patch.approvalDate !== undefined ? patch.approvalDate as string : approvalDate,
+                              });
+                              return filtered;
+                            });
+                          };
+
+                          return (
+                            <tr key={ls.id} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 text-gray-800 font-medium">{ls.subject.subject}</td>
+                              <td className="px-4 py-3 text-center">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  maxLength={2}
+                                  disabled={isRepeating}
+                                  value={finalScore ?? ""}
+                                  placeholder={isRepeating ? "P" : "—"}
+                                  onChange={(e) => {
+                                    let v = e.target.value.replace(/\D/g, "");
+                                    if (v) {
+                                      const n = Math.min(20, Math.max(1, parseInt(v)));
+                                      v = String(n);
+                                    }
+                                    updateSubject({ finalScore: v ? parseInt(v) : undefined });
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (["-", "e", "E", ".", ",", "+"].includes(e.key)) e.preventDefault();
+                                  }}
+                                  className={`w-20 h-9 px-2 text-center text-sm border rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) ${isRepeating ? "bg-gray-100 border-gray-300 text-gray-500" : "border-gray-300"}`}
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <select
+                                  disabled={isRepeating}
+                                  value={typeOf ?? ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value as "F" | "R" | "P" | "E" | "Q" | "T" | "";
+                                    const patch: Record<string, unknown> = { typeOf: val || undefined };
+                                    if (["F", "E", "Q", "T"].includes(val)) {
+                                      patch.approvalDate = previousYearEndDate;
+                                    } else if (val === "P" || val === "R") {
+                                      patch.approvalDate = "";
+                                    }
+                                    updateSubject(patch);
+                                  }}
+                                  className={`w-24 h-9 px-1 text-center text-sm border rounded focus:outline-none focus:ring-1 focus:ring-(--blueColor) ${isRepeating ? "bg-gray-100 border-gray-300 text-gray-500" : "border-gray-300"}`}
+                                >
+                                  <option value="">—</option>
+                                  <option value="F">F</option>
+                                  <option value="R">R</option>
+                                  <option value="P">P</option>
+                                  <option value="E">E</option>
+                                  <option value="Q">Q</option>
+                                  <option value="T">T</option>
+                                </select>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <div className={isRepeating || isAutoDateType ? "opacity-50 pointer-events-none" : ""}>
+                                  <CalendarFieldComponent
+                                    value={approvalDate ? new Date(approvalDate + "T00:00:00") : undefined}
+                                    onChange={(date) =>
+                                      updateSubject({
+                                        approvalDate: date
+                                          ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`
+                                          : "",
+                                      })
+                                    }
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isRepeating}
+                                  onChange={(e) => {
+                                    setApprovedSubjects(prev => {
+                                      const filtered = prev.filter(a => a.levelSubjectId !== ls.id);
+                                      filtered.push({
+                                        levelSubjectId: ls.id,
+                                        subjectName: ls.subject.subject,
+                                        isRepeating: e.target.checked,
+                                        finalScore: undefined,
+                                        typeOf: undefined,
+                                        approvalDate: "",
+                                      });
+                                      return filtered;
+                                    });
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 text-(--blueColor) focus:ring-(--blueColor) cursor-pointer"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {levelSubjects.length > 0 && (
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Escuela de Origen <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={selectedSchoolId ?? ""}
+                      onChange={(e) => setSelectedSchoolId(Number(e.target.value) || null)}
+                      className="w-full max-w-md h-10 px-3 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-(--blueColor)"
+                    >
+                      <option value="">Seleccione una escuela...</option>
+                      {schools.map((s: any) => (
+                        <option key={s.id} value={s.id}>
+                          {s.schoolName}{s.schoolCity ? ` — ${s.schoolCity}` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ==================== PASO 5: MATERIAS PENDIENTES ==================== */}
+            {step === 5 && enrollmentType === "pending" && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600">
+                  Seleccione las materias reprobadas del nivel anterior{previousLevelName ? ` (${previousLevelName})` : ""} (máximo 2).
+                </p>
+                {loadingSubjects ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 size={20} className="animate-spin text-(--blueColor)" />
+                    <span className="ml-2 text-gray-500">Cargando materias...</span>
+                  </div>
+                ) : levelSubjects.length === 0 ? (
+                  <p className="text-sm text-gray-400 text-center py-8">No hay materias para este nivel</p>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left px-4 py-3 font-medium text-gray-700">Materia</th>
+                          <th className="text-center px-4 py-3 font-medium text-gray-700 w-24">Seleccionar</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {levelSubjects.map((ls) => {
+                          const isSelected = pendingSubjects.some(p => p.levelSubjectId === ls.id);
+                          return (
+                            <tr key={ls.id} className={`hover:bg-gray-50 ${isSelected ? "bg-blue-50" : ""}`}>
+                              <td className="px-4 py-3 text-gray-800 font-medium">{ls.subject.subject}</td>
+                              <td className="px-4 py-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  disabled={!isSelected && pendingSubjects.length >= 2}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setPendingSubjects(prev => [...prev, { levelSubjectId: ls.id, subjectName: ls.subject.subject }]);
+                                    } else {
+                                      setPendingSubjects(prev => prev.filter(p => p.levelSubjectId !== ls.id));
+                                    }
+                                  }}
+                                  className="w-4 h-4 rounded border-gray-300 text-(--blueColor) focus:ring-(--blueColor) cursor-pointer"
+                                />
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* ==================== BOTONES DE NAVEGACIÓN ==================== */}
             <div className="flex justify-between pt-6 border-t border-(--lightBlueColor)/20">
               {step > 1 ? (
@@ -849,7 +1225,7 @@ export function EnrollmentForm({ open, onClose, initialData, mode = "create", se
                   Guardar Cambios
                 </Button>
               ) : (
-                <Button type="submit" disabled={isPending}
+                <Button type="button" disabled={isPending} onClick={validateStep}
                   className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) hover:brightness-110 text-white shadow-md cursor-pointer disabled:opacity-60">
                   {isPending ? "Guardando..." : "Finalizar"}
                   {!isPending && <Check size={16} className="ml-2" />}

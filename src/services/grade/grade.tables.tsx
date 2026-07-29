@@ -29,6 +29,11 @@ export function gradeColumns(
     {
       header: "Nombres",
       accessor: "firstNames",
+      render: (row) => (
+        <span className="text-sm text-gray-700">
+          {row.firstNames}
+        </span>
+      ),
       className: "text-sm text-gray-700",
     },
   ];
@@ -36,6 +41,11 @@ export function gradeColumns(
   const evalColumns: Column<GradeStudentRow>[] = evaluations.map((ev, idx) => ({
     header: `EVA ${idx + 1} (${ev.percentage}%)`,
     render: (row) => {
+      if (row.hasApprovedSubject) {
+        return (
+          <span className="text-amber-500 font-bold text-sm">*</span>
+        );
+      }
       const currentVal = row.grades[ev.id];
       return (
         <input
@@ -64,11 +74,21 @@ export function gradeColumns(
   const definitivaColumn: Column<GradeStudentRow>[] = [
     {
       header: "Definitiva",
-      render: (row) => (
-        <span className={`text-sm font-bold ${row.hasMissingGrades ? "text-gray-400" : row.definitiva >= 10 ? "text-green-600" : "text-gray-800"}`}>
-          {row.hasMissingGrades ? "—" : row.definitiva > 0 ? row.definitiva.toFixed(1) : "—"}
-        </span>
-      ),
+      render: (row) => {
+        if (row.hasApprovedSubject) {
+          const score = row.approvedSubjectScore;
+          return (
+            <span className={`text-sm font-bold ${score != null && score >= 10 ? "text-green-600" : "text-gray-800"}`}>
+              {score != null ? score.toFixed(1) : "—"}
+            </span>
+          );
+        }
+        return (
+          <span className={`text-sm font-bold ${row.hasMissingGrades ? "text-gray-400" : row.definitiva >= 10 ? "text-green-600" : "text-gray-800"}`}>
+            {row.hasMissingGrades ? "—" : row.definitiva > 0 ? row.definitiva.toFixed(1) : "—"}
+          </span>
+        );
+      },
       headerClassName: "text-center",
       className: "text-center",
     },

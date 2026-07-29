@@ -225,6 +225,45 @@ export default function StudentInfo({ selectedStudent, person, fullName }: Stude
 
                         </div>
 
+                        <div>
+
+                            <p className="text-sm text-gray-500 mb-1">
+                                Tipo de Inscripción
+                            </p>
+
+                            {(() => {
+                                const enrollment = selectedStudent.enrollments?.[0];
+                                const typeOf = enrollment?.typeOf;
+                                if (typeOf === 'Regular') {
+                                    return (
+                                        <Badge className="bg-blue-50 text-blue-700 border-blue-200">
+                                            Regular
+                                        </Badge>
+                                    );
+                                }
+                                if (typeOf === 'Repitiente') {
+                                    return (
+                                        <Badge className="bg-amber-50 text-amber-700 border-amber-200">
+                                            Repitiente
+                                        </Badge>
+                                    );
+                                }
+                                if (typeOf === 'Materia Pendiente') {
+                                    return (
+                                        <Badge className="bg-red-50 text-red-700 border-red-200">
+                                            Materia Pendiente
+                                        </Badge>
+                                    );
+                                }
+                                return (
+                                    <Badge variant="outline" className="text-gray-400 border-gray-300">
+                                        No cursante
+                                    </Badge>
+                                );
+                            })()}
+
+                        </div>
+
                     </div>
 
                 </CardContent>

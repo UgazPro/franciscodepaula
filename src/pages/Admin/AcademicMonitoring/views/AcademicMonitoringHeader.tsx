@@ -18,7 +18,7 @@ export default function AcademicMonitoringHeader() {
                 />
                 <FilterDropdown />
                 <button
-                    onClick={() => useStudentsStore.getState().startCreate()}
+                    onClick={() => useStudentsStore.getState().setShowEnrollmentTypeDialog(true)}
                     className="flex items-center gap-2 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-5 py-2.5 rounded-xl transition-all shadow-md hover:shadow-lg font-medium cursor-pointer"
                 >
                     <UserPlus size={18} />

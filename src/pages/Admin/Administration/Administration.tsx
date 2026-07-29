@@ -106,6 +106,7 @@ export default function Administracion() {
         usePaymentsStore.getState().setScreen("list");
         usePaymentsStore.getState().setStep(1);
         useAdministrationStore.getState().setActiveTab("dashboard");
+        useStudentsStore.getState().clearSelectedStudent();
     }, []);
 
     const filteredData: (Nomina | PagoRepresentante | Beca)[] = useMemo(() => {

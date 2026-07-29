@@ -10,6 +10,7 @@ import { PaginationComponent } from "@/components/table/PaginationComponent";
 import StudentsNoResults from "./views/StudentNoResultsView";
 import StudentCardView from "./views/StudentCardView";
 import PdfExportButton from "@/components/pdf/PdfExportButton";
+import EnrollmentTypeDialog from "@/components/dialog/EnrollmentTypeDialog";
 import type { EnrollmentFormValues } from "../../form/enrollment/enrollment.schema";
 import type { IStudent } from "@/services/users/user.interface";
 import type { PaginatedResponse } from "@/services/users/user.service";
@@ -20,7 +21,8 @@ interface StudentsProps {
 
 export default function Students({ tabsComponent }: StudentsProps) {
     const {
-        screen, searchTerm, mode, selectedStudent, step, setStep, closeForm,
+        screen, searchTerm, mode, selectedStudent, step, setStep, closeForm, enrollmentType,
+        showEnrollmentTypeDialog, setShowEnrollmentTypeDialog,
         filterView, filterLevelId, filterSection, filterGender,
         filterAgeMode, filterAgeMin, filterAgeMax, filterAgeExact,
     } = useStudentsStore();
@@ -69,7 +71,7 @@ export default function Students({ tabsComponent }: StudentsProps) {
         useStudentsStore.getState().clearFilters();
     }, []);
 
-    const formSteps = 4;
+    const formSteps = enrollmentType && enrollmentType !== "regular" ? 5 : 4;
 
     const initialData = useMemo((): Partial<EnrollmentFormValues> | undefined => {
         if (mode !== "edit" || !selectedStudent) return undefined;
@@ -114,8 +116,21 @@ export default function Students({ tabsComponent }: StudentsProps) {
         useStudentsStore.getState().selectStudent(student);
     }, []);
 
+    const handleOpenCreateDialog = useCallback(() => {
+        setShowEnrollmentTypeDialog(true);
+    }, [setShowEnrollmentTypeDialog]);
+
+    const handleSelectEnrollmentType = useCallback((type: "regular" | "repitiente" | "pending") => {
+        useStudentsStore.getState().startCreate(type);
+    }, []);
+
     return (
         <div className="flex-1 min-h-0">
+            <EnrollmentTypeDialog
+                open={showEnrollmentTypeDialog}
+                onClose={() => setShowEnrollmentTypeDialog(false)}
+                onSelect={handleSelectEnrollmentType}
+            />
             <PageTransitionComponent
                 primaryChildren={
                     <>
@@ -131,7 +146,7 @@ export default function Students({ tabsComponent }: StudentsProps) {
                                 Cargando estudiantes...
                             </div>
                         ) : students.length === 0 ? (
-                            <StudentsNoResults openCreateStudent={() => useStudentsStore.getState().startCreate()} />
+                            <StudentsNoResults openCreateStudent={handleOpenCreateDialog} />
                         ) : (
                             <>
                                 <div className="hidden md:block">

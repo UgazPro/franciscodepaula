@@ -26,7 +26,7 @@ export interface SchoolHistoryRecord {
   id: number;
   levelSubjectId: number | null;
   schoolId: number;
-  schoolYear: number | null;
+  schoolYearId: number | null;
   finalScore: number | null;
   subjectName: string;
 }
@@ -35,6 +35,7 @@ export interface AcademicHistoryEntry {
   schoolYearId: number | null;
   schoolYearName: string | null;
   schoolYear: number | null;
+  enrollmentTypeOf: string | null;
   level: string;
   section: string | null;
   schoolName: string;
@@ -43,6 +44,7 @@ export interface AcademicHistoryEntry {
   totalSubjects: number | null;
   totalGrades: number | null;
   subjects: AcademicHistorySubject[];
+  failedSubjects?: { levelSubjectId: number; highSchoolLevelId: number; subjectName: string; finalScore: number | null; section: string | null; date: string | null }[];
   records?: SchoolHistoryRecord[];
 }
 
@@ -51,6 +53,8 @@ export interface AcademicHistoryData {
   studentName: string;
   currentSchool: { id: number; schoolName: string } | null;
   history: AcademicHistoryEntry[];
+  failedSubjects: { levelSubjectId: number; highSchoolLevelId: number; subjectName: string; finalScore: number | null; section: string | null; date: string | null }[];
+  enrollmentTypeOf: string | null;
 }
 
 export const useAcademicHistory = (studentId: number | null) => {

@@ -3,6 +3,7 @@ import { create } from "zustand";
 
 type StudentScreen = "list" | "detail" | "edit" | "form";
 type FilterView = "active" | "all" | "pending" | "inactive";
+type EnrollmentType = "regular" | "repitiente" | "pending" | null;
 
 interface StudentsStore {
 
@@ -18,8 +19,13 @@ interface StudentsStore {
   selectStudent: (student: IStudent) => void;
   clearSelectedStudent: () => void;
 
-  startCreate: () => void;
+  startCreate: (type?: EnrollmentType) => void;
   startEdit: (student: IStudent) => void;
+
+  enrollmentType: EnrollmentType;
+  setEnrollmentType: (type: EnrollmentType) => void;
+  showEnrollmentTypeDialog: boolean;
+  setShowEnrollmentTypeDialog: (show: boolean) => void;
 
   searchTerm: string;
   setSearchTerm: (v: string) => void;
@@ -66,11 +72,12 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
   selectStudent: (student) => set({ selectedStudent: student, screen: "detail" }),
   clearSelectedStudent: () => set({ selectedStudent: null, screen: "list" }),
 
-  startCreate: () => set({
+  startCreate: (type: EnrollmentType = null) => set({
     mode: "create",
     selectedStudent: null,
     screen: "form",
     step: 1,
+    enrollmentType: type,
   }),
 
   startEdit: (student) => set({
@@ -79,6 +86,11 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
     screen: "form",
     step: 1,
   }),
+
+  enrollmentType: null,
+  setEnrollmentType: (type) => set({ enrollmentType: type }),
+  showEnrollmentTypeDialog: false,
+  setShowEnrollmentTypeDialog: (show) => set({ showEnrollmentTypeDialog: show }),
 
   searchTerm: "",
   setSearchTerm: (v) => set({ searchTerm: v }),
@@ -90,6 +102,7 @@ export const useStudentsStore = create<StudentsStore>((set) => ({
     step: 1,
     selectedStudent: null,
     mode: "create",
+    enrollmentType: null,
   }),
 
   step: 1,

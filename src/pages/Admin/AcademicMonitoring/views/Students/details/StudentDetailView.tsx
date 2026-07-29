@@ -28,7 +28,7 @@ export default function StudentDetailView() {
 
     const currentLevelOrder = useMemo(() => {
         if (!selectedStudent?.enrollments || selectedStudent.enrollments.length === 0) return 0;
-        const activeEnrollment = selectedStudent.enrollments.find((e) => e.status);
+        const activeEnrollment = selectedStudent.enrollments[0];
         if (!activeEnrollment) return 0;
         const level = activeEnrollment.section?.highSchoolLevel?.level;
         if (!level) return 0;
@@ -39,7 +39,7 @@ export default function StudentDetailView() {
     const nextLevelOrder = useMemo(() => {
         if (!academicHistory?.history) return 1;
         const previousOrders = academicHistory.history
-            .filter((h: any) => h.schoolYearId == null && h._levelOrder != null)
+            .filter((h: any) => h.schoolYearName == null && h._levelOrder != null)
             .map((h: any) => h._levelOrder as number);
         if (previousOrders.length === 0) return 1;
         return Math.max(...previousOrders) + 1;

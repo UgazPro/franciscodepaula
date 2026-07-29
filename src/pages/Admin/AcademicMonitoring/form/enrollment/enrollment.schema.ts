@@ -41,10 +41,38 @@ export const step4Schema = z.object({
   enrollmentDate: z.date({ message: "Selecciona una fecha" }),
 });
 
+export const approvedSubjectSchema = z.object({
+  levelSubjectId: z.number(),
+  subjectName: z.string(),
+  isRepeating: z.boolean(),
+  finalScore: z.number().min(1, "La nota es requerida").max(20, "La nota máxima es 20").optional(),
+  typeOf: z.enum(["F", "R", "P", "E", "Q", "T"]).optional(),
+  approvalDate: z.string().optional(),
+  schoolId: z.number({ required_error: "La escuela es requerida" }).optional(),
+});
+
+export const pendingSubjectSchema = z.object({
+  levelSubjectId: z.number(),
+  subjectName: z.string(),
+});
+
+export const step5RepitienteSchema = z.object({
+  approvedSubjects: z.array(approvedSubjectSchema).min(1, "Debe indicar al menos el estado de una materia"),
+});
+
+export const step5PendingSchema = z.object({
+  pendingSubjects: z.array(pendingSubjectSchema).min(1, "Seleccione al menos una materia pendiente").max(2, "Máximo 2 materias pendientes"),
+});
+
 export const enrollmentSchema = step1Schema
   .merge(step2Schema)
   .merge(step3BaseSchema)
   .merge(step4Schema)
+  .extend({
+    enrollmentType: z.enum(["regular", "repitiente", "pending"]).optional(),
+    approvedSubjects: z.array(approvedSubjectSchema).optional(),
+    pendingSubjects: z.array(pendingSubjectSchema).optional(),
+  })
   .superRefine((data, ctx) => {
     if (data.representativeMode === "create") {
       if (!data.representativeFirstNames || data.representativeFirstNames.length < 2) {
@@ -122,3 +150,5 @@ export const enrollmentSchema = step1Schema
   });
 
 export type EnrollmentFormValues = z.infer<typeof enrollmentSchema>;
+export type ApprovedSubject = z.infer<typeof approvedSubjectSchema>;
+export type PendingSubject = z.infer<typeof pendingSubjectSchema>;

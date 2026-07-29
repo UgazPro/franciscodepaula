@@ -80,4 +80,6 @@ export interface GradeStudentRow {
   grades: Record<number, number | null>;
   definitiva: number;
   hasMissingGrades: boolean;
+  hasApprovedSubject: boolean;
+  approvedSubjectScore: number | null;
 }

@@ -24,6 +24,7 @@ export interface StudentEnrollment {
     sectionId: number;
     enrollmentDate: string | null;
     status: boolean | null;
+    typeOf: string | null;
     section: {
         id: number;
         section: string;

@@ -6,22 +6,14 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import { useSchools } from "@/hooks/useSchools";
+import { useSchoolYears } from "@/hooks/useSchoolYears";
 import { useLevelSubjects } from "@/hooks/useLevelSubjects";
 import { useCreateSchoolHistoryBatch, useUpdateSchoolHistoryBatch } from "@/queries/useAcademicHistoryMutations";
 import type { SchoolHistoryRecord } from "@/queries/useAcademicHistoryMutations";
 import type { AcademicHistoryEntry } from "@/hooks/useAcademicHistory";
-import { Save, X, ArrowLeft } from "lucide-react";
+import { Save, X, ArrowLeft, AlertTriangle } from "lucide-react";
 
 const SPECIAL_SUBJECT_CODES = ["ROB", "MUS", "MET"];
-
-const YEAR_OPTIONS = [
-    { label: "2020-2021", value: 2020 },
-    { label: "2021-2022", value: 2021 },
-    { label: "2022-2023", value: 2022 },
-    { label: "2023-2024", value: 2023 },
-    { label: "2024-2025", value: 2024 },
-    { label: "2025-2026", value: 2025 },
-];
 
 const schema = z.object({
     schoolId: z.number({ error: "Seleccione una escuela" }).min(1, "Seleccione una escuela"),
@@ -31,12 +23,23 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+interface FailedSubject {
+    levelSubjectId: number;
+    highSchoolLevelId: number;
+    subjectName: string;
+    finalScore: number | null;
+    section: string | null;
+    date: string | null;
+}
+
 interface SchoolHistoryFormProps {
     studentId: number;
     currentLevelOrder: number;
     history: AcademicHistoryEntry[];
     onClose: () => void;
     editEntry?: AcademicHistoryEntry | null;
+    failedSubjects?: FailedSubject[];
+    enrollmentTypeOf?: string | null;
 }
 
 function getLevelOrder(level: string | null): number {
@@ -62,23 +65,31 @@ export default function SchoolHistoryForm({
     history,
     onClose,
     editEntry,
+    failedSubjects = [],
+    enrollmentTypeOf,
 }: SchoolHistoryFormProps) {
 
     const isEditMode = !!editEntry;
 
     const { data: schools = [] } = useSchools();
+    const { data: schoolYears = [] } = useSchoolYears();
     const { data: levelSubjectsData = [] } = useLevelSubjects();
     const createBatch = useCreateSchoolHistoryBatch();
     const updateBatch = useUpdateSchoolHistoryBatch();
 
     const [missingSubjects, setMissingSubjects] = useState<Set<number>>(new Set());
 
+    const failedLevelSubjectIds = useMemo(() => {
+        if (enrollmentTypeOf !== 'Materia Pendiente') return new Set<number>();
+        return new Set(failedSubjects.map((fs) => fs.levelSubjectId));
+    }, [failedSubjects, enrollmentTypeOf]);
+
     const nextLevelOrder = useMemo(() => {
         if (isEditMode && editEntry) {
             return getLevelOrder(editEntry.level);
         }
         const previousOrders = history
-            .filter((h) => h.schoolYearId == null && h._levelOrder != null)
+            .filter((h) => h.schoolYearName == null && h._levelOrder != null)
             .map((h) => h._levelOrder as number);
         if (previousOrders.length === 0) return 1;
         return Math.max(...previousOrders) + 1;
@@ -121,7 +132,7 @@ export default function SchoolHistoryForm({
         resolver: zodResolver(schema),
         defaultValues: {
             schoolId: (editEntry?.schoolId ?? undefined) as never,
-            schoolYear: (editEntry?.schoolYear ?? undefined) as never,
+            schoolYear: (editEntry?.schoolYearId ?? undefined) as never,
             scores: defaultScores,
         },
     });
@@ -129,8 +140,8 @@ export default function SchoolHistoryForm({
     useEffect(() => {
         if (isEditMode && editEntry) {
             form.setValue("schoolId", editEntry.schoolId as never);
-            if (editEntry.schoolYear != null) {
-                form.setValue("schoolYear", editEntry.schoolYear as never);
+            if (editEntry.schoolYearId != null) {
+                form.setValue("schoolYear", editEntry.schoolYearId as never);
             }
             if (editEntry.records) {
                 const scores: Record<string, number | undefined> = {};
@@ -154,9 +165,17 @@ export default function SchoolHistoryForm({
         }));
     }, [schools]);
 
+    const schoolYearOptions = useMemo(() => {
+        return (schoolYears as any[]).map((sy) => ({
+            label: sy.name,
+            value: sy.id,
+        }));
+    }, [schoolYears]);
+
     const handleSubmit = form.handleSubmit(async (data: FormValues) => {
         const missing = new Set<number>();
         for (const subject of subjectsForLevel) {
+            if (failedLevelSubjectIds.has(subject.levelSubjectId)) continue;
             const isSpecial = SPECIAL_SUBJECT_CODES.includes(subject.code ?? "");
             const score = data.scores[String(subject.id)];
             if (!isSpecial && (score === undefined || score === null || isNaN(score))) {
@@ -172,6 +191,7 @@ export default function SchoolHistoryForm({
         if (isEditMode && editEntry?.records) {
             const updates = editEntry.records
                 .filter((record) => {
+                    if (record.levelSubjectId != null && failedLevelSubjectIds.has(record.levelSubjectId)) return false;
                     const subject = subjectsForLevel.find((s) => s.levelSubjectId === record.levelSubjectId);
                     if (!subject) return false;
                     const score = data.scores[String(subject.id)];
@@ -184,7 +204,7 @@ export default function SchoolHistoryForm({
                     return {
                         id: record.id,
                         schoolId: data.schoolId,
-                        schoolYear: data.schoolYear,
+                        schoolYearId: data.schoolYear,
                         finalScore: data.scores[String(subject.id)] ?? null,
                     };
                 });
@@ -193,6 +213,7 @@ export default function SchoolHistoryForm({
             }
         } else {
             const records: SchoolHistoryRecord[] = subjectsForLevel
+                .filter((subject) => !failedLevelSubjectIds.has(subject.levelSubjectId))
                 .map((subject) => {
                     const score = data.scores[String(subject.id)];
                     const isSpecial = SPECIAL_SUBJECT_CODES.includes(subject.code ?? "");
@@ -201,14 +222,16 @@ export default function SchoolHistoryForm({
                         studentId,
                         levelSubjectId: subject.levelSubjectId,
                         schoolId: data.schoolId,
-                        schoolYear: data.schoolYear,
+                        schoolYearId: data.schoolYear,
                         finalScore: score ?? null,
                     };
                 })
                 .filter(Boolean) as SchoolHistoryRecord[];
 
-            if (records.length === 0) return;
-            await createBatch.mutateAsync({ records });
+            if (records.length === 0 && failedLevelSubjectIds.size === 0) return;
+            if (records.length > 0) {
+                await createBatch.mutateAsync({ records });
+            }
         }
         onClose();
     });
@@ -270,7 +293,7 @@ export default function SchoolHistoryForm({
                                 label: "Año Escolar",
                                 type: "select",
                                 placeholder: "Seleccione el año...",
-                                options: YEAR_OPTIONS,
+                                options: schoolYearOptions,
                             }}
                         />
                     </div>
@@ -284,34 +307,47 @@ export default function SchoolHistoryForm({
                             {subjectsForLevel.map((subject) => {
                                 const isSpecial = SPECIAL_SUBJECT_CODES.includes(subject.code ?? "");
                                 const isMissing = missingSubjects.has(subject.id);
+                                const isFailed = failedLevelSubjectIds.has(subject.levelSubjectId);
                                 return (
                                     <div
                                         key={subject.id}
                                         className={`flex items-center justify-between px-3 py-2 border rounded-lg transition ${
-                                            isMissing
-                                                ? "border-red-400 bg-red-50"
-                                                : "border-(--lightBlueColor)/30 hover:bg-gray-50"
+                                            isFailed
+                                                ? "border-amber-300 bg-amber-50"
+                                                : isMissing
+                                                    ? "border-red-400 bg-red-50"
+                                                    : "border-(--lightBlueColor)/30 hover:bg-gray-50"
                                         }`}
                                     >
                                         <div className="flex items-center gap-1.5 min-w-0">
-                                            <span className="text-sm font-medium text-gray-800 truncate">
+                                            <span className={`text-sm font-medium truncate ${isFailed ? "text-amber-800" : "text-gray-800"}`}>
                                                 {subject.subject}
                                             </span>
+                                            {isFailed && (
+                                                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-300 shrink-0 flex items-center gap-0.5">
+                                                    <AlertTriangle className="h-2.5 w-2.5" />
+                                                    Pendiente
+                                                </span>
+                                            )}
                                             {isSpecial && (
                                                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-200 shrink-0">
                                                     Opcional
                                                 </span>
                                             )}
                                         </div>
-                                        <FieldRenderer
-                                            field={{
-                                                name: `scores.${subject.id}`,
-                                                label: "",
-                                                type: "grade",
-                                                placeholder: "—",
-                                                inputClassName: isMissing ? "!border-red-400" : "",
-                                            }}
-                                        />
+                                        {isFailed ? (
+                                            <span className="text-sm font-bold text-amber-600 px-2">P</span>
+                                        ) : (
+                                            <FieldRenderer
+                                                field={{
+                                                    name: `scores.${subject.id}`,
+                                                    label: "",
+                                                    type: "grade",
+                                                    placeholder: "—",
+                                                    inputClassName: isMissing ? "!border-red-400" : "",
+                                                }}
+                                            />
+                                        )}
                                     </div>
                                 );
                             })}

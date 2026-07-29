@@ -5,14 +5,14 @@ export interface SchoolHistoryRecord {
   studentId: number;
   levelSubjectId?: number | null;
   schoolId: number;
-  schoolYear?: number | null;
+  schoolYearId?: number | null;
   finalScore?: number | null;
 }
 
 export interface SchoolHistoryUpdateItem {
   id: number;
   schoolId?: number;
-  schoolYear?: number | null;
+  schoolYearId?: number | null;
   finalScore?: number | null;
 }
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, type Key } from "react";
-import { History, School, BookOpen, ArrowLeft, GraduationCap, Plus, Pencil } from "lucide-react";
+import { History, School, BookOpen, ArrowLeft, GraduationCap, Plus, Pencil, AlertTriangle } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 import type { AcademicHistoryEntry } from "@/hooks/useAcademicHistory";
+import { useLevelSubjects } from "@/hooks/useLevelSubjects";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import { TableComponent, type Column } from "@/components/table/TableComponent";
 import SchoolHistoryForm from "../components/SchoolHistoryForm";
@@ -59,6 +60,12 @@ function getGradeBg(grade: number | null): string {
     return "bg-red-50";
 }
 
+function getLevelOrder(level: string | null): number {
+    if (!level) return 99;
+    const match = level.match(/(\d)/);
+    return match ? parseInt(match[1]) : 99;
+}
+
 function getDisabledTooltip(nextLevelOrder: number, currentLevelOrder: number): string {
     if (currentLevelOrder <= 1) return "No se puede crear historial para un estudiante en 1er año";
     if (nextLevelOrder >= currentLevelOrder) return "Todos los años previos ya están cargados";
@@ -93,7 +100,7 @@ export default function AcademicHistoryInfo({
         }
     }, [academicHistory]);
 
-    const hasPeriodData = selectedEntry?.subjects.some((s) => s.periodAverages && s.periodAverages.length > 0);
+    const isEnrollmentEntry = selectedEntry?.schoolYearId != null && selectedEntry?.schoolYearName != null;
 
     const handleYearClick = (entry: AcademicHistoryEntry) => {
         setSelectedEntry(entry);
@@ -115,13 +122,33 @@ export default function AcademicHistoryInfo({
         setEditEntry(null);
     };
 
+    const { data: levelSubjectsData = [] } = useLevelSubjects();
+
     const nextLevelOrder = (() => {
         if (!academicHistory?.history) return 1;
         const previousOrders = academicHistory.history
-            .filter((h: any) => h.schoolYearId == null && h._levelOrder != null)
+            .filter((h: any) => h.schoolYearName == null && h._levelOrder != null)
             .map((h: any) => h._levelOrder as number);
         if (previousOrders.length === 0) return 1;
         return Math.max(...previousOrders) + 1;
+    })();
+
+    const targetLevelHighSchoolId = (() => {
+        for (const level of levelSubjectsData) {
+            if (getLevelOrder(level.level) === nextLevelOrder) return level.id;
+        }
+        return null;
+    })();
+
+    const failedSubjectsForTargetLevel = (() => {
+        if (!academicHistory?.failedSubjects || targetLevelHighSchoolId == null) return [];
+        return academicHistory.failedSubjects.filter((fs: any) => fs.highSchoolLevelId === targetLevelHighSchoolId);
+    })();
+
+    const enrollmentTypeOfForTargetLevel = (() => {
+        if (!academicHistory?.enrollmentTypeOf) return null;
+        if (failedSubjectsForTargetLevel.length === 0) return null;
+        return academicHistory.enrollmentTypeOf;
     })();
 
     const titleRow = (
@@ -176,20 +203,20 @@ export default function AcademicHistoryInfo({
             </Card>
         );
 
-        return (
-            <PageTransitionComponent
-                primaryChildren={emptyView}
-                secondaryChildren={
-                    <SchoolHistoryForm
-                        studentId={studentId}
-                        currentLevelOrder={currentLevelOrder}
-                        history={academicHistory?.history || []}
-                        onClose={onCloseForm}
-                    />
-                }
-                toggle={showForm}
-            />
-        );
+        if (showForm) {
+            return (
+                <SchoolHistoryForm
+                    studentId={studentId}
+                    currentLevelOrder={currentLevelOrder}
+                    history={academicHistory?.history || []}
+                    onClose={onCloseForm}
+                    failedSubjects={failedSubjectsForTargetLevel}
+                    enrollmentTypeOf={enrollmentTypeOfForTargetLevel}
+                />
+            );
+        }
+
+        return emptyView;
     }
 
     // Build grade table data from selected entry
@@ -233,7 +260,7 @@ export default function AcademicHistoryInfo({
             accessor: "subject1",
             className: "font-medium text-gray-800",
         },
-        ...(hasPeriodData
+        ...(isEnrollmentEntry
             ? [
                 {
                     header: "Mom. I",
@@ -264,9 +291,11 @@ export default function AcademicHistoryInfo({
         {
             header: "Def.",
             render: (row: GradeRow) => (
-                <span className={`font-bold ${getGradeColor(row.definitiva1)}`}>
-                    {row.definitiva1 != null ? row.definitiva1.toFixed(1) : "—"}
-                </span>
+                selectedEntry?.enrollmentTypeOf === 'Materia Pendiente' && row.typeOf1 === 'P'
+                    ? <span className="font-bold text-amber-600">P</span>
+                    : <span className={`font-bold ${getGradeColor(row.definitiva1)}`}>
+                        {row.definitiva1 != null ? row.definitiva1.toFixed(1) : "—"}
+                      </span>
             ),
             className: "text-center",
         },
@@ -281,7 +310,7 @@ export default function AcademicHistoryInfo({
                 </span>
             ),
         },
-        ...(hasPeriodData
+        ...(isEnrollmentEntry
             ? [
                 {
                     header: "Mom. I",
@@ -312,9 +341,13 @@ export default function AcademicHistoryInfo({
         {
             header: "Def.",
             render: (row: GradeRow) => (
-                <span className={`font-bold ${getGradeColor(row.definitiva2)}`}>
-                    {row.subject2 ? (row.definitiva2 != null ? row.definitiva2.toFixed(1) : "—") : ""}
-                </span>
+                row.subject2
+                    ? (selectedEntry?.enrollmentTypeOf === 'Materia Pendiente' && row.typeOf2 === 'P'
+                        ? <span className="font-bold text-amber-600">P</span>
+                        : <span className={`font-bold ${getGradeColor(row.definitiva2)}`}>
+                            {row.definitiva2 != null ? row.definitiva2.toFixed(1) : "—"}
+                          </span>)
+                    : ""
             ),
             className: "text-center",
         },
@@ -343,7 +376,7 @@ export default function AcademicHistoryInfo({
             accessor: "subject",
             className: "font-medium text-gray-800",
         },
-        ...(hasPeriodData
+        ...(isEnrollmentEntry
             ? [
                 {
                     header: "Mom. I",
@@ -374,9 +407,11 @@ export default function AcademicHistoryInfo({
         {
             header: "Def.",
             render: (row: SingleGradeRow) => (
-                <span className={`font-bold ${getGradeColor(row.definitiva)}`}>
-                    {row.definitiva != null ? row.definitiva.toFixed(1) : "—"}
-                </span>
+                selectedEntry?.enrollmentTypeOf === 'Materia Pendiente' && row.typeOf === 'P'
+                    ? <span className="font-bold text-amber-600">P</span>
+                    : <span className={`font-bold ${getGradeColor(row.definitiva)}`}>
+                        {row.definitiva != null ? row.definitiva.toFixed(1) : "—"}
+                      </span>
             ),
             className: "text-center",
         },
@@ -384,10 +419,10 @@ export default function AcademicHistoryInfo({
 
     const gradeRows = selectedEntry ? buildGradeRows(selectedEntry) : [];
     const singleGradeRows = selectedEntry ? buildSingleGradeRows(selectedEntry) : [];
-    const activeColumns = hasPeriodData ? singleGradeColumns : gradeColumns;
-    const activeRows = hasPeriodData ? singleGradeRows : gradeRows;
+    const activeColumns = isEnrollmentEntry ? singleGradeColumns : gradeColumns;
+    const activeRows = isEnrollmentEntry ? singleGradeRows : gradeRows;
     const overallAvg = selectedEntry?.averageGrade;
-    const isPreviousSchool = selectedEntry?.schoolYearId == null && selectedEntry?.records;
+    const isPreviousSchool = selectedEntry?.schoolYearName == null && selectedEntry?.records;
 
     // Cards view
     const cardsView = (
@@ -460,6 +495,13 @@ export default function AcademicHistoryInfo({
                                             {entry.totalGrades != null && entry.totalGrades > 0 && ` · ${entry.totalGrades} evaluacione${entry.totalGrades !== 1 ? "s" : ""}`}
                                         </p>
                                     )}
+
+                                    {entry.failedSubjects && entry.failedSubjects.length > 0 && (
+                                        <Badge variant="outline" className="text-amber-600 border-amber-300 bg-amber-50 text-[10px] mt-1">
+                                            <AlertTriangle className="h-2.5 w-2.5 mr-1" />
+                                            {entry.failedSubjects.length} pendiente{entry.failedSubjects.length !== 1 ? "s" : ""}
+                                        </Badge>
+                                    )}
                                 </CardContent>
                             </Card>
                         );
@@ -528,6 +570,33 @@ export default function AcademicHistoryInfo({
                                 </span>
                             </div>
                         )}
+
+                        {/* Failed/Pending subjects */}
+                        {selectedEntry.failedSubjects && selectedEntry.failedSubjects.length > 0 && (
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                    <span className="font-semibold text-amber-800 text-sm">
+                                        Materias Pendientes ({selectedEntry.failedSubjects.length})
+                                    </span>
+                                </div>
+                                <div className="space-y-2">
+                                    {selectedEntry.failedSubjects.map((fs, idx) => (
+                                        <div key={idx} className="flex items-center justify-between text-sm">
+                                            <span className="text-amber-900 font-medium">{fs.subjectName}</span>
+                                            <div className="flex items-center gap-3 text-amber-700">
+                                                {fs.section && <span className="text-xs">Sección: {fs.section}</span>}
+                                                {fs.finalScore != null && (
+                                                    <span className={`font-bold ${fs.finalScore >= 10 ? "text-green-600" : "text-red-600"}`}>
+                                                        {fs.finalScore}/20
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="text-center py-8">
@@ -549,6 +618,8 @@ export default function AcademicHistoryInfo({
                 history={academicHistory?.history || []}
                 onClose={handleCloseEdit}
                 editEntry={editEntry}
+                failedSubjects={editEntry?.failedSubjects ?? []}
+                enrollmentTypeOf={editEntry?.enrollmentTypeOf ?? null}
             />
         );
     }
@@ -560,6 +631,8 @@ export default function AcademicHistoryInfo({
                 currentLevelOrder={currentLevelOrder}
                 history={academicHistory?.history || []}
                 onClose={onCloseForm}
+                failedSubjects={failedSubjectsForTargetLevel}
+                enrollmentTypeOf={enrollmentTypeOfForTargetLevel}
             />
         );
     }
