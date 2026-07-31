@@ -24,12 +24,12 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>;
 
 interface FailedSubject {
+    id: number;
     levelSubjectId: number;
     highSchoolLevelId: number;
     subjectName: string;
-    finalScore: number | null;
     section: string | null;
-    date: string | null;
+    attempts: { id: number; score: number | null; evaluationDate: string | null }[];
 }
 
 interface SchoolHistoryFormProps {

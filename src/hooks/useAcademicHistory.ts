@@ -1,6 +1,15 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDataApi } from "@/services/api";
 
+export interface FailedSubjectAttempt {
+  id: number;
+  score: number | null;
+  evaluationDate: string | null;
+  observations: string | null;
+  createdAt: string;
+  createdBy: number | null;
+}
+
 export interface AcademicHistorySubject {
   subjectName: string;
   isSpecialGroup: boolean;
@@ -44,7 +53,13 @@ export interface AcademicHistoryEntry {
   totalSubjects: number | null;
   totalGrades: number | null;
   subjects: AcademicHistorySubject[];
-  failedSubjects?: { levelSubjectId: number; highSchoolLevelId: number; subjectName: string; finalScore: number | null; section: string | null; date: string | null }[];
+  failedSubjects?: {
+    levelSubjectId: number;
+    highSchoolLevelId: number;
+    subjectName: string;
+    section: string | null;
+    attempts: FailedSubjectAttempt[];
+  }[];
   records?: SchoolHistoryRecord[];
 }
 
@@ -53,7 +68,14 @@ export interface AcademicHistoryData {
   studentName: string;
   currentSchool: { id: number; schoolName: string } | null;
   history: AcademicHistoryEntry[];
-  failedSubjects: { levelSubjectId: number; highSchoolLevelId: number; subjectName: string; finalScore: number | null; section: string | null; date: string | null }[];
+  failedSubjects: {
+    id: number;
+    levelSubjectId: number;
+    highSchoolLevelId: number;
+    subjectName: string;
+    section: string | null;
+    attempts: FailedSubjectAttempt[];
+  }[];
   enrollmentTypeOf: string | null;
 }
 

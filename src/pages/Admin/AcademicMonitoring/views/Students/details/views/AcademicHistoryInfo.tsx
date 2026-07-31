@@ -580,18 +580,32 @@ export default function AcademicHistoryInfo({
                                         Materias Pendientes ({selectedEntry.failedSubjects.length})
                                     </span>
                                 </div>
-                                <div className="space-y-2">
+                                <div className="space-y-3">
                                     {selectedEntry.failedSubjects.map((fs, idx) => (
-                                        <div key={idx} className="flex items-center justify-between text-sm">
-                                            <span className="text-amber-900 font-medium">{fs.subjectName}</span>
-                                            <div className="flex items-center gap-3 text-amber-700">
-                                                {fs.section && <span className="text-xs">Sección: {fs.section}</span>}
-                                                {fs.finalScore != null && (
-                                                    <span className={`font-bold ${fs.finalScore >= 10 ? "text-green-600" : "text-red-600"}`}>
-                                                        {fs.finalScore}/20
-                                                    </span>
-                                                )}
+                                        <div key={idx} className="border border-amber-200 rounded-lg p-3 bg-white/50">
+                                            <div className="flex items-center justify-between text-sm mb-1">
+                                                <span className="text-amber-900 font-medium">{fs.subjectName}</span>
+                                                <div className="flex items-center gap-3 text-amber-700">
+                                                    {fs.section && <span className="text-xs">Sección: {fs.section}</span>}
+                                                    <span className="text-xs">{fs.attempts.length}/4 intentos</span>
+                                                </div>
                                             </div>
+                                            {fs.attempts.length > 0 && (
+                                                <div className="flex flex-wrap gap-1 mt-2">
+                                                    {fs.attempts.map((attempt, aIdx) => (
+                                                        <span
+                                                            key={attempt.id}
+                                                            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                                                                attempt.score != null && attempt.score >= 10
+                                                                    ? "bg-green-100 text-green-700"
+                                                                    : "bg-red-100 text-red-700"
+                                                            }`}
+                                                        >
+                                                            {aIdx + 1}°: {attempt.score ?? "—"}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>

@@ -98,6 +98,7 @@ export const useEnrollmentMutation = () => {
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["pending-enrollments"] });
       qc.invalidateQueries({ queryKey: ["representatives"] });
+      qc.invalidateQueries({ queryKey: ["failed-subjects"] });
     },
   });
 };
