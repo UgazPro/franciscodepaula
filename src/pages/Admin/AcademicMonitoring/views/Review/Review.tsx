@@ -245,6 +245,13 @@ export default function Review({ tabsComponent }: ReviewProps) {
 
   const columns = useMemo(() => buildColumns(), [buildColumns]);
 
+  const handleBack = useCallback(() => {
+    setSelectedLevel(null);
+    setGradeMap({});
+    setStudentSearch("");
+    setCurrentPage(1);
+  }, []);
+
   return (
     <PageTransitionComponent
       primaryChildren={
@@ -260,49 +267,19 @@ export default function Review({ tabsComponent }: ReviewProps) {
               <div>
                 <h2 className="text-lg font-semibold text-gray-800">Revisión</h2>
                 <p className="text-sm text-gray-500">
-                  {selectedLevel
-                    ? `${selectedLevel.level} — ${selectedLevel.studentCount} estudiante(s)`
-                    : `${levels.length} año(s) disponible(s)`}
+                  {levels.length} año(s) disponible(s)
                 </p>
               </div>
             </div>
-
-            <div className="flex items-center gap-3">
-              {selectedLevel && (
-                <>
-                  <SearchFilterComponent
-                    value={studentSearch}
-                    onChange={(v) => { setStudentSearch(v); setCurrentPage(1); }}
-                    placeholder="Buscar por nombre o cédula..."
-                  />
-                  {hasChanges && (
-                    <button
-                      onClick={handleSave}
-                      disabled={saveReview.isPending}
-                      className="flex items-center gap-2 px-4 py-2 bg-(--blueColor) text-white rounded-lg hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
-                    >
-                      {saveReview.isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Save className="h-4 w-4" />
-                      )}
-                      Guardar Notas
-                    </button>
-                  )}
-                </>
-              )}
-            </div>
           </div>
 
-          {/* Content */}
-          {!selectedLevel ? (
-            isLoading ? (
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400 flex items-center justify-center gap-2">
-                <Loader2 size={20} className="animate-spin" />
-                Cargando años...
-              </div>
-            ) : (
-            /* Level Cards */
+          {/* Level Cards */}
+          {isLoading ? (
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400 flex items-center justify-center gap-2">
+              <Loader2 size={20} className="animate-spin" />
+              Cargando años...
+            </div>
+          ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {levels.map((level) => {
                 const hasStudents = level.studentCount > 0;
@@ -334,37 +311,76 @@ export default function Review({ tabsComponent }: ReviewProps) {
                 );
               })}
             </div>
-            )
-          ) : (
-            /* Table View */
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <button
-                  onClick={() => { setSelectedLevel(null); setGradeMap({}); }}
-                  className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-800 cursor-pointer"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Volver
-                </button>
-              </div>
-
-              <TableComponent
-                data={paginatedRows}
-                columns={columns}
-                maxHeight={500}
-              />
-
-              {totalPages > 1 && (
-                <PaginationComponent
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  onPageChange={setCurrentPage}
-                />
-              )}
-            </div>
           )}
         </>
       }
+      secondaryChildren={
+        selectedLevel && (
+          <div>
+            {/* Detail Header */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleBack}
+                    className="p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+                  >
+                    <ArrowLeft size={20} className="text-(--blueColor)" />
+                  </button>
+                  <div className="p-3 bg-linear-to-br from-indigo-500 to-indigo-600 rounded-xl">
+                    <AlertTriangle size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-800">{selectedLevel.level}</h1>
+                    <p className="text-sm text-gray-500">
+                      {selectedLevel.studentCount} estudiante(s) — {selectedLevel.subjects.length} materia(s)
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <SearchFilterComponent
+                    searchTerm={studentSearch}
+                    setSearchTerm={(term) => { setStudentSearch(term); setCurrentPage(1); }}
+                    placeHolder="Buscar alumno por nombre o cédula..."
+                    width="w-full"
+                  />
+                  {hasChanges && (
+                    <button
+                      onClick={handleSave}
+                      disabled={saveReview.isPending}
+                      className="flex items-center gap-2 px-4 py-2 bg-(--blueColor) text-white rounded-lg hover:opacity-90 transition disabled:opacity-50 cursor-pointer"
+                    >
+                      {saveReview.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      Guardar Notas
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Table */}
+            <TableComponent
+              data={paginatedRows}
+              columns={columns}
+              maxHeight={500}
+            />
+
+            {totalPages > 1 && (
+              <PaginationComponent
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={setCurrentPage}
+              />
+            )}
+          </div>
+        )
+      }
+      toggle={!!selectedLevel}
     />
   );
 }
