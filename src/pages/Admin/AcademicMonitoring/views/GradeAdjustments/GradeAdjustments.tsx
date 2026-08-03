@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { Loader2, Table2, Save, ArrowLeft } from "lucide-react";
 import toast from "react-hot-toast";
 import { ToastMessage } from "@/components/toast/ToastMessage";
@@ -48,6 +48,18 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
 
   const sections = useMemo(() => sabanaData?.data?.sections ?? [], [sabanaData]);
 
+  const isSavingRef = useRef(false);
+
+  useEffect(() => {
+    if (selectedSection && sections.length > 0) {
+      const updated = sections.find((s) => s.sectionId === selectedSection.sectionId);
+      if (updated && JSON.stringify(updated) !== JSON.stringify(selectedSection)) {
+        setSelectedSection(updated);
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sections]);
+
   const currentAdjustmentMap = useMemo(() => {
     if (!selectedSection) return {};
     const map: Record<string, number | null> = {};
@@ -59,6 +71,21 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
     }
     return { ...map, ...adjustmentMap };
   }, [selectedSection, adjustmentMap]);
+
+  const adjustmentsPerStudent = useMemo(() => {
+    if (!selectedSection) return {};
+    const counts: Record<number, number> = {};
+    for (const student of selectedSection.students) {
+      let count = 0;
+      for (const subj of student.subjects) {
+        const key = `${student.studentId}-${subj.levelSubjectId}`;
+        const val = currentAdjustmentMap[key];
+        if (val != null) count++;
+      }
+      counts[student.studentId] = count;
+    }
+    return counts;
+  }, [selectedSection, currentAdjustmentMap]);
 
   const hasChanges = useMemo(() => {
     if (!selectedSection) return false;
@@ -75,7 +102,9 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
   }, [selectedSection, currentAdjustmentMap]);
 
   const handleSave = useCallback(async () => {
+    if (isSavingRef.current) return;
     if (!selectedSection || !userData?.id || !effectivePeriodId) return;
+    isSavingRef.current = true;
 
     const changes: Array<{
       studentId: number;
@@ -103,7 +132,10 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
       }
     }
 
-    if (changes.length === 0) return;
+    if (changes.length === 0) {
+      isSavingRef.current = false;
+      return;
+    }
 
     try {
       await saveAdjustments.mutateAsync({ adjustments: changes });
@@ -129,6 +161,8 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
         ),
         { duration: 3000 }
       );
+    } finally {
+      isSavingRef.current = false;
     }
   }, [selectedSection, userData, effectivePeriodId, currentAdjustmentMap, saveAdjustments]);
 
@@ -159,6 +193,8 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
         const key = `${row.studentId}-${subj.levelSubjectId}`;
         const currentVal = currentAdjustmentMap[key] ?? null;
         const isFailed = sg.periodGrade < 10;
+        const studentCount = adjustmentsPerStudent[row.studentId] ?? 0;
+        const isDisabledByLimit = studentCount >= 2 && currentVal == null;
 
         const gradeClass = isFailed
           ? "text-sm font-semibold text-red-600 w-8 text-right"
@@ -173,8 +209,8 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
                 const val = e.target.value === "" ? null : Number(e.target.value);
                 setAdjustmentMap((prev) => ({ ...prev, [key]: val }));
               }}
-              disabled={saveAdjustments.isPending}
-              className="w-12 h-6 px-0.5 text-center text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-(--blueColor) cursor-pointer"
+              disabled={saveAdjustments.isPending || isDisabledByLimit}
+              className={`w-12 h-6 px-0.5 text-center text-xs border border-gray-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-(--blueColor) ${isDisabledByLimit ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}
             >
               <option value=""></option>
               <option value="1">+1</option>
@@ -195,7 +231,7 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
           return subj && !subj.isSpecialGroup && s.periodGrade !== null;
         });
         if (nonSpecial.length === 0) return <span className="text-sm text-gray-400">—</span>;
-        const avg = Math.round(nonSpecial.reduce((sum, s) => sum + (s.periodGrade ?? 0), 0) / nonSpecial.length);
+        const avg = Math.round(nonSpecial.reduce((sum, s) => sum + ((s.periodGrade ?? 0) + (s.currentAdjustment ?? 0)), 0) / nonSpecial.length);
         const colorClass = avg < 10 ? "text-red-600 font-semibold" : "text-gray-800 font-semibold";
         return <span className={`text-sm ${colorClass}`}>{avg}</span>;
       },
@@ -204,7 +240,7 @@ export default function GradeAdjustments({ tabsComponent }: GradeAdjustmentsProp
     };
 
     return [...baseCols, ...subjectCols, promedioCol];
-  }, [selectedSection, currentAdjustmentMap, saveAdjustments.isPending]);
+  }, [selectedSection, currentAdjustmentMap, adjustmentsPerStudent, saveAdjustments.isPending]);
 
   const tableRows = useMemo((): TableRow[] => {
     if (!selectedSection) return [];

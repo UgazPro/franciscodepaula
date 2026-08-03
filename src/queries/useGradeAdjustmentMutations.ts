@@ -17,6 +17,7 @@ export const useSaveGradeAdjustments = () => {
       postDataApi("/grade-adjustments", data as unknown as Record<string, unknown>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sabana-data"] });
+      qc.invalidateQueries({ queryKey: ["academic-history"] });
     },
   });
 };

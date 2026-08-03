@@ -12,6 +12,7 @@ export interface FailedSubjectAttempt {
 
 export interface AcademicHistorySubject {
   subjectName: string;
+  teachingGroupId: number | null;
   isSpecialGroup: boolean;
   definitiva: number | null;
   totalEvaluations: number;
