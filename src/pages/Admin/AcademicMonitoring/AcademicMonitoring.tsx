@@ -9,9 +9,10 @@ import TeacherAssignmentsView from "./views/TeacherAssignmentsView";
 import CRPView from "./views/CRP/CRPView";
 import UploadGradesManagement from "./views/UploadGradesManagement/UploadGradesManagement";
 import PendingSubjects from "./views/PendingSubjects/PendingSubjects";
+import Review from "./views/Review/Review";
 import type { IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp" | "carga-notas" | "materias-pendientes";
+type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp" | "carga-notas" | "revision" | "materias-pendientes";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
@@ -19,6 +20,7 @@ const tabs = [
     { value: "asignaciones" as const, label: "Asignaciones" },
     { value: "crp" as const, label: "CRP" },
     { value: "carga-notas" as const, label: "Supervisión de Carga de Notas" },
+    { value: "revision" as const, label: "Revisión" },
     { value: "materias-pendientes" as const, label: "Materias Pendiente" },
 ];
 
@@ -75,6 +77,10 @@ export default function AcademicMonitoring() {
             ) : activeTab === "carga-notas" ? (
                 <div className="flex-1 min-h-0">
                     <UploadGradesManagement tabsComponent={tabsComponent} />
+                </div>
+            ) : activeTab === "revision" ? (
+                <div className="flex-1 min-h-0">
+                    <Review tabsComponent={tabsComponent} />
                 </div>
             ) : activeTab === "materias-pendientes" ? (
                 <div className="flex-1 min-h-0">

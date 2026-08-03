@@ -264,6 +264,33 @@ export default function StudentInfo({ selectedStudent, person, fullName }: Stude
 
                         </div>
 
+                        <div>
+
+                            <p className="text-sm text-gray-500 mb-1">
+                                CRP
+                            </p>
+
+                            {(() => {
+                                const enrollment = selectedStudent.enrollments?.[0];
+                                const crpGroup = enrollment?.studentTeachingGroups?.find(
+                                    (stg: any) => stg.teachingGroup.isSpecialGroup && stg.teachingGroup.groupName
+                                );
+                                if (crpGroup) {
+                                    return (
+                                        <Badge className="bg-purple-50 text-purple-700 border-purple-200">
+                                            {crpGroup.teachingGroup.groupName}
+                                        </Badge>
+                                    );
+                                }
+                                return (
+                                    <Badge variant="outline" className="text-gray-400 border-gray-300">
+                                        Sin asignar
+                                    </Badge>
+                                );
+                            })()}
+
+                        </div>
+
                     </div>
 
                 </CardContent>

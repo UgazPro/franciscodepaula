@@ -30,6 +30,13 @@ export interface StudentEnrollment {
         section: string;
         highSchoolLevel: { id: number; level: string };
     };
+    studentTeachingGroups?: {
+        teachingGroup: {
+            id: number;
+            groupName: string | null;
+            isSpecialGroup: boolean;
+        };
+    }[];
 }
 
 export interface RepStudent {
