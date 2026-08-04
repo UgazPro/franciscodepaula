@@ -10,6 +10,7 @@ export const useSaveGrades = () => {
       postDataApi("/grades", data as unknown as Record<string, unknown>),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["grade-detail"] });
+      qc.invalidateQueries({ queryKey: ["subject-grades"] });
     },
   });
 };

@@ -5,8 +5,9 @@ import Employees from "./Employees";
 import SchoolYearPanel from "./views/SchoolYearPanel";
 import SubjectsView from "./views/SubjectsView";
 import CRPsView from "./views/CRPsView";
+import Schedules from "./views/Schedules/Schedules";
 
-type ActiveTab = "tarifas" | "empleados" | "school-year" | "materias" | "crps";
+type ActiveTab = "tarifas" | "empleados" | "school-year" | "materias" | "crps" | "horarios";
 
 const tabs = [
   { value: "tarifas" as const, label: "Tarifas" },
@@ -14,6 +15,7 @@ const tabs = [
   { value: "school-year" as const, label: "Año Escolar" },
   { value: "materias" as const, label: "Materias" },
   { value: "crps" as const, label: "CRPs" },
+  { value: "horarios" as const, label: "Horarios" },
 ];
 
 export default function SchoolManagement() {
@@ -29,6 +31,7 @@ export default function SchoolManagement() {
         {activeTab === "school-year" && <SchoolYearPanel />}
         {activeTab === "materias" && <SubjectsView />}
         {activeTab === "crps" && <CRPsView />}
+        {activeTab === "horarios" && <Schedules />}
       </div>
     </div>
   );
