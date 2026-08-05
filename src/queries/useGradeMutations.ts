@@ -11,6 +11,8 @@ export const useSaveGrades = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["grade-detail"] });
       qc.invalidateQueries({ queryKey: ["subject-grades"] });
+      qc.invalidateQueries({ queryKey: ["teachers-overview"] });
+      qc.invalidateQueries({ queryKey: ["grade-teacher-planning"] });
     },
   });
 };

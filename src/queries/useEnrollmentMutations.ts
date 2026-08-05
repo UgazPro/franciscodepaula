@@ -99,6 +99,10 @@ export const useEnrollmentMutation = () => {
       qc.invalidateQueries({ queryKey: ["pending-enrollments"] });
       qc.invalidateQueries({ queryKey: ["representatives"] });
       qc.invalidateQueries({ queryKey: ["failed-subjects"] });
+      qc.invalidateQueries({ queryKey: ["grade-teacher-planning"] });
+      qc.invalidateQueries({ queryKey: ["teacher-planning"] });
+      qc.invalidateQueries({ queryKey: ["grade-detail"] });
+      qc.invalidateQueries({ queryKey: ["evaluations"] });
     },
   });
 };

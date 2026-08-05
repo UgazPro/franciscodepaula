@@ -10,6 +10,35 @@ export const useAssignSchedule = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teacher-schedule"] });
       qc.invalidateQueries({ queryKey: ["section-schedule"] });
+      qc.invalidateQueries({ queryKey: ["crp-schedule"] });
+    },
+  });
+};
+
+export const useAssignCRPSchedule = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { groupName: string; scheduleSlotId: number; classroom?: string }) =>
+      postDataApi("/schedules/crp", data as unknown as Record<string, unknown>),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teacher-schedule"] });
+      qc.invalidateQueries({ queryKey: ["section-schedule"] });
+      qc.invalidateQueries({ queryKey: ["crp-schedule"] });
+    },
+  });
+};
+
+export const useAssignAllCRPSchedule = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: { scheduleSlotId: number; classroom?: string }) =>
+      postDataApi("/schedules/crp/all", data as unknown as Record<string, unknown>),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["teacher-schedule"] });
+      qc.invalidateQueries({ queryKey: ["section-schedule"] });
+      qc.invalidateQueries({ queryKey: ["crp-schedule"] });
     },
   });
 };
@@ -22,6 +51,7 @@ export const useRemoveSchedule = () => {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["teacher-schedule"] });
       qc.invalidateQueries({ queryKey: ["section-schedule"] });
+      qc.invalidateQueries({ queryKey: ["crp-schedule"] });
     },
   });
 };

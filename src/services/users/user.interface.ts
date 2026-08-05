@@ -108,6 +108,16 @@ export interface Person {
     gender:               string;
 }
 
+export interface TeacherItem {
+    id: number;
+    person: {
+        firstNames: string;
+        lastNames: string;
+        identificationNumber: string;
+    };
+    employee: { id: number };
+}
+
 
 
 

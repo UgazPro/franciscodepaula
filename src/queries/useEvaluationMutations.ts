@@ -7,6 +7,7 @@ const invalidateEvaluations = (qc: ReturnType<typeof useQueryClient>) => {
   qc.invalidateQueries({ queryKey: ["grade-teacher-planning"] });
   qc.invalidateQueries({ queryKey: ["grade-detail"] });
   qc.invalidateQueries({ queryKey: ["subject-grades"] });
+  qc.invalidateQueries({ queryKey: ["teachers-overview"] });
 };
 
 export const useCreateEvaluation = () => {

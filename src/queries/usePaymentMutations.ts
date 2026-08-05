@@ -12,6 +12,11 @@ export const useCreatePayment = () => {
       qc.invalidateQueries({ queryKey: ["payments"] });
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["students-with-debts"] });
+      qc.invalidateQueries({ queryKey: ["grade-teacher-planning"] });
+      qc.invalidateQueries({ queryKey: ["teacher-planning"] });
+      qc.invalidateQueries({ queryKey: ["teachers-overview"] });
+      qc.invalidateQueries({ queryKey: ["grade-detail"] });
+      qc.invalidateQueries({ queryKey: ["evaluations"] });
     },
   });
 };
@@ -38,6 +43,11 @@ export const useUpdatePayment = () => {
       qc.invalidateQueries({ queryKey: ["payments"] });
       qc.invalidateQueries({ queryKey: ["students"] });
       qc.invalidateQueries({ queryKey: ["students-with-debts"] });
+      qc.invalidateQueries({ queryKey: ["grade-teacher-planning"] });
+      qc.invalidateQueries({ queryKey: ["teacher-planning"] });
+      qc.invalidateQueries({ queryKey: ["teachers-overview"] });
+      qc.invalidateQueries({ queryKey: ["grade-detail"] });
+      qc.invalidateQueries({ queryKey: ["evaluations"] });
     },
   });
 };

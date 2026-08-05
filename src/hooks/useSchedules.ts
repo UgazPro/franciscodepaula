@@ -62,3 +62,12 @@ export const useSectionSchedule = (sectionId: number | null) => {
     enabled: !!sectionId,
   });
 };
+
+export const useCRPSchedule = (enabled: boolean = false) => {
+  return useQuery<ScheduleResponse>({
+    queryKey: ["crp-schedule"],
+    queryFn: () => getDataApi("/schedules/crp"),
+    staleTime: 1000 * 60 * 2,
+    enabled,
+  });
+};

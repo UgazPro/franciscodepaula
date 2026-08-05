@@ -18,16 +18,18 @@ import {
   useClassHours,
   useTeacherSchedule,
   useSectionSchedule,
+  useCRPSchedule,
   type ClassHour,
   type ScheduleEntry,
 } from "@/hooks/useSchedules";
-import { useAssignSchedule, useRemoveSchedule } from "@/queries/useScheduleMutations";
+import { useAssignSchedule, useAssignAllCRPSchedule, useRemoveSchedule } from "@/queries/useScheduleMutations";
+import type { TeacherItem } from "@/services/users/user.interface";
 
 interface SchedulesProps {
   tabsComponent?: React.ReactNode;
 }
 
-type CalendarMode = "teacher" | "section" | null;
+type CalendarMode = "teacher" | "section" | "crp" | null;
 
 const DAY_NAMES = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
 
@@ -64,7 +66,10 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
     useTeacherSchedule(selectedTeacherId);
   const { data: sectionScheduleData, isLoading: isLoadingSectionSchedule } =
     useSectionSchedule(selectedSectionId);
+  const { data: crpScheduleData, isLoading: isLoadingCRPSchedule } =
+    useCRPSchedule(calendarMode === "crp");
   const { mutateAsync: assignSchedule, isPending: isAssigning } = useAssignSchedule();
+  const { mutateAsync: assignAllCRPSchedule, isPending: isAssigningCRP } = useAssignAllCRPSchedule();
   const { mutateAsync: removeSchedule } = useRemoveSchedule();
 
   const formMethods = useForm<AssignFormValues>({
@@ -76,13 +81,7 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
   const watchedSubjectId = useWatch({ control, name: "subjectId" });
 
   const teachers = useMemo(() => {
-    const data = teachersData as
-      | {
-          id: number;
-          person: { firstNames: string; lastNames: string; identificationNumber: string };
-          employee: { id: number } | null;
-        }[]
-      | undefined;
+    const data = teachersData as TeacherItem[] | undefined;
     return (data ?? []).filter((t) => t.employee);
   }, [teachersData]);
 
@@ -117,7 +116,7 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
           schoolYear: { id: number; isActive: boolean | null };
         }[]
       | undefined;
-    return (data ?? []).filter((a) => a.schoolYear?.isActive && !a.isSpecialGroup);
+    return (data ?? []).filter((a) => a.schoolYear?.isActive);
   }, [teacherAssignmentsData]);
 
   const teacherTGs = useMemo(() => {
@@ -127,8 +126,14 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
 
   const sectionTGs = useMemo(() => {
     if (!selectedSectionId) return [];
-    return allAssignments.filter((a) => a.sectionId === selectedSectionId);
+    return allAssignments.filter((a) => a.sectionId === selectedSectionId && !a.isSpecialGroup);
   }, [allAssignments, selectedSectionId]);
+
+  const teacherHasOnlyCRPs = useMemo(() => {
+    if (!selectedTeacherId) return false;
+    const regularTGs = teacherTGs.filter((a) => !a.isSpecialGroup);
+    return regularTGs.length === 0 && teacherTGs.length > 0;
+  }, [teacherTGs, selectedTeacherId]);
 
   const sectionsForTeacher = useMemo(() => {
     const seen = new Map<number, { id: number; label: string }>();
@@ -170,7 +175,10 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
         (a) => a.levelSubjectId === subjectIdNum && a.sectionId === sectionIdNum,
       );
     }
-    return sectionTGs.find((a) => a.levelSubjectId === subjectIdNum);
+    if (calendarMode === "section") {
+      return sectionTGs.find((a) => a.levelSubjectId === subjectIdNum);
+    }
+    return null;
   }, [calendarMode, watchedSectionId, watchedSubjectId, teacherTGs, sectionTGs]);
 
   const classHours = useMemo(() => {
@@ -188,9 +196,22 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
     return data?.data ?? [];
   }, [sectionScheduleData]);
 
-  const currentSchedule = calendarMode === "teacher" ? teacherSchedule : sectionSchedule;
+  const crpSchedule = useMemo(() => {
+    const data = crpScheduleData as { data: ScheduleEntry[] } | undefined;
+    return data?.data ?? [];
+  }, [crpScheduleData]);
+
+  const currentSchedule = calendarMode === "teacher"
+    ? teacherSchedule
+    : calendarMode === "section"
+      ? sectionSchedule
+      : crpSchedule;
   const isLoadingSchedule =
-    calendarMode === "teacher" ? isLoadingTeacherSchedule : isLoadingSectionSchedule;
+    calendarMode === "teacher"
+      ? isLoadingTeacherSchedule
+      : calendarMode === "section"
+        ? isLoadingSectionSchedule
+        : isLoadingCRPSchedule;
 
   const scheduleMap = useMemo(() => {
     const map = new Map<string, ScheduleEntry>();
@@ -209,7 +230,7 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
   );
 
   const handleSelectTeacher = useCallback(
-    (teacher: { id: number; employee: { id: number }; person: { firstNames: string; lastNames: string } }) => {
+    (teacher: TeacherItem) => {
       setSelectedTeacherId(teacher.employee.id);
       setSelectedTeacherName(
         `${teacher.person.firstNames} ${teacher.person.lastNames}`,
@@ -243,6 +264,14 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
     [],
   );
 
+  const handleSelectCRP = useCallback(() => {
+    setIsAnimating(true);
+    requestAnimationFrame(() => {
+      setCalendarMode("crp");
+      setIsAnimating(false);
+    });
+  }, []);
+
   const handleCellClick = useCallback(
     (dayOfWeek: number, block: number) => {
       const key = `${dayOfWeek}-${block}`;
@@ -260,15 +289,36 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
       const slotIndex = allSlots.findIndex((ch) => ch.block === block);
       const scheduleSlotId = (dayOfWeek - 1) * allSlots.length + slotIndex + 1;
 
+      if (calendarMode === "teacher" && teacherHasOnlyCRPs) return;
+
+      if (calendarMode === "crp") {
+        setAssignSlotId(scheduleSlotId);
+        setAssignDialogOpen(true);
+        return;
+      }
+
       setAssignSlotId(scheduleSlotId);
       reset({ sectionId: "", subjectId: "", classroom: "" });
       setAssignDialogOpen(true);
     },
-    [scheduleMap, classHours, calendarMode, selectedSectionLevelId, getRecessBlock, reset],
+    [scheduleMap, classHours, calendarMode, selectedSectionLevelId, getRecessBlock, reset, teacherHasOnlyCRPs],
   );
 
   const handleAssign = handleSubmit(async (values) => {
-    if (!assignSlotId || !selectedTG) return;
+    if (!assignSlotId) return;
+
+    if (calendarMode === "crp") {
+      await assignAllCRPSchedule({
+        scheduleSlotId: assignSlotId,
+        classroom: values.classroom || undefined,
+      });
+      setAssignDialogOpen(false);
+      setAssignSlotId(null);
+      reset({ sectionId: "", subjectId: "", classroom: "" });
+      return;
+    }
+
+    if (!selectedTG) return;
     await assignSchedule({
       teachingGroupId: selectedTG.id,
       scheduleSlotId: assignSlotId,
@@ -431,6 +481,18 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                   </div>
                 </button>
               ))}
+              <button
+                onClick={handleSelectCRP}
+                className="w-full flex items-center gap-3 p-4 hover:bg-purple-50/50 transition cursor-pointer text-left group"
+              >
+                <div className="w-10 h-10 bg-linear-to-br from-purple-600 to-purple-800 rounded-full flex items-center justify-center text-white font-bold text-xs shrink-0 group-hover:from-purple-700 group-hover:to-purple-900 transition">
+                  CRP
+                </div>
+                <div className="min-w-0">
+                  <p className="font-medium text-gray-800">CRP</p>
+                  <p className="text-xs text-gray-400">Horario común de todos los CRPs</p>
+                </div>
+              </button>
             </div>
           )}
         </div>
@@ -462,12 +524,18 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
             <h1 className="text-xl font-bold text-gray-800">
               {calendarMode === "teacher"
                 ? selectedTeacherName
-                : selectedSectionLabel}
+                : calendarMode === "section"
+                  ? selectedSectionLabel
+                  : "CRP"}
             </h1>
             <p className="text-sm text-gray-500">
               {calendarMode === "teacher"
-                ? "Horario del docente"
-                : "Horario de la sección"}
+                ? teacherHasOnlyCRPs
+                  ? "Horario del docente (solo CRP — solo lectura)"
+                  : "Horario del docente"
+                : calendarMode === "section"
+                  ? "Horario de la sección"
+                  : "Horario común de todos los CRPs"}
             </p>
           </div>
         </div>
@@ -526,9 +594,12 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                         }
 
                         if (isOccupied) {
+                          const cellColor = entry.isSpecialGroup
+                            ? "bg-purple-600"
+                            : "bg-(--blueColor)";
                           return (
                             <td key={day} className="px-2 py-2 text-center">
-                              <div className="h-16 bg-(--blueColor) rounded-lg flex flex-col items-center justify-center gap-0.5 relative group">
+                              <div className={`h-16 ${cellColor} rounded-lg flex flex-col items-center justify-center gap-0.5 relative group`}>
                                 <span className="text-[10px] font-bold text-white leading-tight">
                                   {entry.subjectCode ?? entry.subject}
                                 </span>
@@ -537,9 +608,19 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                                     {entry.section}
                                   </span>
                                 )}
+                                {calendarMode === "teacher" && entry.isSpecialGroup && entry.groupName && (
+                                  <span className="text-[9px] text-purple-200">
+                                    {entry.groupName}
+                                  </span>
+                                )}
                                 {calendarMode === "section" && entry.teacherName && (
                                   <span className="text-[9px] text-blue-200 leading-tight">
                                     {entry.teacherName}
+                                  </span>
+                                )}
+                                {calendarMode === "crp" && (
+                                  <span className="text-[9px] text-purple-200">
+                                    {entry.level}
                                   </span>
                                 )}
                                 {entry.classroom && (
@@ -547,15 +628,17 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                                     {entry.classroom}
                                   </span>
                                 )}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRemove(entry.id);
-                                  }}
-                                  className="absolute top-0.5 right-0.5 p-0.5 rounded bg-red-500/80 opacity-0 group-hover:opacity-100 transition cursor-pointer"
-                                >
-                                  <Trash2 size={10} className="text-white" />
-                                </button>
+                                {!(calendarMode === "teacher" && teacherHasOnlyCRPs) && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRemove(entry.id);
+                                    }}
+                                    className="absolute top-0.5 right-0.5 p-0.5 rounded bg-red-500/80 opacity-0 group-hover:opacity-100 transition cursor-pointer"
+                                  >
+                                    <Trash2 size={10} className="text-white" />
+                                  </button>
+                                )}
                               </div>
                             </td>
                           );
@@ -563,10 +646,14 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
 
                         return (
                           <td key={day} className="px-2 py-2 text-center">
-                            <button
-                              onClick={() => handleCellClick(day, ch.block)}
-                              className="h-16 w-full bg-white border border-gray-200 rounded-lg hover:border-(--blueColor) hover:bg-blue-50 transition cursor-pointer"
-                            />
+                            {calendarMode === "teacher" && teacherHasOnlyCRPs ? (
+                              <div className="h-16 w-full bg-gray-50 border border-gray-100 rounded-lg" />
+                            ) : (
+                              <button
+                                onClick={() => handleCellClick(day, ch.block)}
+                                className="h-16 w-full bg-white border border-gray-200 rounded-lg hover:border-(--blueColor) hover:bg-blue-50 transition cursor-pointer"
+                              />
+                            )}
                           </td>
                         );
                       })}
@@ -582,6 +669,7 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
   );
 
   const assignFields = useMemo(() => {
+    if (calendarMode === "crp") return [];
     const fields = [];
     if (calendarMode === "teacher") {
       fields.push(sectionField);
@@ -634,16 +722,16 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                disabled={!selectedTG || isAssigning}
-                className="bg-linear-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 cursor-pointer disabled:opacity-50"
-              >
-                {isAssigning ? (
-                  <Loader2 size={16} className="animate-spin mr-1" />
-                ) : null}
-                Asignar
-              </Button>
+            <Button
+              type="submit"
+              disabled={calendarMode !== "crp" && !selectedTG || isAssigning || isAssigningCRP}
+              className="bg-linear-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 cursor-pointer disabled:opacity-50"
+            >
+              {isAssigning || isAssigningCRP ? (
+                <Loader2 size={16} className="animate-spin mr-1" />
+              ) : null}
+              Asignar
+            </Button>
             </div>
           </form>
         </FormProvider>
