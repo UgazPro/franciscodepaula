@@ -12,9 +12,10 @@ import PendingSubjects from "./views/PendingSubjects/PendingSubjects";
 import StudentGradesReview from "./views/StudentGradesReview/StudentGradesReview";
 import Review from "./views/Review/Review";
 import GradeAdjustments from "./views/GradeAdjustments/GradeAdjustments";
+import Newsletters from "./views/Newsletters/Newsletters";
 import type { IRepresentative } from "@/services/users/user.interface";
 
-type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp" | "carga-notas" | "revision" | "materias-pendientes" | "notas-estudiantiles" | "sabana";
+type ActiveTab = "estudiantes" | "representantes" | "asignaciones" | "crp" | "carga-notas" | "revision" | "materias-pendientes" | "notas-estudiantiles" | "sabana" | "boletines";
 
 const tabs = [
     { value: "estudiantes" as const, label: "Estudiantes" },
@@ -26,6 +27,7 @@ const tabs = [
     { value: "materias-pendientes" as const, label: "Materias Pendiente" },
     { value: "notas-estudiantiles" as const, label: "Notas Estudiantiles" },
     { value: "sabana" as const, label: "Sabana" },
+    { value: "boletines" as const, label: "Boletines" },
 ];
 
 export default function AcademicMonitoring() {
@@ -97,6 +99,10 @@ export default function AcademicMonitoring() {
             ) : activeTab === "sabana" ? (
                 <div className="flex-1 min-h-0">
                     <GradeAdjustments tabsComponent={tabsComponent} />
+                </div>
+            ) : activeTab === "boletines" ? (
+                <div className="flex-1 min-h-0">
+                    <Newsletters tabsComponent={tabsComponent} />
                 </div>
             ) : null}
         </div>
