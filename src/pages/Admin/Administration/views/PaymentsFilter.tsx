@@ -138,7 +138,7 @@ export default function PaymentsFilter() {
                 onClick={() => setFilterPaymentMethodId(filters.paymentMethodId === pm.id ? null : pm.id)}
                 className={pillClass(filters.paymentMethodId === pm.id)}
               >
-                {pm.type}
+                {pm.paymentType?.type ?? pm.type}
               </button>
             ))}
           </div>

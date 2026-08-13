@@ -164,7 +164,8 @@ export async function generatePaymentsPdf(payments: PaymentResponse[]): Promise<
   doc.text(`Total de pagos: ${payments.length}`, 48, 36);
 
   const tableRows = payments.map((p) => {
-    const studentFee = p.studentFees?.[0];
+    const studentFeePayment = p.studentFeePayments?.[0];
+    const studentFee = studentFeePayment?.studentFee;
     const person = studentFee?.student?.person;
     const studentName = person
       ? `${person.firstNames} ${person.lastNames}`
@@ -173,7 +174,7 @@ export async function generatePaymentsPdf(payments: PaymentResponse[]): Promise<
     const feeName = studentFee?.fee?.name ?? "—";
     const currencySymbol = p.currency === "VES" ? "Bs." : "$";
     const amount = `${currencySymbol} ${Number(p.totalAmount).toFixed(2)}`;
-    const method = p.paymentMethod?.type ?? "—";
+    const method = p.paymentMethod?.paymentType?.type ?? "—";
     const date = p.paymentDate
       ? new Date(p.paymentDate).toLocaleDateString("es-ES", {
           day: "2-digit",

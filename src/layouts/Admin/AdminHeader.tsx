@@ -100,7 +100,7 @@ export default function AdminHeader() {
 
   const userDB = useUserData();
   const logout = useAuthStore((s) => s.logout);
-  const { data: latestExchange } = useExchangeRate();
+  const { data: latestExchange } = useExchangeRate(location.pathname === "/admin/administracion");
 
   const query = useSearchStore((s) => s.query);
   const results = useSearchStore((s) => s.results);
@@ -112,8 +112,8 @@ export default function AdminHeader() {
 
   const { data: rawResults, isLoading } = useGlobalSearch(query);
 
-  const exchangeRate = latestExchange ? Number(latestExchange.rate) : 0;
-  const exchangeRateDate = latestExchange ? new Date(latestExchange.date) : new Date();
+  const exchangeRate = latestExchange?.defaultRate ? Number(latestExchange.defaultRate.rate) : 0;
+  const exchangeRateDate = latestExchange?.defaultRate ? new Date(latestExchange.defaultRate.date) : new Date();
 
   const user = {
     name: userDB?.person.firstNames + " " + userDB?.person.lastNames || "Ana Gómez",

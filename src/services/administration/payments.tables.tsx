@@ -16,8 +16,8 @@ export const paymentColumns = ({ onDelete, onEdit }: Actions): Column<PaymentRes
   {
     header: "Estudiante",
     render: (payment) => {
-      const fees = payment.studentFees ?? [];
-      const uniqueStudents = [...new Set(fees.map((sf) => sf.studentId))];
+      const sfp = payment.studentFeePayments ?? [];
+      const uniqueStudents = [...new Set(sfp.map((sf) => sf.studentFee.studentId))];
       if (uniqueStudents.length > 1) {
         return (
           <div className="flex items-center gap-3">
@@ -32,7 +32,7 @@ export const paymentColumns = ({ onDelete, onEdit }: Actions): Column<PaymentRes
           </div>
         );
       }
-      const studentFee = fees[0];
+      const studentFee = sfp[0]?.studentFee;
       const person = studentFee?.student?.person;
       return (
         <div className="flex items-center gap-3">
@@ -52,8 +52,8 @@ export const paymentColumns = ({ onDelete, onEdit }: Actions): Column<PaymentRes
   {
     header: "Concepto de Pago",
     render: (payment) => {
-      const fees = payment.studentFees ?? [];
-      const uniqueFeeNames = [...new Set(fees.map((sf) => sf.fee?.name).filter(Boolean))];
+      const sfp = payment.studentFeePayments ?? [];
+      const uniqueFeeNames = [...new Set(sfp.map((sf) => sf.studentFee.fee?.name).filter(Boolean))];
       if (uniqueFeeNames.length > 1) {
         return (
           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-700 border border-gray-300">
@@ -129,7 +129,7 @@ export const paymentColumns = ({ onDelete, onEdit }: Actions): Column<PaymentRes
   {
     header: "Método",
     render: (payment) => (
-      <span className="text-gray-600">{payment.paymentMethod?.type ?? "—"}</span>
+      <span className="text-gray-600">{payment.paymentMethod?.paymentType?.type ?? "—"}</span>
     ),
   },
   {
@@ -155,9 +155,9 @@ export const paymentColumns = ({ onDelete, onEdit }: Actions): Column<PaymentRes
 ];
 
 export const paymentExpandedRender = (payment: PaymentResponse) => {
-  const fees = payment.studentFees ?? [];
-  const uniqueStudents = [...new Set(fees.map((sf) => sf.studentId))];
-  const uniqueFeeNames = [...new Set(fees.map((sf) => sf.fee?.name).filter(Boolean))];
+  const sfp = payment.studentFeePayments ?? [];
+  const uniqueStudents = [...new Set(sfp.map((sf) => sf.studentFee.studentId))];
+  const uniqueFeeNames = [...new Set(sfp.map((sf) => sf.studentFee.fee?.name).filter(Boolean))];
   const exchangeRate = Number(payment.exchange?.rate ?? 0);
 
   // Escenario 1: 1 estudiante + 1 concepto
@@ -170,6 +170,9 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Nombre</th>
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Cédula</th>
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Teléfono</th>
+              {payment.paymentMethod?.paymentType?.type?.toLowerCase() === "zelle" && (
+                <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Pagado por (Zelle)</th>
+              )}
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Estado</th>
             </tr>
           </thead>
@@ -184,6 +187,11 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
               <td className="px-3 py-1.5">
                 <p className="text-[11px] text-gray-400">{payment.payerPhone ?? ""}</p>
               </td>
+              {payment.paymentMethod?.paymentType?.type?.toLowerCase() === "zelle" && (
+                <td className="px-3 py-1.5">
+                  <p className="font-medium text-gray-600">{payment.zellePayer ?? "—"}</p>
+                </td>
+              )}
               <td className="px-3 py-1.5">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-700">Pagado</span>
               </td>
@@ -202,6 +210,9 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
           <thead>
             <tr className="bg-(--blueColor) text-white">
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Pagado por</th>
+              {payment.paymentMethod?.paymentType?.type?.toLowerCase() === "zelle" && (
+                <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Nombre en Zelle</th>
+              )}
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Concepto</th>
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Monto (Bs.)</th>
               <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Monto ($)</th>
@@ -209,16 +220,22 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
             </tr>
           </thead>
           <tbody className="bg-gray-100">
-            {fees.map((sf) => {
-              const usdVal = Number(sf.fee?.value ?? 0);
+            {sfp.map((sf) => {
+              const amount = Number(sf.amount ?? 0);
+              const usdVal = sf.studentFee.fee?.name === "Inscripción" ? amount : amount;
               const vesVal = usdVal * exchangeRate;
               return (
-                <tr key={`${sf.studentId}-${sf.feeId}`}>
+                <tr key={`${sf.studentFee.studentId}-${sf.studentFee.feeId}-${sf.id}`}>
                   <td className="px-3 py-1.5">
                     <p className="font-medium text-gray-600">{payment.payerName ?? "—"}</p>
                     <p className="text-[11px] text-gray-400">{payment.payerIdentification ?? ""}</p>
                   </td>
-                  <td className="px-3 py-1.5 text-gray-600">{sf.fee?.name === "Inscripción" ? "Inscripción" : `Mensualidad ${sf.fee?.name ?? "—"}`}</td>
+                  {payment.paymentMethod?.paymentType?.type?.toLowerCase() === "zelle" && (
+                    <td className="px-3 py-1.5">
+                      <p className="font-medium text-gray-600">{payment.zellePayer ?? "—"}</p>
+                    </td>
+                  )}
+                  <td className="px-3 py-1.5 text-gray-600">{sf.studentFee.fee?.name === "Inscripción" ? "Inscripción" : `Mensualidad ${sf.studentFee.fee?.name ?? "—"}`}</td>
                   <td className="px-3 py-1.5 text-blue-900 font-bold">Bs. {vesVal.toFixed(2)}</td>
                   <td className="px-3 py-1.5 text-green-700 font-bold">$ {usdVal.toFixed(2)}</td>
                   <td className="px-3 py-1.5">
@@ -244,30 +261,38 @@ export const paymentExpandedRender = (payment: PaymentResponse) => {
             <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Monto (Bs.)</th>
             <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Monto ($)</th>
             <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Pagado por</th>
+            {payment.paymentMethod?.paymentType?.type?.toLowerCase() === "zelle" && (
+              <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Nombre en Zelle</th>
+            )}
             <th className="px-3 py-1.5 text-left text-[11px] font-semibold uppercase tracking-wider">Estado</th>
           </tr>
         </thead>
         <tbody className="bg-gray-100">
-          {fees.map((sf) => {
-            const usdVal = Number(sf.fee?.value ?? 0);
-            const vesVal = usdVal * exchangeRate;
+          {sfp.map((sf) => {
+            const amount = Number(sf.amount ?? 0);
+            const vesVal = amount * exchangeRate;
             return (
-              <tr key={`${sf.studentId}-${sf.feeId}`}>
+              <tr key={`${sf.studentFee.studentId}-${sf.studentFee.feeId}-${sf.id}`}>
                 <td className="px-3 py-1.5">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-[10px] shrink-0">
-                      {sf.student.person.firstNames.charAt(0)}{sf.student.person.lastNames.charAt(0)}
+                      {sf.studentFee.student.person.firstNames.charAt(0)}{sf.studentFee.student.person.lastNames.charAt(0)}
                     </div>
-                    <span className="text-gray-700">{sf.student.person.firstNames} {sf.student.person.lastNames}</span>
+                    <span className="text-gray-700">{sf.studentFee.student.person.firstNames} {sf.studentFee.student.person.lastNames}</span>
                   </div>
                 </td>
-                <td className="px-3 py-1.5 text-gray-600">{sf.fee?.name === "Inscripción" ? "Inscripción" : `Mensualidad ${sf.fee?.name ?? "—"}`}</td>
+                <td className="px-3 py-1.5 text-gray-600">{sf.studentFee.fee?.name === "Inscripción" ? "Inscripción" : `Mensualidad ${sf.studentFee.fee?.name ?? "—"}`}</td>
                 <td className="px-3 py-1.5 text-blue-900 font-bold">Bs. {vesVal.toFixed(2)}</td>
-                <td className="px-3 py-1.5 text-green-700 font-bold">$ {usdVal.toFixed(2)}</td>
+                <td className="px-3 py-1.5 text-green-700 font-bold">$ {amount.toFixed(2)}</td>
                 <td className="px-3 py-1.5">
                   <p className="text-gray-600">{payment.payerName ?? "—"}</p>
                   <p className="text-[11px] text-gray-400">{payment.payerIdentification ?? ""}</p>
                 </td>
+                {payment.paymentMethod?.paymentType?.type?.toLowerCase() === "zelle" && (
+                  <td className="px-3 py-1.5">
+                    <p className="font-medium text-gray-600">{payment.zellePayer ?? "—"}</p>
+                  </td>
+                )}
                 <td className="px-3 py-1.5">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium bg-green-100 text-green-700">Pagado</span>
                 </td>

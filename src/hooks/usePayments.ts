@@ -55,7 +55,7 @@ export const useFees = () => {
   });
 };
 
-export const useExchangeRate = () => {
+export const useExchangeRate = (enabled = true) => {
   return useQuery({
     queryKey: ["exchange-rate"],
     queryFn: () => getDataApi("/payments/exchange"),
@@ -64,5 +64,6 @@ export const useExchangeRate = () => {
     refetchOnMount: false,
     refetchOnReconnect: false,
     refetchInterval: 1000 * 60 * 60,
+    enabled,
   });
 };

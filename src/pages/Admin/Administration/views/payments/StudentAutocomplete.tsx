@@ -3,12 +3,27 @@ import { useStudentsWithDebts } from "@/hooks/useStudentsWithDebts";
 import { Search } from "lucide-react";
 import type { IStudent } from "@/services/users/user.interface";
 
+export interface StudentDebtInfo {
+  feeId: number;
+  feeName: string;
+  totalValue: number;
+  paidAmount: number;
+  pending: number;
+  schoolYearName?: string;
+}
+
 interface StudentWithDebts extends IStudent {
-  paidFeeIds: number[];
+  paidFeeIds?: number[];
+  debts?: StudentDebtInfo[];
+  enrollments?: {
+    schoolYear?: {
+      fees?: { id: number }[];
+    };
+  }[];
 }
 
 interface StudentAutocompleteProps {
-  onSelect: (student: IStudent, paidFeeIds: number[]) => void;
+  onSelect: (student: IStudent, paidFeeIds: number[], debts: StudentDebtInfo[]) => void;
   excludeIds?: number[];
 }
 
@@ -31,7 +46,13 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
 
   const handleSelect = useCallback(
     (student: StudentWithDebts) => {
-      onSelect(student, student.paidFeeIds);
+      const allStudentFeeIds = student.enrollments?.flatMap(
+        (e) => e.schoolYear?.fees?.map((f) => f.id) ?? [],
+      ) ?? [];
+      const debtFeeIds = student.debts?.map((d) => d.feeId) ?? [];
+      const paidFeeIds = student.paidFeeIds ?? allStudentFeeIds.filter((id) => !debtFeeIds.includes(id));
+      const debts = student.debts ?? [];
+      onSelect(student, paidFeeIds, debts);
       setQuery("");
       setIsOpen(false);
     },
@@ -54,7 +75,7 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
   }, []);
 
   return (
-    <div ref={wrapperRef} className="relative">
+    <div ref={wrapperRef} className="relative z-50">
       <div className="relative">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
         <input
@@ -63,12 +84,12 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
           onChange={handleInputChange}
           onFocus={() => { if (query || rawData.length > 0) setIsOpen(true); }}
           placeholder="Buscar estudiante..."
-          className="w-full pl-10 pr-4 h-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) focus:border-transparent"
+          className="w-full pl-10 pr-4 h-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) focus:border-transparent"
         />
       </div>
 
       {isOpen && filtered.length > 0 && (
-        <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg overflow-y-auto max-h-52">
           {filtered.map((s) => (
             <button
               key={s.id}

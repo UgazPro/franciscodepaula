@@ -6,6 +6,7 @@ export interface PaymentResponse {
   currency: "USD" | "VES";
   paymentDate: string;
   reference: string | null;
+  zellePayer: string | null;
   payerName: string | null;
   payerIdentification: string | null;
   payerPhone: string | null;
@@ -13,12 +14,16 @@ export interface PaymentResponse {
   status: boolean;
   paymentMethod: PaymentMethod;
   exchange: Exchange | null;
-  studentFees: StudentFeeResponse[];
+  studentFeePayments: StudentFeePaymentResponse[];
 }
 
 export interface PaymentMethod {
   id: number;
-  type: string;
+  paymentType: {
+    id: number;
+    type: string;
+    currency: "USD" | "VES";
+  };
   bank: string | null;
   accountNumber: string | null;
   identification: string | null;
@@ -42,11 +47,18 @@ export interface FeeResponse {
   };
 }
 
+export interface StudentFeePaymentResponse {
+  id: number;
+  studentFeeId: number;
+  paymentId: number;
+  amount: number;
+  studentFee: StudentFeeResponse;
+}
+
 export interface StudentFeeResponse {
   id: number;
   studentId: number;
   feeId: number;
-  paymentId: number;
   status: boolean | null;
   student: {
     id: number;
@@ -67,18 +79,63 @@ export interface Exchange {
   id: number;
   rate: number;
   date: string;
+  setByUser: boolean;
+}
+
+export interface ExchangeResponse {
+  latest: Exchange | null;
+  defaultRate: Exchange | null;
+}
+
+export interface PaymentEntry {
+  id: string;
+  paymentMethodId: number;
+  amount: number;
+  reference: string;
+  zellePayer: string;
+}
+
+export interface StudentWithDebts {
+  id: number;
+  personId: number;
+  status: boolean;
+  person: {
+    id: number;
+    firstNames: string;
+    lastNames: string;
+    identificationNumber: string;
+    profilePhoto: string | null;
+  };
+  debts: {
+    feeId: number;
+    feeName: string;
+    totalValue: number;
+    paidAmount: number;
+    pending: number;
+    schoolYearName?: string;
+  }[];
+  representatives?: {
+    representative: {
+      user: {
+        person: {
+          firstNames: string;
+          lastNames: string;
+          identificationNumber: string;
+        };
+        phone: string | null;
+      };
+    };
+  }[];
 }
 
 export interface PaymentFormValues {
-  studentId: number;
-  feeId: number;
-  description: string;
+  exchangeRate: number;
   totalAmount: number;
-  currency: "USD" | "VES";
-  paymentMethodId: number;
-  reference: string;
   payerName: string;
   payerIdentification: string;
   payerPhone: string;
+  reference: string;
+  description: string;
   paymentDate: Date;
+  paymentEntries: PaymentEntry[];
 }

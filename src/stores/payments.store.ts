@@ -71,7 +71,7 @@ export const usePaymentsStore = create<PaymentsStore>((set) => ({
   setSearchTerm: (v) => set({ searchTerm: v }),
   step: 1,
   setStep: (step) => set({ step }),
-  totalSteps: 2,
+  totalSteps: 3,
 
   // Filters
   filters: { ...defaultFilters },
