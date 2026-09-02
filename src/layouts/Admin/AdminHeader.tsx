@@ -165,6 +165,7 @@ export default function AdminHeader() {
       "/admin/control-estudio": "Control de Estudio",
       "/admin/profesores": "Gestión de Profesores",
       "/admin/administracion": "Administración",
+      "/admin/administracion/cuentas": "Cuentas",
       "/admin/secretaria": "Secretaría",
       "/admin/coordinacion": "Coordinación",
       "/admin/estudiantes": "Estudiantes",

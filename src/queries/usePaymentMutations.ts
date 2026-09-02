@@ -62,3 +62,38 @@ export const useDeletePayment = () => {
     },
   });
 };
+
+export interface PaymentMethodPayload {
+  paymentTypeId: number;
+  bank?: string;
+  accountNumber?: string;
+  identification?: string;
+  email?: string;
+  phone?: string;
+  owner?: string;
+  active?: boolean;
+}
+
+export const useCreatePaymentMethod = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: PaymentMethodPayload) =>
+      postDataApi("/payments/payment-methods", data as Record<string, unknown>),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payment-methods"] });
+    },
+  });
+};
+
+export const useUpdatePaymentMethod = () => {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: PaymentMethodPayload }) =>
+      putDataApi(`/payments/payment-methods/${id}`, data as Record<string, unknown>),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["payment-methods"] });
+    },
+  });
+};

@@ -41,6 +41,7 @@ export interface FeeResponse {
   createdAt: string;
   startAt: string;
   endAt: string;
+  appliesScholarship: boolean;
   schoolYear?: {
     id: number;
     name: string;

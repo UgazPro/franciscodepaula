@@ -34,6 +34,7 @@ interface SelectedFeeInfo {
   fee: FeeResponse;
   paidAmount: number;
   pending: number;
+  scholarshipDiscount: number;
 }
 
 export default function PaymentForm() {
@@ -86,6 +87,7 @@ export default function PaymentForm() {
           fee,
           paidAmount,
           pending: debt ? debt.pending : 0,
+          scholarshipDiscount: debt?.scholarshipDiscount ?? 0,
         });
       }
     }
@@ -657,6 +659,7 @@ export default function PaymentForm() {
                               studentName={info.studentName}
                               mixedCurrencies={hasMixedCurrencies}
                               readOnly
+                              scholarshipDiscount={info.scholarshipDiscount}
                             />
                           );
                         })}

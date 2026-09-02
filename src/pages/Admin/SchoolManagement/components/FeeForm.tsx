@@ -18,6 +18,7 @@ const feeFormSchema = z.object({
   valueVES: z.number().optional(),
   startAt: z.date({ error: "Seleccione una fecha de inicio" }),
   endAt: z.date({ error: "Seleccione una fecha de fin" }),
+  appliesScholarship: z.boolean().default(false),
 });
 
 type FeeFormValues = z.infer<typeof feeFormSchema>;
@@ -25,7 +26,7 @@ type FeeFormValues = z.infer<typeof feeFormSchema>;
 interface FeeFormProps {
   fee: FeeResponse | null;
   schoolYear: { id: number; name: string } | null;
-  onSave: (data: { name: string; value: number; startAt: Date; endAt: Date }) => Promise<void>;
+  onSave: (data: { name: string; value: number; startAt: Date; endAt: Date; appliesScholarship: boolean }) => Promise<void>;
   onBack: () => void;
 }
 
@@ -43,6 +44,7 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
       valueVES: undefined as never,
       startAt: undefined as never,
       endAt: undefined as never,
+      appliesScholarship: false,
     },
   });
 
@@ -55,6 +57,7 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
       setValue("valueUSD", Number(fee.value));
       setValue("startAt", new Date(fee.startAt));
       setValue("endAt", new Date(fee.endAt));
+      setValue("appliesScholarship", fee.appliesScholarship);
     }
   }, [fee, setValue]);
 
@@ -74,6 +77,7 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
         value: data.valueUSD,
         startAt: data.startAt,
         endAt: data.endAt,
+        appliesScholarship: data.appliesScholarship,
       });
     } finally {
       setIsPending(false);
@@ -119,6 +123,19 @@ export default function FeeForm({ fee, schoolYear, onSave, onBack }: FeeFormProp
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FieldRenderer field={feeFormByName.startAt} />
             <FieldRenderer field={feeFormByName.endAt} />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="appliesScholarship"
+              checked={form.watch("appliesScholarship")}
+              onChange={(e) => form.setValue("appliesScholarship", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-green-600 focus:ring-green-500"
+            />
+            <label htmlFor="appliesScholarship" className="text-sm font-medium text-gray-700">
+              Aplica Beca
+            </label>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">

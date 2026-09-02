@@ -1,43 +1,25 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useStudentsWithDebts } from "@/hooks/useStudentsWithDebts";
 import { Search } from "lucide-react";
 import type { IStudent } from "@/services/users/user.interface";
 
-export interface StudentDebtInfo {
-  feeId: number;
-  feeName: string;
-  totalValue: number;
-  paidAmount: number;
-  pending: number;
-  schoolYearName?: string;
-  scholarshipDiscount: number;
-}
-
-interface StudentWithDebts extends IStudent {
-  paidFeeIds?: number[];
-  debts?: StudentDebtInfo[];
-  enrollments?: {
-    schoolYear?: {
-      fees?: { id: number }[];
-    };
-  }[];
-}
-
 interface StudentAutocompleteProps {
-  onSelect: (student: IStudent, paidFeeIds: number[], debts: StudentDebtInfo[]) => void;
-  excludeIds?: number[];
+  onSelect: (student: IStudent) => void;
+  selectedStudent: IStudent | null;
+  onClear: () => void;
+  disabled?: boolean;
 }
 
-export default function StudentAutocomplete({ onSelect, excludeIds = [] }: StudentAutocompleteProps) {
+export default function StudentAutocomplete({ onSelect, selectedStudent, onClear, disabled }: StudentAutocompleteProps) {
   const { data: rawData = [] } = useStudentsWithDebts();
 
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  const filtered = (rawData as StudentWithDebts[])
+  const filtered = (rawData as IStudent[])
     .filter((s) => {
-      if (excludeIds.includes(s.id)) return false;
+      if (s.status === false) return false;
       const name = `${s.person.firstNames} ${s.person.lastNames}`.toLowerCase();
       const id = (s.person.identificationNumber ?? "").toLowerCase();
       const term = query.toLowerCase();
@@ -46,24 +28,13 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
     .slice(0, 10);
 
   const handleSelect = useCallback(
-    (student: StudentWithDebts) => {
-      const allStudentFeeIds = student.enrollments?.flatMap(
-        (e) => e.schoolYear?.fees?.map((f) => f.id) ?? [],
-      ) ?? [];
-      const debtFeeIds = student.debts?.map((d) => d.feeId) ?? [];
-      const paidFeeIds = student.paidFeeIds ?? allStudentFeeIds.filter((id) => !debtFeeIds.includes(id));
-      const debts = student.debts ?? [];
-      onSelect(student, paidFeeIds, debts);
+    (student: IStudent) => {
+      onSelect(student);
       setQuery("");
       setIsOpen(false);
     },
     [onSelect],
   );
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setQuery(e.target.value);
-    setIsOpen(true);
-  };
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -75,6 +46,31 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  if (selectedStudent) {
+    return (
+      <div className="flex items-center gap-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="w-10 h-10 bg-linear-to-br from-blue-900 to-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
+          {selectedStudent.person.firstNames.charAt(0)}{selectedStudent.person.lastNames.charAt(0)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-gray-800 truncate">
+            {selectedStudent.person.firstNames} {selectedStudent.person.lastNames}
+          </p>
+          <p className="text-xs text-gray-400">{selectedStudent.person.identificationNumber}</p>
+        </div>
+        {!disabled && (
+          <button
+            type="button"
+            onClick={onClear}
+            className="text-xs text-red-500 hover:text-red-700 cursor-pointer shrink-0"
+          >
+            Cambiar
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div ref={wrapperRef} className="relative z-50">
       <div className="relative">
@@ -82,10 +78,11 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
         <input
           type="text"
           value={query}
-          onChange={handleInputChange}
-          onFocus={() => { if (query || rawData.length > 0) setIsOpen(true); }}
-          placeholder="Buscar estudiante..."
-          className="w-full pl-10 pr-4 h-10 border rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) focus:border-transparent"
+          onChange={(e) => { setQuery(e.target.value); setIsOpen(true); }}
+          onFocus={() => { if (rawData.length > 0) setIsOpen(true); }}
+          placeholder="Buscar estudiante por nombre o cédula..."
+          disabled={disabled}
+          className="w-full pl-10 pr-4 h-10 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor) focus:border-transparent disabled:bg-gray-50"
         />
       </div>
 
@@ -105,12 +102,16 @@ export default function StudentAutocomplete({ onSelect, excludeIds = [] }: Stude
                 <p className="text-sm font-medium text-gray-800">
                   {s.person.firstNames} {s.person.lastNames}
                 </p>
-                <p className="text-xs text-gray-400">
-                  {s.person.identificationNumber}
-                </p>
+                <p className="text-xs text-gray-400">{s.person.identificationNumber}</p>
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {isOpen && query && filtered.length === 0 && (
+        <div className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-400 text-sm">
+          No se encontraron estudiantes
         </div>
       )}
     </div>

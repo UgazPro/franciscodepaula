@@ -113,6 +113,7 @@ export default function Rates() {
     value: number;
     startAt: Date;
     endAt: Date;
+    appliesScholarship: boolean;
   }) => {
     if (!activeSchoolYear) return;
 

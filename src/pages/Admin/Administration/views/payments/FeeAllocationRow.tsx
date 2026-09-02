@@ -10,6 +10,7 @@ interface FeeAllocationRowProps {
   studentName?: string;
   mixedCurrencies?: boolean;
   readOnly?: boolean;
+  scholarshipDiscount?: number;
 }
 
 export default function FeeAllocationRow({
@@ -22,8 +23,10 @@ export default function FeeAllocationRow({
   studentName,
   mixedCurrencies = false,
   readOnly = false,
+  scholarshipDiscount = 0,
 }: FeeAllocationRowProps) {
-  const totalValue = Number(fee.value);
+  const feeTotal = Number(fee.value);
+  const totalValue = Math.max(0, feeTotal - scholarshipDiscount);
   const pendingBefore = totalValue - paidAmount;
   const pendingAfter = pendingBefore - assignedAmount;
   const progress = totalValue > 0 ? ((paidAmount + assignedAmount) / totalValue) * 100 : 0;
@@ -73,7 +76,11 @@ export default function FeeAllocationRow({
 
       {/* Totals info */}
       <p className="text-xs text-gray-400">
-        Total: ${totalValue.toFixed(2)} | Pagado: ${paidAmount.toFixed(2)} | Pendiente: ${pendingBefore.toFixed(2)}
+        Total: ${Number(fee.value).toFixed(2)}
+        {scholarshipDiscount > 0 && (
+          <span className="text-green-600 font-medium"> | Beca: -${scholarshipDiscount.toFixed(2)}</span>
+        )}
+        {" | Pagado: $"}{paidAmount.toFixed(2)} | Pendiente: ${totalValue.toFixed(2)}
       </p>
 
       {/* Progress bar */}
