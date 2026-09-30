@@ -1,13 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCreatePayrollPeriod } from "@/queries/usePayrollMutations";
-import type { PayrollHalf } from "@/services/payroll/payroll.types";
-
-const MONTHS = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
-];
+import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
 
 interface PayrollPeriodFormProps {
   onBack: () => void;
@@ -15,23 +10,16 @@ interface PayrollPeriodFormProps {
 
 export default function PayrollPeriodForm({ onBack }: PayrollPeriodFormProps) {
   const { mutateAsync: createPeriod, isPending } = useCreatePayrollPeriod();
+  const { data: activeSchoolYear } = useActiveSchoolYear();
 
-  const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
-  const [year, setYear] = useState<number>(new Date().getFullYear());
-  const [half, setHalf] = useState<PayrollHalf>("FIRST_HALF");
+  const [payrollHalf, setPayrollHalf] = useState<number>(1);
+  const [schoolYearId, setSchoolYearId] = useState<number>(activeSchoolYear?.id ?? 1);
 
-  const getHalfDates = () => {
-    const lastDay = new Date(year, month, 0).getDate();
-    if (half === "FIRST_HALF") {
-      return { startDate: `${year}-${String(month).padStart(2, "0")}-01`, endDate: `${year}-${String(month).padStart(2, "0")}-15` };
-    }
-    return { startDate: `${year}-${String(month).padStart(2, "0")}-16`, endDate: `${year}-${String(month).padStart(2, "0")}-${lastDay}` };
-  };
+  const halfLabel = payrollHalf === 1 ? "Primera Quincena" : "Segunda Quincena";
 
   const handleSubmit = async () => {
-    const dates = getHalfDates();
     try {
-      await createPeriod({ month, year, half, ...dates });
+      await createPeriod({ payrollHalf, schoolYearId });
       onBack();
     } catch {
       // interceptor handles the toast
@@ -50,32 +38,25 @@ export default function PayrollPeriodForm({ onBack }: PayrollPeriodFormProps) {
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-(--darkBlueColor) mb-1">Mes</label>
-            <select value={month} onChange={(e) => setMonth(+e.target.value)}
-              className="w-full h-10 px-3 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor)">
-              {MONTHS.map((name, i) => <option key={i + 1} value={i + 1}>{name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-(--darkBlueColor) mb-1">Año</label>
-            <input type="number" value={year} onChange={(e) => setYear(+e.target.value)}
-              className="w-full h-10 px-3 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor)" />
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-(--darkBlueColor) mb-1">Quincena</label>
-            <select value={half} onChange={(e) => setHalf(e.target.value as PayrollHalf)}
+            <select value={payrollHalf} onChange={(e) => setPayrollHalf(+e.target.value)}
               className="w-full h-10 px-3 border border-(--lightBlueColor)/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-(--blueColor)">
-              <option value="FIRST_HALF">Primera Quincena (1-15)</option>
-              <option value="SECOND_HALF">Segunda Quincena (16-fin)</option>
+              <option value={1}>Primera Quincena (1ra)</option>
+              <option value={2}>Segunda Quincena (2da)</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-(--darkBlueColor) mb-1">Año Escolar</label>
+            <input type="text" value={activeSchoolYear?.name ?? "—"} disabled
+              className="w-full h-10 px-3 border border-(--lightBlueColor)/30 rounded-lg bg-gray-50 text-gray-500" />
           </div>
         </div>
 
         <div className="bg-gray-50 rounded-lg p-3 text-sm text-gray-600">
-          <p><strong>Período:</strong> {MONTHS[month - 1]} {year} - {half === "FIRST_HALF" ? "Primera Quincena" : "Segunda Quincena"}</p>
-          <p><strong>Fechas:</strong> {getHalfDates().startDate} al {getHalfDates().endDate}</p>
+          <p><strong>Período:</strong> Quincena {payrollHalf} — {halfLabel}</p>
+          <p><strong>Año Escolar:</strong> {activeSchoolYear?.name ?? "—"}</p>
         </div>
 
         <div className="flex justify-end gap-3 pt-2">

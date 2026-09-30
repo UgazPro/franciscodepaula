@@ -6,6 +6,7 @@ import {
   Trash2,
   Users,
   GraduationCap,
+  Settings,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import DialogComponent from "@/components/dialog/DialogComponent";
@@ -15,14 +16,21 @@ import { FormProvider, useForm, useWatch } from "react-hook-form";
 import { FieldRenderer } from "@/components/fieldRenderer/FieldRenderer";
 import type { SelectField } from "@/components/form/formComponent.interface";
 import {
-  useClassHours,
   useTeacherSchedule,
   useSectionSchedule,
   useCRPSchedule,
-  type ClassHour,
+  useTimeSlots,
   type ScheduleEntry,
+  type TimeSlot,
 } from "@/hooks/useSchedules";
-import { useAssignSchedule, useAssignAllCRPSchedule, useRemoveSchedule } from "@/queries/useScheduleMutations";
+import {
+  useAssignSchedule,
+  useAssignAllCRPSchedule,
+  useRemoveSchedule,
+  useUpdateTimeSlot,
+  useBulkCreateTimeSlots,
+  useDeleteTimeSlot,
+} from "@/queries/useScheduleMutations";
 import type { TeacherItem } from "@/services/users/user.interface";
 
 interface SchedulesProps {
@@ -32,14 +40,6 @@ interface SchedulesProps {
 type CalendarMode = "teacher" | "section" | "crp" | null;
 
 const DAY_NAMES = ["", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
-
-const RECESS_BY_LEVEL: Record<number, number> = {
-  1: 3,
-  2: 3,
-  3: 5,
-  4: 5,
-  5: 5,
-};
 
 interface AssignFormValues {
   sectionId: string;
@@ -53,15 +53,22 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
   const [selectedTeacherName, setSelectedTeacherName] = useState("");
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(null);
   const [selectedSectionLabel, setSelectedSectionLabel] = useState("");
-  const [selectedSectionLevelId, setSelectedSectionLevelId] = useState<number | null>(null);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
-  const [assignSlotId, setAssignSlotId] = useState<number | null>(null);
+  const [pendingDay, setPendingDay] = useState<number | null>(null);
+  const [pendingHour, setPendingHour] = useState<number | null>(null);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [timeConfigOpen, setTimeConfigOpen] = useState(false);
+  const [editingSlotId, setEditingSlotId] = useState<number | null>(null);
+  const [editingStart, setEditingStart] = useState("");
+  const [editingEnd, setEditingEnd] = useState("");
+  const [bulkStartTime, setBulkStartTime] = useState("07:00");
+  const [bulkDuration, setBulkDuration] = useState(40);
+  const [bulkCount, setBulkCount] = useState(8);
 
   const { data: teachersData, isLoading: isLoadingTeachers } = useTeachers();
   const { data: sectionsData, isLoading: isLoadingSections } = useSections();
   const { data: teacherAssignmentsData } = useTeacherAssignments();
-  const { data: classHoursData } = useClassHours();
+  const { data: timeSlotsData, isLoading: isLoadingTimeSlots } = useTimeSlots();
   const { data: teacherScheduleData, isLoading: isLoadingTeacherSchedule } =
     useTeacherSchedule(selectedTeacherId);
   const { data: sectionScheduleData, isLoading: isLoadingSectionSchedule } =
@@ -71,6 +78,9 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
   const { mutateAsync: assignSchedule, isPending: isAssigning } = useAssignSchedule();
   const { mutateAsync: assignAllCRPSchedule, isPending: isAssigningCRP } = useAssignAllCRPSchedule();
   const { mutateAsync: removeSchedule } = useRemoveSchedule();
+  const { mutateAsync: bulkCreateTimeSlots, isPending: isBulkCreating } = useBulkCreateTimeSlots();
+  const { mutateAsync: deleteTimeSlot } = useDeleteTimeSlot();
+  const { mutateAsync: updateTimeSlot, isPending: isUpdatingSlot } = useUpdateTimeSlot();
 
   const formMethods = useForm<AssignFormValues>({
     defaultValues: { sectionId: "", subjectId: "", classroom: "" },
@@ -126,7 +136,7 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
 
   const sectionTGs = useMemo(() => {
     if (!selectedSectionId) return [];
-    return allAssignments.filter((a) => a.sectionId === selectedSectionId && !a.isSpecialGroup);
+    return allAssignments.filter((a) => a.sectionId === selectedSectionId);
   }, [allAssignments, selectedSectionId]);
 
   const teacherHasOnlyCRPs = useMemo(() => {
@@ -157,12 +167,12 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
         .filter((a) => a.sectionId === sectionIdNum)
         .map((a) => ({
           id: a.levelSubjectId,
-          label: `${a.levelSubject.subject.code} — ${a.levelSubject.subject.subject}`,
+          label: `${a.levelSubject.subject.subject} (${a.levelSubject.subject.code})`,
         }));
     }
     return sectionTGs.map((a) => ({
       id: a.levelSubjectId,
-      label: `${a.levelSubject.subject.code} — ${a.levelSubject.subject.subject}`,
+      label: `${a.levelSubject.subject.subject} (${a.levelSubject.subject.code})`,
     }));
   }, [calendarMode, watchedSectionId, teacherTGs, sectionTGs]);
 
@@ -181,10 +191,10 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
     return null;
   }, [calendarMode, watchedSectionId, watchedSubjectId, teacherTGs, sectionTGs]);
 
-  const classHours = useMemo(() => {
-    const data = classHoursData as { data: ClassHour[] } | undefined;
+  const timeSlots = useMemo(() => {
+    const data = timeSlotsData as { data: TimeSlot[] } | undefined;
     return data?.data ?? [];
-  }, [classHoursData]);
+  }, [timeSlotsData]);
 
   const teacherSchedule = useMemo(() => {
     const data = teacherScheduleData as { data: ScheduleEntry[] } | undefined;
@@ -213,21 +223,16 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
         ? isLoadingSectionSchedule
         : isLoadingCRPSchedule;
 
+  // Map: "hour-dayOfWeek" → entries[] (array because split class can have 2)
   const scheduleMap = useMemo(() => {
-    const map = new Map<string, ScheduleEntry>();
+    const map = new Map<string, ScheduleEntry[]>();
     for (const entry of currentSchedule) {
-      map.set(`${entry.dayOfWeek}-${entry.block}`, entry);
+      const key = `${entry.hour}-${entry.dayOfWeek}`;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push(entry);
     }
     return map;
   }, [currentSchedule]);
-
-  const getRecessBlock = useCallback(
-    (levelId: number | null) => {
-      if (!levelId) return null;
-      return RECESS_BY_LEVEL[levelId] ?? null;
-    },
-    [],
-  );
 
   const handleSelectTeacher = useCallback(
     (teacher: TeacherItem) => {
@@ -254,7 +259,6 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
       setSelectedSectionLabel(
         `${section.highSchoolLevel.level} — Sección ${section.section}`,
       );
-      setSelectedSectionLevelId(section.highSchoolLevel.id);
       setIsAnimating(true);
       requestAnimationFrame(() => {
         setCalendarMode("section");
@@ -273,64 +277,75 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
   }, []);
 
   const handleCellClick = useCallback(
-    (dayOfWeek: number, block: number) => {
-      const key = `${dayOfWeek}-${block}`;
-      if (scheduleMap.has(key)) return;
-
-      const recessBlock = getRecessBlock(
-        calendarMode === "section" ? selectedSectionLevelId : null,
-      );
-      if (recessBlock === block) return;
-
-      const slot = classHours.find((ch) => ch.block === block);
-      if (!slot) return;
-
-      const allSlots = classHours;
-      const slotIndex = allSlots.findIndex((ch) => ch.block === block);
-      const scheduleSlotId = (dayOfWeek - 1) * allSlots.length + slotIndex + 1;
-
+    (hour: number, dayOfWeek: number) => {
       if (calendarMode === "teacher" && teacherHasOnlyCRPs) return;
+      const key = `${hour}-${dayOfWeek}`;
+      const entries = scheduleMap.get(key) ?? [];
+      // If already has entries, ignore
+      if (entries.length > 0) return;
+      // If teacher view and cell has CRP entries, don't allow editing
+      if (calendarMode === "teacher" && entries.some((e) => e.isSpecialGroup && e.groupName)) return;
 
       if (calendarMode === "crp") {
-        setAssignSlotId(scheduleSlotId);
+        setPendingDay(dayOfWeek);
+        setPendingHour(hour);
         setAssignDialogOpen(true);
         return;
       }
 
-      setAssignSlotId(scheduleSlotId);
+      setPendingDay(dayOfWeek);
+      setPendingHour(hour);
       reset({ sectionId: "", subjectId: "", classroom: "" });
       setAssignDialogOpen(true);
     },
-    [scheduleMap, classHours, calendarMode, selectedSectionLevelId, getRecessBlock, reset, teacherHasOnlyCRPs],
+    [scheduleMap, calendarMode, reset, teacherHasOnlyCRPs],
   );
 
   const handleAssign = handleSubmit(async (values) => {
-    if (!assignSlotId) return;
+    if (pendingDay === null || pendingHour === null) return;
 
     if (calendarMode === "crp") {
       await assignAllCRPSchedule({
-        scheduleSlotId: assignSlotId,
+        dayOfWeek: pendingDay,
+        hour: pendingHour,
+        order: 1,
         classroom: values.classroom || undefined,
       });
       setAssignDialogOpen(false);
-      setAssignSlotId(null);
+      setPendingDay(null);
+      setPendingHour(null);
       reset({ sectionId: "", subjectId: "", classroom: "" });
       return;
     }
 
     if (!selectedTG) return;
+
+    // Normal assign
     await assignSchedule({
       teachingGroupId: selectedTG.id,
-      scheduleSlotId: assignSlotId,
+      dayOfWeek: pendingDay,
+      hour: pendingHour,
+      order: 1,
       classroom: values.classroom || undefined,
     });
+
     setAssignDialogOpen(false);
-    setAssignSlotId(null);
+    setPendingDay(null);
+    setPendingHour(null);
     reset({ sectionId: "", subjectId: "", classroom: "" });
   });
 
   const handleRemove = async (id: number) => {
     await removeSchedule(id);
+  };
+
+  const handleBulkGenerate = async () => {
+    await bulkCreateTimeSlots({
+      startTime: bulkStartTime,
+      durationMinutes: bulkDuration,
+      count: bulkCount,
+    });
+    setTimeConfigOpen(false);
   };
 
   const handleBack = () => {
@@ -341,27 +356,21 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
       setSelectedTeacherName("");
       setSelectedSectionId(null);
       setSelectedSectionLabel("");
-      setSelectedSectionLevelId(null);
       setIsAnimating(false);
     });
   };
 
-  const sortedClassHours = useMemo(
-    () => [...classHours].sort((a, b) => a.block - b.block),
-    [classHours],
-  );
+  const assignDialogDayLabel = useMemo(() => {
+    if (pendingDay === null) return null;
+    return DAY_NAMES[pendingDay] ?? null;
+  }, [pendingDay]);
 
-  const assignDialogSlot = useMemo(() => {
-    if (!assignSlotId || !classHours.length) return null;
-    const slotIndex = (assignSlotId - 1) % classHours.length;
-    return classHours[slotIndex] ?? null;
-  }, [assignSlotId, classHours]);
-
-  const assignDialogDay = useMemo(() => {
-    if (!assignSlotId || !classHours.length) return null;
-    const dayIndex = Math.floor((assignSlotId - 1) / classHours.length);
-    return DAY_NAMES[dayIndex + 1] ?? null;
-  }, [assignSlotId, classHours]);
+  const assignDialogHourLabel = useMemo(() => {
+    if (pendingHour === null) return null;
+    const slot = timeSlots.find((ts) => ts.id === pendingHour);
+    if (slot) return `Hora ${slot.id}: ${slot.startTime} - ${slot.endTime}`;
+    return `Hora ${pendingHour}`;
+  }, [pendingHour, timeSlots]);
 
   const sectionField: SelectField = useMemo(
     () => ({
@@ -520,7 +529,7 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
           <div className="p-3 bg-linear-to-br from-(--darkBlueColor) to-(--blueColor) rounded-xl">
             <Calendar size={24} className="text-white" />
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="text-xl font-bold text-gray-800">
               {calendarMode === "teacher"
                 ? selectedTeacherName
@@ -538,13 +547,33 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                   : "Horario común de todos los CRPs"}
             </p>
           </div>
+          {calendarMode !== "crp" && (
+            <button
+              onClick={() => setTimeConfigOpen(true)}
+              className="p-2 hover:bg-gray-100 rounded-lg transition cursor-pointer"
+              title="Configurar horario"
+            >
+              <Settings size={20} className="text-gray-600" />
+            </button>
+          )}
         </div>
       </div>
 
-      {isLoadingSchedule ? (
+      {isLoadingSchedule || isLoadingTimeSlots ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center text-gray-400 flex items-center justify-center gap-2">
           <Loader2 size={20} className="animate-spin" />
           Cargando horario...
+        </div>
+      ) : timeSlots.length === 0 ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-12 text-center">
+          <p className="text-gray-500 mb-4">No hay horarios configurados</p>
+          <Button
+            onClick={() => setTimeConfigOpen(true)}
+            className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) text-white cursor-pointer"
+          >
+            <Settings size={16} className="mr-2" />
+            Configurar Horario
+          </Button>
         </div>
       ) : (
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
@@ -552,7 +581,10 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
             <table className="w-full">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-32">
+                  <th className="px-3 py-3 text-center text-xs font-semibold text-gray-500 uppercase w-12">
+                    N°
+                  </th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase w-36">
                     Hora
                   </th>
                   {[1, 2, 3, 4, 5].map((day) => (
@@ -566,69 +598,67 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {sortedClassHours.map((ch) => {
-                  const recessBlock =
-                    calendarMode === "section"
-                      ? getRecessBlock(selectedSectionLevelId)
-                      : null;
-                  const isRecess = recessBlock === ch.block;
-
+                {timeSlots.map((slot) => {
                   return (
-                    <tr key={ch.id}>
+                    <tr key={slot.id}>
+                      <td className="px-3 py-2 text-center text-sm font-bold text-gray-700">
+                        {slot.id}
+                      </td>
                       <td className="px-4 py-2 text-sm text-gray-600 font-medium whitespace-nowrap">
-                        {ch.startTime} - {ch.endTime}
+                        {slot.startTime} - {slot.endTime}
                       </td>
                       {[1, 2, 3, 4, 5].map((day) => {
-                        const key = `${day}-${ch.block}`;
-                        const entry = scheduleMap.get(key);
-                        const isOccupied = !!entry;
+                        const key = `${slot.id}-${day}`;
+                        const entries = scheduleMap.get(key) ?? [];
 
-                        if (isRecess) {
+                        if (entries.length > 0) {
+                          const entry = entries[0];
                           return (
                             <td key={day} className="px-2 py-2 text-center">
-                              <div className="h-16 bg-gray-100 rounded-lg flex items-center justify-center">
-                                <span className="text-xs text-gray-400">Recreo</span>
-                              </div>
-                            </td>
-                          );
-                        }
-
-                        if (isOccupied) {
-                          const cellColor = entry.isSpecialGroup
-                            ? "bg-purple-600"
-                            : "bg-(--blueColor)";
-                          return (
-                            <td key={day} className="px-2 py-2 text-center">
-                              <div className={`h-16 ${cellColor} rounded-lg flex flex-col items-center justify-center gap-0.5 relative group`}>
-                                <span className="text-[10px] font-bold text-white leading-tight">
-                                  {entry.subjectCode ?? entry.subject}
-                                </span>
-                                {calendarMode === "teacher" && entry.section && (
-                                  <span className="text-[9px] text-blue-200">
-                                    {entry.section}
-                                  </span>
+                              <div
+                                className={`h-20 rounded-lg flex flex-col items-center justify-center gap-0.5 relative group ${
+                                  entry.isRecess
+                                    ? "bg-gray-400"
+                                    : entry.isSpecialGroup
+                                      ? "bg-purple-600"
+                                      : "bg-(--blueColor)"
+                                }`}
+                              >
+                                {entry.isRecess ? (
+                                  <span className="text-[10px] font-bold text-white leading-tight">Receso</span>
+                                ) : (
+                                  <>
+                                    <span className="text-xs font-bold text-white leading-tight">
+                                      {entry.subject}
+                                    </span>
+                                    {calendarMode === "teacher" && entry.section && (
+                                      <span className="text-[10px] text-blue-200">
+                                        {entry.level?.replace(' Año', '')} {entry.section}
+                                      </span>
+                                    )}
+                                    {calendarMode === "teacher" && entry.isSpecialGroup && entry.groupName && (
+                                      <span className="text-[10px] text-purple-200">
+                                        {entry.groupName}
+                                      </span>
+                                    )}
+                                    {calendarMode === "section" && entry.teacherName && (
+                                      <span className="text-[10px] text-blue-200 leading-tight">
+                                        {entry.teacherName}
+                                      </span>
+                                    )}
+                                    {calendarMode === "crp" && (
+                                      <span className="text-[10px] text-purple-200">
+                                        {entry.level}
+                                      </span>
+                                    )}
+                                    {entry.classroom && (
+                                      <span className="text-[10px] text-blue-200">
+                                        {entry.classroom}
+                                      </span>
+                                    )}
+                                  </>
                                 )}
-                                {calendarMode === "teacher" && entry.isSpecialGroup && entry.groupName && (
-                                  <span className="text-[9px] text-purple-200">
-                                    {entry.groupName}
-                                  </span>
-                                )}
-                                {calendarMode === "section" && entry.teacherName && (
-                                  <span className="text-[9px] text-blue-200 leading-tight">
-                                    {entry.teacherName}
-                                  </span>
-                                )}
-                                {calendarMode === "crp" && (
-                                  <span className="text-[9px] text-purple-200">
-                                    {entry.level}
-                                  </span>
-                                )}
-                                {entry.classroom && (
-                                  <span className="text-[9px] text-blue-200">
-                                    {entry.classroom}
-                                  </span>
-                                )}
-                                {!(calendarMode === "teacher" && teacherHasOnlyCRPs) && (
+                                {!(calendarMode === "teacher" && (teacherHasOnlyCRPs || (entry.isSpecialGroup && entry.groupName))) && (
                                   <button
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -647,11 +677,11 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
                         return (
                           <td key={day} className="px-2 py-2 text-center">
                             {calendarMode === "teacher" && teacherHasOnlyCRPs ? (
-                              <div className="h-16 w-full bg-gray-50 border border-gray-100 rounded-lg" />
+                              <div className="h-20 w-full bg-gray-50 border border-gray-100 rounded-lg" />
                             ) : (
                               <button
-                                onClick={() => handleCellClick(day, ch.block)}
-                                className="h-16 w-full bg-white border border-gray-200 rounded-lg hover:border-(--blueColor) hover:bg-blue-50 transition cursor-pointer"
+                                onClick={() => handleCellClick(slot.id, day)}
+                                className="h-20 w-full bg-white border border-gray-200 rounded-lg hover:border-(--blueColor) hover:bg-blue-50 transition cursor-pointer"
                               />
                             )}
                           </td>
@@ -684,13 +714,14 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
 
       {calendarMode ? calendarView : menuView}
 
+      {/* Assign Dialog */}
       <DialogComponent
         openDialog={assignDialogOpen}
         onClose={() => setAssignDialogOpen(false)}
         dialogTitle="Asignar Horario"
         dialogDescription={
-          assignDialogDay && assignDialogSlot
-            ? `${assignDialogDay} ${assignDialogSlot.startTime} - ${assignDialogSlot.endTime}`
+          assignDialogDayLabel && assignDialogHourLabel
+            ? `${assignDialogDayLabel} ${assignDialogHourLabel}`
             : ""
         }
         className="max-w-md"
@@ -722,19 +753,193 @@ export default function Schedules({ tabsComponent }: SchedulesProps) {
               >
                 Cancelar
               </Button>
-            <Button
-              type="submit"
-              disabled={calendarMode !== "crp" && !selectedTG || isAssigning || isAssigningCRP}
-              className="bg-linear-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 cursor-pointer disabled:opacity-50"
-            >
-              {isAssigning || isAssigningCRP ? (
-                <Loader2 size={16} className="animate-spin mr-1" />
-              ) : null}
-              Asignar
-            </Button>
+              <Button
+                type="submit"
+                disabled={calendarMode !== "crp" && !selectedTG || isAssigning || isAssigningCRP}
+                className="bg-linear-to-r from-green-500 to-green-600 text-white hover:from-green-600 hover:to-green-700 cursor-pointer disabled:opacity-50"
+              >
+                {isAssigning || isAssigningCRP ? (
+                  <Loader2 size={16} className="animate-spin mr-1" />
+                ) : null}
+                Asignar
+              </Button>
             </div>
           </form>
         </FormProvider>
+      </DialogComponent>
+
+      {/* Time Config Dialog */}
+      <DialogComponent
+        openDialog={timeConfigOpen}
+        onClose={() => { setTimeConfigOpen(false); setEditingSlotId(null); }}
+        dialogTitle="Configurar Horario"
+        dialogDescription="Edita los horarios de clase para la jornada escolar"
+        className="max-w-lg"
+      >
+        <div className="space-y-4 mt-2">
+          {timeSlots.length > 0 && (
+            <div>
+              <p className="text-sm font-medium text-gray-700 mb-2">Horarios actuales:</p>
+              <div className="max-h-64 overflow-y-auto border border-gray-200 rounded-lg">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500">N°</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500">Inicio</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500">Fin</th>
+                      <th className="px-3 py-2 text-center text-xs font-semibold text-gray-500 w-20">Acción</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {timeSlots.map((slot) => (
+                      <tr key={slot.id} className={editingSlotId === slot.id ? "bg-blue-50" : undefined}>
+                        <td className="px-3 py-2 text-center font-bold text-gray-700">{slot.id}</td>
+                        {editingSlotId === slot.id ? (
+                          <>
+                            <td className="px-2 py-1">
+                              <input
+                                type="time"
+                                value={editingStart}
+                                onChange={(e) => setEditingStart(e.target.value)}
+                                className="w-full h-8 px-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-(--blueColor)"
+                              />
+                            </td>
+                            <td className="px-2 py-1">
+                              <input
+                                type="time"
+                                value={editingEnd}
+                                onChange={(e) => setEditingEnd(e.target.value)}
+                                className="w-full h-8 px-1 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-(--blueColor)"
+                              />
+                            </td>
+                            <td className="px-2 py-1 flex gap-1 justify-center">
+                              <button
+                                onClick={async () => {
+                                  if (!editingStart || !editingEnd) return;
+                                  // Update this slot
+                                  await updateTimeSlot({ id: slot.id, data: { startTime: editingStart, endTime: editingEnd } });
+                                  // Recalculate following slots with 40min default
+                                  const slotIndex = timeSlots.findIndex((s) => s.id === slot.id);
+                                  if (slotIndex >= 0) {
+                                    let prevEnd = editingEnd;
+                                    for (let i = slotIndex + 1; i < timeSlots.length; i++) {
+                                      const nextStart = prevEnd;
+                                      // Calculate end = start + 40min
+                                      const [h, m] = nextStart.split(":").map(Number);
+                                      const totalMin = h * 60 + m + bulkDuration;
+                                      const nextEnd = `${String(Math.floor(totalMin / 60)).padStart(2, "0")}:${String(totalMin % 60).padStart(2, "0")}`;
+                                      await updateTimeSlot({ id: timeSlots[i].id, data: { startTime: nextStart, endTime: nextEnd } });
+                                      prevEnd = nextEnd;
+                                    }
+                                  }
+                                  setEditingSlotId(null);
+                                }}
+                                disabled={isUpdatingSlot}
+                                className="px-2 py-1 bg-green-500 text-white rounded text-xs hover:bg-green-600 cursor-pointer disabled:opacity-50"
+                              >
+                                {isUpdatingSlot ? <Loader2 size={10} className="animate-spin" /> : "OK"}
+                              </button>
+                              <button
+                                onClick={() => setEditingSlotId(null)}
+                                className="px-2 py-1 bg-gray-200 text-gray-600 rounded text-xs hover:bg-gray-300 cursor-pointer"
+                              >
+                                X
+                              </button>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-3 py-2 text-center text-gray-600">{slot.startTime}</td>
+                            <td className="px-3 py-2 text-center text-gray-600">{slot.endTime}</td>
+                            <td className="px-2 py-1 flex gap-1 justify-center">
+                              <button
+                                onClick={() => {
+                                  setEditingSlotId(slot.id);
+                                  setEditingStart(slot.startTime);
+                                  setEditingEnd(slot.endTime);
+                                }}
+                                className="px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs hover:bg-gray-200 cursor-pointer"
+                              >
+                                Editar
+                              </button>
+                              <button
+                                onClick={() => deleteTimeSlot(slot.id)}
+                                className="px-2 py-1 bg-red-50 text-red-500 rounded text-xs hover:bg-red-100 cursor-pointer"
+                              >
+                                <Trash2 size={10} />
+                              </button>
+                            </td>
+                          </>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-gray-200 pt-4">
+            <p className="text-sm font-medium text-gray-700 mb-3">Generar horario automáticamente:</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Hora inicio</label>
+                <input
+                  type="time"
+                  value={bulkStartTime}
+                  onChange={(e) => setBulkStartTime(e.target.value)}
+                  className="w-full h-9 px-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-(--blueColor)"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Duración (min)</label>
+                <input
+                  type="number"
+                  value={bulkDuration}
+                  onChange={(e) => setBulkDuration(+e.target.value)}
+                  min={10}
+                  max={120}
+                  className="w-full h-9 px-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-(--blueColor)"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Cantidad</label>
+                <input
+                  type="number"
+                  value={bulkCount}
+                  onChange={(e) => setBulkCount(+e.target.value)}
+                  min={1}
+                  max={20}
+                  className="w-full h-9 px-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-(--blueColor)"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-gray-400 mt-2">
+              Esto reemplazará todos los horarios existentes.
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => { setTimeConfigOpen(false); setEditingSlotId(null); }}
+              className="cursor-pointer"
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleBulkGenerate}
+              disabled={isBulkCreating}
+              className="bg-linear-to-r from-(--blueColor) to-(--darkBlueColor) text-white cursor-pointer disabled:opacity-50"
+            >
+              {isBulkCreating ? (
+                <Loader2 size={16} className="animate-spin mr-1" />
+              ) : null}
+              Generar
+            </Button>
+          </div>
+        </div>
       </DialogComponent>
     </div>
   );

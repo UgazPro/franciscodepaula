@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Plus, Search, CheckCircle, Eye, ChevronLeft, ChevronRight } from "lucide-react";
+import { Plus, Search, CheckCircle, Eye } from "lucide-react";
 import { usePayrollPeriods, usePayrollPreview, usePayrollRecords } from "@/hooks/usePayroll";
 import { useGeneratePayroll, useMarkAsPaid } from "@/queries/usePayrollMutations";
 import { TableComponent, type Column } from "@/components/table/TableComponent";
@@ -7,9 +7,8 @@ import { PaginationComponent } from "@/components/table/PaginationComponent";
 import PageTransitionComponent from "@/components/pageTransition/PageTransitionComponent";
 import SummaryCard from "../../components/SummaryCard";
 import PayrollPeriodForm from "./PayrollPeriodForm";
-import type { PayrollPeriod, PayrollPreviewItem, PayrollRecord, PayrollHalf } from "@/services/payroll/payroll.types";
-
-const MONTHS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+import { useActiveSchoolYear } from "@/hooks/useSchoolYears";
+import type { PayrollPeriod, PayrollPreviewItem, PayrollRecord } from "@/services/payroll/payroll.types";
 
 export default function PayrollView() {
   const [screen, setScreen] = useState<"list" | "form">("list");
@@ -17,14 +16,13 @@ export default function PayrollView() {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filterMonth, setFilterMonth] = useState<string>("");
-  const [filterYear, setFilterYear] = useState<string>("");
   const [filterHalf, setFilterHalf] = useState<string>("");
 
+  const { data: activeSchoolYear } = useActiveSchoolYear();
+
   const { data: periodsData, isLoading: loadingPeriods } = usePayrollPeriods({
-    month: filterMonth ? +filterMonth : undefined,
-    year: filterYear ? +filterYear : undefined,
-    half: filterHalf || undefined,
+    payrollHalf: filterHalf ? +filterHalf : undefined,
+    schoolYearId: activeSchoolYear?.id,
   });
 
   const { data: previewData, isLoading: loadingPreview } = usePayrollPreview(selectedPeriodId);
@@ -62,10 +60,7 @@ export default function PayrollView() {
     const items = hasRecords ? records : [];
     return {
       totalGross: items.reduce((sum, r) => sum + Number(r.grossSalary ?? 0), 0),
-      totalDeductions: items.reduce((sum, r) => sum + Number(r.deductions ?? 0), 0),
-      totalBonuses: items.reduce((sum, r) => sum + Number(r.bonuses ?? 0), 0),
-      totalNet: items.reduce((sum, r) => sum + Number(r.netSalary ?? 0), 0),
-      paidCount: items.filter((r) => r.paymentStatus === "paid").length,
+      paidCount: items.filter((r) => r.paymentDate !== null).length,
     };
   }, [records, hasRecords]);
 
@@ -86,7 +81,7 @@ export default function PayrollView() {
     }
   };
 
-  const formatPeriod = (p: PayrollPeriod) => `${MONTHS[p.month - 1]} ${p.year} - ${p.half === "FIRST_HALF" ? "1ra" : "2da"}`;
+  const formatPeriod = (p: PayrollPeriod) => `Quincena ${p.payrollHalf} — ${p.schoolYear?.name ?? ""}`;
 
   const recordColumns: Column<PayrollRecord>[] = [
     {
@@ -112,45 +107,29 @@ export default function PayrollView() {
       header: "Tipo",
       render: (row) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-          row.workedHours !== null ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+          row.employee.type === "variado" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
         }`}>
-          {row.workedHours !== null ? "Docente" : "Administrativo"}
+          {row.employee.type === "variado" ? "Docente" : "Administrativo"}
         </span>
       ),
     },
     {
-      header: "Horas",
-      render: (row) => <span className="text-gray-600">{row.workedHours !== null ? `${row.workedHours} hrs` : "—"}</span>,
-    },
-    {
-      header: "Valor Hora",
-      render: (row) => <span className="text-gray-600">{row.hourlyRate !== null ? `$ ${Number(row.hourlyRate).toFixed(2)}` : "—"}</span>,
-    },
-    {
-      header: "Bruto",
-      render: (row) => <span className="font-bold text-gray-800">$ {Math.floor(Number(row.grossSalary ?? 0))}</span>,
-    },
-    {
-      header: "Deducciones",
-      render: (row) => <span className="text-red-600">$ {Math.floor(Number(row.deductions ?? 0))}</span>,
-    },
-    {
-      header: "Bonificaciones",
-      render: (row) => <span className="text-green-600">$ {Math.floor(Number(row.bonuses ?? 0))}</span>,
-    },
-    {
-      header: "Neto",
-      render: (row) => <span className="font-bold text-blue-900">$ {Math.floor(Number(row.netSalary ?? 0))}</span>,
+      header: "Bruto (VES)",
+      render: (row) => <span className="font-bold text-gray-800">Bs. {Number(row.grossSalary ?? 0).toFixed(2)}</span>,
     },
     {
       header: "Estado",
       render: (row) => (
         <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-          row.paymentStatus === "paid" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+          row.paymentDate ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
         }`}>
-          {row.paymentStatus === "paid" ? "Pagado" : "Pendiente"}
+          {row.paymentDate ? "Pagado" : "Pendiente"}
         </span>
       ),
+    },
+    {
+      header: "Fecha Pago",
+      render: (row) => <span className="text-gray-600">{row.paymentDate ? new Date(row.paymentDate).toLocaleDateString() : "—"}</span>,
     },
     {
       header: "Acciones",
@@ -158,7 +137,7 @@ export default function PayrollView() {
       className: "text-right",
       render: (row) => (
         <div className="flex items-center justify-end gap-1">
-          {row.paymentStatus !== "paid" && (
+          {!row.paymentDate && (
             <button onClick={() => handleMarkPaid(row.id)}
               className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition cursor-pointer" title="Marcar como pagado">
               <CheckCircle size={16} />
@@ -180,22 +159,11 @@ export default function PayrollView() {
               className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500" />
           </div>
           <div className="flex gap-2">
-            <select value={filterMonth} onChange={(e) => { setFilterMonth(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-green-500">
-              <option value="">Mes</option>
-              {MONTHS.map((m, i) => <option key={i} value={i + 1}>{m}</option>)}
-            </select>
-            <select value={filterYear} onChange={(e) => { setFilterYear(e.target.value); setCurrentPage(1); }}
-              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-green-500">
-              <option value="">Año</option>
-              <option value="2026">2026</option>
-              <option value="2027">2027</option>
-            </select>
             <select value={filterHalf} onChange={(e) => { setFilterHalf(e.target.value); setCurrentPage(1); }}
               className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-green-500">
               <option value="">Quincena</option>
-              <option value="FIRST_HALF">1ra</option>
-              <option value="SECOND_HALF">2da</option>
+              <option value="1">1ra</option>
+              <option value="2">2da</option>
             </select>
           </div>
           <button onClick={() => setScreen("form")}
@@ -218,8 +186,8 @@ export default function PayrollView() {
                 }`}>
                 <p className="font-medium text-gray-800">{formatPeriod(p)}</p>
                 <p className="text-xs text-gray-400 mt-1">{p.startDate?.slice(0, 10)} al {p.endDate?.slice(0, 10)}</p>
-                <p className={`text-xs mt-1 font-medium ${p.status ? "text-green-600" : "text-yellow-600"}`}>
-                  {p.status ? "Generada" : "Pendiente"}
+                <p className={`text-xs mt-1 font-medium ${p.payrollRecords.length > 0 ? "text-green-600" : "text-yellow-600"}`}>
+                  {p.payrollRecords.length > 0 ? "Generada" : "Pendiente"}
                 </p>
               </button>
             ))}
@@ -252,11 +220,10 @@ export default function PayrollView() {
 
       {/* Summary cards */}
       {hasRecords && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <SummaryCard title="Total Bruto" value={`$ ${totals.totalGross.toFixed(2)}`} icon={Eye} color="blue" />
-          <SummaryCard title="Deducciones" value={`$ ${totals.totalDeductions.toFixed(2)}`} icon={Eye} color="red" />
-          <SummaryCard title="Neto Total" value={`$ ${totals.totalNet.toFixed(2)}`} icon={Eye} color="green" />
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+          <SummaryCard title="Total Bruto" value={`Bs. ${totals.totalGross.toFixed(2)}`} icon={Eye} color="blue" />
           <SummaryCard title="Pagados" value={`${totals.paidCount} / ${records.length}`} icon={CheckCircle} color="green" />
+          <SummaryCard title="Pendientes" value={`${records.length - totals.paidCount}`} icon={Eye} color="red" />
         </div>
       )}
 
@@ -273,8 +240,8 @@ export default function PayrollView() {
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Empleado</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tipo</th>
                   <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Horas</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Valor Hora</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Salario Bruto</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Tarifa/Hora</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Salario Bruto (VES)</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -293,14 +260,14 @@ export default function PayrollView() {
                     </td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                        item.type === "Docente" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
+                        item.type === "variado" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"
                       }`}>
-                        {item.type}
+                        {item.type === "variado" ? "Docente" : "Administrativo"}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{item.workedHours !== null ? `${item.workedHours} hrs` : "—"}</td>
-                    <td className="px-6 py-4 text-gray-600">{item.hourlyRate !== null ? `$ ${Number(item.hourlyRate).toFixed(2)}` : "—"}</td>
-                    <td className="px-6 py-4 font-bold text-gray-800">$ {Math.floor(Number(item.grossSalary))}</td>
+                    <td className="px-6 py-4 text-gray-600">{item.costPerHour !== null ? `$ ${item.costPerHour.toFixed(2)}` : "—"}</td>
+                    <td className="px-6 py-4 font-bold text-gray-800">Bs. {Number(item.grossSalary).toFixed(2)}</td>
                   </tr>
                 ))}
               </tbody>

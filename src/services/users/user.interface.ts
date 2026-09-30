@@ -95,7 +95,7 @@ export interface IStaff {
     updatedAt: string;
     person: Person;
     userRoles: { id: number; userId: number; roleId: number; role: { id: number; role: string } }[];
-    employee: { id: number; userId: number; baseHourRate: number | null; hireDate: Date | string | null } | null;
+    employee: { id: number; userId: number; type: string; salary: number | null; hireDate: Date | string | null } | null;
 }
 
 export interface Person {

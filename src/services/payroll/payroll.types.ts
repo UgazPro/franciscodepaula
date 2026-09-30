@@ -1,13 +1,10 @@
-export type PayrollHalf = "FIRST_HALF" | "SECOND_HALF";
-
 export interface PayrollPeriod {
   id: number;
-  month: number;
-  year: number;
-  half: PayrollHalf;
+  payrollHalf: number;
+  schoolYearId: number;
   startDate: string | null;
   endDate: string | null;
-  status: boolean | null;
+  schoolYear: { id: number; name: string };
   payrollRecords: PayrollRecord[];
 }
 
@@ -17,10 +14,14 @@ export interface PayrollEmployee {
   lastName: string;
   identification: string;
   roles: string[];
-  isDocente: boolean;
-  baseHourRate: number | null;
-  fixedSalary: number | null;
+  type: string | null;
+  salary: number | null;
   hireDate: string | null;
+}
+
+export interface TeacherHourCost {
+  id: number;
+  costPerHour: number | null;
 }
 
 export interface PayrollPreviewItem {
@@ -28,29 +29,27 @@ export interface PayrollPreviewItem {
   firstName: string;
   lastName: string;
   identification: string;
-  type: "Docente" | "Administrativo";
-  hourlyRate: number | null;
-  workedHours: number | null;
+  type: string | null;
   grossSalary: number;
-  fixedSalary: number | null;
+  teacherHourCostId: number | null;
+  costPerHour: number | null;
+  workedHours: number | null;
 }
 
 export interface PayrollRecord {
   id: number;
   employeeId: number;
   payrollPeriodId: number;
-  hourlyRate: number | null;
-  workedHours: number | null;
+  teacherHourCostId: number | null;
   grossSalary: number | null;
-  deductions: number;
-  bonuses: number;
-  netSalary: number | null;
   currency: string | null;
-  paymentStatus: string | null;
   paymentDate: string | null;
+  exchangeId: number | null;
   generatedAt: string;
   employee: {
     id: number;
+    type: string | null;
+    salary: number | null;
     user: {
       person: {
         firstNames: string;
@@ -60,6 +59,8 @@ export interface PayrollRecord {
     };
   };
   payrollPeriod: PayrollPeriod;
+  teacherHourCost: TeacherHourCost | null;
+  exchange: { id: number; rate: number } | null;
   adjustments: {
     id: number;
     type: string;
@@ -69,9 +70,8 @@ export interface PayrollRecord {
 }
 
 export interface CreatePayrollPeriodDTO {
-  month: number;
-  year: number;
-  half: PayrollHalf;
+  payrollHalf: number;
+  schoolYearId: number;
   startDate?: string;
   endDate?: string;
 }

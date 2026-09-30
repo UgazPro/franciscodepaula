@@ -1,35 +1,27 @@
 import { useQuery } from "@tanstack/react-query";
 import { getDataApi } from "@/services/api";
 
-export interface ClassHour {
-  id: number;
-  block: number;
-  startTime: string;
-  endTime: string;
-  type: string;
-}
-
 export interface ScheduleEntry {
   id: number;
-  teachingGroupId: number;
+  teachingGroupId: number | null;
   subject: string;
   subjectCode: string;
-  level: string;
+  level: string | null;
   section: string | null;
   groupName: string | null;
   isSpecialGroup: boolean;
   teacherName?: string;
-  slotId: number;
   dayOfWeek: number;
-  block: number;
-  startTime: string;
-  endTime: string;
+  hour: number;
+  order: number;
   classroom: string | null;
+  isRecess: boolean;
 }
 
-interface ClassHoursResponse {
-  success: boolean;
-  data: ClassHour[];
+export interface TimeSlot {
+  id: number;
+  startTime: string;
+  endTime: string;
 }
 
 interface ScheduleResponse {
@@ -37,13 +29,10 @@ interface ScheduleResponse {
   data: ScheduleEntry[];
 }
 
-export const useClassHours = () => {
-  return useQuery<ClassHoursResponse>({
-    queryKey: ["class-hours"],
-    queryFn: () => getDataApi("/schedules/class-hours"),
-    staleTime: 1000 * 60 * 10,
-  });
-};
+interface TimeSlotResponse {
+  success: boolean;
+  data: TimeSlot[];
+}
 
 export const useTeacherSchedule = (teacherId: number | null) => {
   return useQuery<ScheduleResponse>({
@@ -69,5 +58,13 @@ export const useCRPSchedule = (enabled: boolean = false) => {
     queryFn: () => getDataApi("/schedules/crp"),
     staleTime: 1000 * 60 * 2,
     enabled,
+  });
+};
+
+export const useTimeSlots = () => {
+  return useQuery<TimeSlotResponse>({
+    queryKey: ["time-slots"],
+    queryFn: () => getDataApi("/schedule-config/time-slots"),
+    staleTime: 1000 * 60 * 5,
   });
 };

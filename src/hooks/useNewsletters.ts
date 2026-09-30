@@ -13,7 +13,7 @@ interface BoletinResponse {
 
 export const useBoletinData = (periodId: number | null, enabled: boolean) => {
   return useQuery<BoletinResponse>({
-    queryKey: ["boletin-data", periodId],
+    queryKey: ["sabana-data", periodId],
     queryFn: () => getDataApi(`/grade-adjustments/sabana?periodId=${periodId}`),
     staleTime: 1000 * 60 * 2,
     enabled,
